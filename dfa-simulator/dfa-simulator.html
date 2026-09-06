@@ -226,8 +226,8 @@
     <h1>DFA Visual Designer & Simulator</h1>
     <div class="instructions">
       <span><b>Add state:</b> Double-click/Tap canvas</span>
-      <span><b>Toggle accept:</b> Double-click/Tap state</span>
-      <span><b>Move node:</b> Drag node</span>
+      <span><b>Move/Pan:</b> Drag node or empty canvas</span>
+      <span><b>Zoom:</b> Scroll wheel or Pinch</span>
       <span><b>Add arrow:</b> <kbd>Shift</kbd> + Drag (or Toggle Arrow Mode)</span>
       <span><b>Delete:</b> Select + <kbd>Delete</kbd> (or UI button)</span>
     </div>
@@ -256,6 +256,10 @@
   <div class="canvas-container" id="canvasContainer">
     <!-- Mobile/Touch Interaction Toolbar -->
     <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; z-index: 10;">
+      <button class="btn" id="btnZoomIn" style="padding: 4px 8px;" title="Zoom In">➕</button>
+      <button class="btn" id="btnZoomOut" style="padding: 4px 8px;" title="Zoom Out">➖</button>
+      <button class="btn" id="btnZoomReset" style="padding: 4px 8px;" title="Reset View">⌂</button>
+      <div style="width: 2px; background: #e2e8f0; margin: 0 2px;"></div>
       <button class="btn" id="btnArrowMode">Arrow Mode: OFF</button>
       <button class="btn" id="btnDeleteMode" style="display: none; background: #fee2e2; color: #991b1b; border-color: #f87171;">Delete</button>
     </div>
@@ -316,9 +320,22 @@
     const stringDisplay = document.getElementById('stringDisplay');
     const simStatus = document.getElementById('simStatus');
 
+    // Camera & Transform State
+    let scale = 1;
+    let offsetX = 0;
+    let offsetY = 0;
+    let isPanning = false;
+    let panStartX = 0;
+    let panStartY = 0;
+    let initialPinchDistance = null;
+    let initialScale = 1;
+
     // Touch/Mobile State UI
     const btnArrowMode = document.getElementById('btnArrowMode');
     const btnDeleteMode = document.getElementById('btnDeleteMode');
+    const btnZoomIn = document.getElementById('btnZoomIn');
+    const btnZoomOut = document.getElementById('btnZoomOut');
+    const btnZoomReset = document.getElementById('btnZoomReset');
     let arrowMode = false;
     let lastTapTime = 0;
 
@@ -340,12 +357,34 @@
     let activeTransitionIndex = null;
     let isPlaying = false;
     let playInterval = null;
-    let machineState = 'idle'; // 'idle' | 'running' | 'accepted' | 'rejected' | 'paused'
+    let machineState = 'idle'; 
     let initialInputString = '';
 
     const NODE_RADIUS = 30;
 
-    // Mobile/Toolbar Listeners
+    // View Controls
+    function setZoom(newScale, centerScreenX = canvas.width / 2, centerScreenY = canvas.height / 2) {
+      const oldScale = scale;
+      scale = Math.max(0.1, Math.min(newScale, 5));
+      offsetX = centerScreenX - (centerScreenX - offsetX) * (scale / oldScale);
+      offsetY = centerScreenY - (centerScreenY - offsetY) * (scale / oldScale);
+      draw();
+    }
+
+    btnZoomIn.addEventListener('click', () => setZoom(scale * 1.2));
+    btnZoomOut.addEventListener('click', () => setZoom(scale / 1.2));
+    btnZoomReset.addEventListener('click', () => { scale = 1; offsetX = 0; offsetY = 0; draw(); });
+
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      setZoom(scale * zoomFactor, mouseX, mouseY);
+    }, { passive: false });
+
+    // Toolbar Listeners
     btnArrowMode.addEventListener('click', () => {
       arrowMode = !arrowMode;
       btnArrowMode.innerText = `Arrow Mode: ${arrowMode ? 'ON' : 'OFF'}`;
@@ -380,13 +419,24 @@
 
     function getMousePos(e) {
       const rect = canvas.getBoundingClientRect();
-      const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : 
-                     (e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0].clientX : e.clientX);
-      const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : 
-                     (e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0].clientY : e.clientY);
+      let clientX, clientY;
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else if (e.changedTouches && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
+      } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      }
+      const screenX = clientX - rect.left;
+      const screenY = clientY - rect.top;
       return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
+        x: (screenX - offsetX) / scale,
+        y: (screenY - offsetY) / scale,
+        screenX,
+        screenY
       };
     }
 
@@ -468,7 +518,6 @@
       t.curve = mx * nx + my * ny;
     }
 
-    // Pretty Print Algorithm (Hierarchical Layered Layout)
     function prettyPrintDFA() {
       if (states.length === 0) return;
 
@@ -532,17 +581,20 @@
         }
       });
 
+      scale = 1; offsetX = 0; offsetY = 0;
       updateDFA();
     }
 
-    // Modal Handlers
-    function openModal(x, y, initialData = { read: '0' }) {
+    function openModal(worldX, worldY, initialData = { read: '0' }) {
       modalRead.value = initialData.read;
+
+      const screenX = worldX * scale + offsetX;
+      const screenY = worldY * scale + offsetY;
 
       const modalWidth = 120;
       const modalHeight = 85;
-      let left = Math.min(Math.max(10, x), container.clientWidth - modalWidth - 10);
-      let top = Math.min(Math.max(10, y), container.clientHeight - modalHeight - 10);
+      let left = Math.min(Math.max(10, screenX), container.clientWidth - modalWidth - 10);
+      let top = Math.min(Math.max(10, screenY), container.clientHeight - modalHeight - 10);
 
       modal.style.left = left + 'px';
       modal.style.top = top + 'px';
@@ -584,7 +636,6 @@
       updateDFA();
     }
 
-    // Dynamic Simulation Logic
     function loadInput() {
       pauseSimulation();
       initialInputString = stringInput.value.trim();
@@ -733,12 +784,8 @@
       }
     }
 
-    // Controls Event Listeners
     btnLoad.addEventListener('click', loadInput);
-    btnStep.addEventListener('click', () => {
-      pauseSimulation();
-      stepSimulation();
-    });
+    btnStep.addEventListener('click', () => { pauseSimulation(); stepSimulation(); });
     btnPlay.addEventListener('click', togglePlay);
     btnReset.addEventListener('click', resetSimulation);
     btnPrettyPrint.addEventListener('click', prettyPrintDFA);
@@ -746,7 +793,12 @@
     // Canvas Events (Unified Pointer/Touch handlers)
     function handlePointerDown(e) {
       if (!modal.classList.contains('hidden')) return;
-      if (e.type === 'touchstart') e.preventDefault(); // Stop page scrolling on drag
+      if (e.type === 'touchstart') e.preventDefault(); 
+
+      // Pinch zoom handling
+      if (e.touches && e.touches.length === 2) {
+        return; 
+      }
 
       const pos = getMousePos(e);
       const clickedNode = getNodeAt(pos);
@@ -769,7 +821,7 @@
       }
       lastTapTime = currentTime;
 
-      // Handle Interactions (Shift key OR Mobile Arrow Mode)
+      // Handle Interactions
       if (e.shiftKey || arrowMode) {
         if (clickedNode) {
           arrowStartNode = clickedNode;
@@ -784,14 +836,43 @@
       } else if (transIdx !== -1) {
         setSelection({ type: 'trans', index: transIdx });
       } else {
+        // Panning Canvas
+        isPanning = true;
+        panStartX = pos.screenX - offsetX;
+        panStartY = pos.screenY - offsetY;
         setSelection(null);
       }
       draw();
     }
 
     function handlePointerMove(e) {
+      if (e.touches && e.touches.length === 2) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        
+        if (!initialPinchDistance) {
+          initialPinchDistance = dist;
+          initialScale = scale;
+        } else {
+          const zoomFactor = dist / initialPinchDistance;
+          const rect = canvas.getBoundingClientRect();
+          const centerX = (t1.clientX + t2.clientX) / 2 - rect.left;
+          const centerY = (t1.clientY + t2.clientY) / 2 - rect.top;
+          setZoom(initialScale * zoomFactor, centerX, centerY);
+        }
+        return;
+      }
+
       const pos = getMousePos(e);
       currentMousePos = pos;
+
+      if (isPanning) {
+        offsetX = pos.screenX - panStartX;
+        offsetY = pos.screenY - panStartY;
+        draw();
+        return;
+      }
 
       if (draggedNode) {
         draggedNode.x = pos.x;
@@ -806,6 +887,15 @@
     }
 
     function handlePointerUp(e) {
+      if (!e.touches || e.touches.length < 2) {
+        initialPinchDistance = null;
+      }
+      
+      if (isPanning) {
+        isPanning = false;
+        return;
+      }
+
       if (arrowStartNode) {
         const pos = getMousePos(e);
         const targetNode = getNodeAt(pos);
@@ -817,7 +907,6 @@
         arrowStartNode = null;
       }
       
-      // Edit existing transition on tap/click
       if (!draggedNode && !draggedTransition && !e.shiftKey && !arrowMode) {
         const pos = getMousePos(e);
         const transIdx = getTransitionAt(pos);
@@ -833,7 +922,6 @@
       draw();
     }
 
-    // Bind both mouse and touch events
     canvas.addEventListener('mousedown', handlePointerDown);
     canvas.addEventListener('mousemove', handlePointerMove);
     canvas.addEventListener('mouseup', handlePointerUp);
@@ -860,13 +948,10 @@
       }
     });
 
-    // Copy to Clipboard (Strips out all spaces)
     function copyToClipboard(elementId, btn) {
       const text = document.getElementById(elementId).innerText;
       if (!text) return;
-
       const unspacedText = text.replace(/\s+/g, '');
-
       navigator.clipboard.writeText(unspacedText).then(() => {
         const originalText = btn.innerText;
         btn.innerText = 'Copied!';
@@ -889,18 +974,14 @@
         document.getElementById('binaryNotation').innerText = '';
         return;
       }
-
       const startState = states[0].id;
       const transStr = transitions.map(t => `(${t.from},${t.read},${t.to})`).join('');
       const finalStates = states.filter(s => s.isFinal).map(s => s.id).join(',');
-
       const textRepresentation = `${startState} ${transStr}${finalStates ? ' ' + finalStates : ''}`;
-
       const binaryRepresentation = textRepresentation
         .split('')
         .map(char => char.charCodeAt(0).toString(2).padStart(8, '0'))
         .join(' ');
-
       document.getElementById('textNotation').innerText = textRepresentation;
       document.getElementById('binaryNotation').innerText = binaryRepresentation;
     }
@@ -920,7 +1001,6 @@
       ctx.restore();
     }
 
-    // Autoload Parser from URL Query Parameters (?dfa=...&input=...)
     function parseAndLoadDFANotation(str) {
       str = str.trim();
       if (!str) return;
@@ -964,11 +1044,9 @@
         let from = match[1].trim();
         let read = match[2].trim();
         let to = match[3].trim();
-
         addState(from);
         addState(to);
         transitions.push({ from, read, to, curve: 0 });
-
         lastTransEndIndex = transRegex.lastIndex;
       }
 
@@ -977,9 +1055,7 @@
         let finalIds = finalPart.split(/[,\s]+/);
         finalIds.forEach(fid => {
           fid = fid.trim();
-          if (fid) {
-            addState(fid, true);
-          }
+          if (fid) addState(fid, true);
         });
       }
 
@@ -990,9 +1066,7 @@
     function loadFromURL() {
       const params = new URLSearchParams(window.location.search);
       const inputParam = params.get('input') || params.get('tape');
-      if (inputParam !== null) {
-        stringInput.value = inputParam;
-      }
+      if (inputParam !== null) stringInput.value = inputParam;
 
       const notationParam = params.get('dfa') || params.get('notation') || params.get('spec');
       if (notationParam) {
@@ -1006,21 +1080,22 @@
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.save();
+      ctx.translate(offsetX, offsetY);
+      ctx.scale(scale, scale);
 
       if (arrowStartNode) {
         ctx.strokeStyle = '#2563eb';
         ctx.lineWidth = 1.8;
-
         ctx.beginPath();
         ctx.moveTo(arrowStartNode.x, arrowStartNode.y);
         ctx.lineTo(currentMousePos.x, currentMousePos.y);
         ctx.stroke();
-
         const angle = Math.atan2(currentMousePos.y - arrowStartNode.y, currentMousePos.x - arrowStartNode.x);
         drawArrowhead(currentMousePos.x, currentMousePos.y, angle);
       }
 
-      // 1. Draw states FIRST so they form the background layer
       states.forEach((s, idx) => {
         const isStart = (idx === 0);
         const isSelected = selectedItem && selectedItem.type === 'node' && selectedItem.ref === s;
@@ -1036,7 +1111,6 @@
           drawArrowhead(s.x - NODE_RADIUS, s.y, 0);
         }
 
-        // Draw selection ring
         if (isSelected) {
           ctx.beginPath();
           ctx.arc(s.x, s.y, NODE_RADIUS + 4, 0, Math.PI * 2);
@@ -1045,24 +1119,22 @@
           ctx.stroke();
         }
 
-        // Determine node colors based on simulation state
         let nodeBgColor = '#ffffff';
         let nodeBorderColor = '#000000';
 
         if (isActiveState) {
           if (machineState === 'accepted') {
-            nodeBgColor = '#dcfce7'; // Light green
-            nodeBorderColor = '#16a34a'; // Dark green border
+            nodeBgColor = '#dcfce7'; 
+            nodeBorderColor = '#16a34a'; 
           } else if (machineState === 'rejected') {
-            nodeBgColor = '#fee2e2'; // Light red
-            nodeBorderColor = '#dc2626'; // Dark red border
+            nodeBgColor = '#fee2e2'; 
+            nodeBorderColor = '#dc2626'; 
           } else {
-            nodeBgColor = '#dbeafe'; // Light blue for running/idle
-            nodeBorderColor = '#2563eb'; // Blue border
+            nodeBgColor = '#dbeafe'; 
+            nodeBorderColor = '#2563eb'; 
           }
         }
 
-        // Main Node Circle
         ctx.beginPath();
         ctx.arc(s.x, s.y, NODE_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = nodeBgColor;
@@ -1071,7 +1143,6 @@
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Final State Inner Circle
         if (s.isFinal) {
           ctx.beginPath();
           ctx.arc(s.x, s.y, NODE_RADIUS - 5, 0, Math.PI * 2);
@@ -1080,7 +1151,6 @@
           ctx.stroke();
         }
 
-        // Node Label
         ctx.fillStyle = '#000000';
         ctx.font = 'italic 16px "Times New Roman", serif';
         ctx.textAlign = 'center';
@@ -1088,7 +1158,6 @@
         ctx.fillText(s.id, s.x, s.y);
       });
 
-      // 2. Draw transitions SECOND so arrows and arrowheads render cleanly on top of nodes
       transitions.forEach((t, idx) => {
         const sFrom = states.find(s => s.id === t.from);
         const sTo = states.find(s => s.id === t.to);
@@ -1110,18 +1179,16 @@
           const cx = sFrom.x;
           const cy = sFrom.y - NODE_RADIUS - loopRadius + 2;
 
-          // Open the gap at the bottom so it connects perfectly to the node boundary
-          const startAngle = Math.PI * 0.65; // Bottom-left of the loop
-          const endAngle = Math.PI * 0.35;   // Bottom-right of the loop
+          const startAngle = Math.PI * 0.65; 
+          const endAngle = Math.PI * 0.35;   
 
           ctx.beginPath();
           ctx.arc(cx, cy, loopRadius, startAngle, endAngle);
           ctx.stroke();
 
-          // Calculate exact arrowhead position on the circle boundary
           const arrowX = cx + loopRadius * Math.cos(endAngle);
           const arrowY = cy + loopRadius * Math.sin(endAngle);
-          const arrowAngle = endAngle + Math.PI / 2; // Tangent angle for the arrow
+          const arrowAngle = endAngle + Math.PI / 2;
           
           drawArrowhead(arrowX, arrowY, arrowAngle);
 
@@ -1150,6 +1217,8 @@
           ctx.fillText(`${t.read}`, labelX, labelY - 5);
         }
       });
+      
+      ctx.restore();
     }
 
     resizeCanvas();

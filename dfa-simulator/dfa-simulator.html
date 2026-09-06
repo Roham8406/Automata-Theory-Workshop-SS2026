@@ -322,6 +322,7 @@
     let inputString = '';
     let charIndex = 0;
     let currentStateId = null;
+    let activeTransitionIndex = null; // Tracks the currently active transition during step/play execution
     let isPlaying = false;
     let playInterval = null;
     let machineState = 'idle'; // 'idle' | 'running' | 'accepted' | 'rejected' | 'paused'
@@ -474,6 +475,7 @@
       initialInputString = stringInput.value.trim();
       inputString = initialInputString;
       charIndex = 0;
+      activeTransitionIndex = null;
       
       if (states.length > 0) {
         currentStateId = states[0].id; 
@@ -489,6 +491,7 @@
 
     function stepSimulation() {
       if (states.length === 0) {
+        activeTransitionIndex = null;
         setSimStatus('rejected', 'No States');
         pauseSimulation();
         return false;
@@ -498,8 +501,8 @@
         currentStateId = states[0].id;
       }
 
-      // Check if we have consumed the entire input string
       if (charIndex >= inputString.length) {
+        activeTransitionIndex = null;
         const currStateObj = states.find(s => s.id === currentStateId);
         if (currStateObj && currStateObj.isFinal) {
           setSimStatus('accepted', 'Accepted');
@@ -513,13 +516,17 @@
       setSimStatus('running', 'Running');
       const currentChar = inputString[charIndex];
 
-      const trans = transitions.find(t => t.from === currentStateId && t.read === currentChar);
+      const transIdx = transitions.findIndex(t => t.from === currentStateId && t.read === currentChar);
 
-      if (!trans) {
+      if (transIdx === -1) {
+        activeTransitionIndex = null;
         setSimStatus('rejected', 'Rejected');
         pauseSimulation();
         return false;
       }
+
+      activeTransitionIndex = transIdx;
+      const trans = transitions[transIdx];
 
       currentStateId = trans.to;
       charIndex++;
@@ -527,7 +534,6 @@
       renderStringDisplay();
       draw();
 
-      // If we've reached the end after consuming this character, evaluate final acceptance
       if (charIndex >= inputString.length) {
         const currStateObj = states.find(s => s.id === currentStateId);
         if (currStateObj && currStateObj.isFinal) {
@@ -535,6 +541,7 @@
         } else {
           setSimStatus('rejected', 'Rejected');
         }
+        draw();
         pauseSimulation();
         return false;
       }
@@ -814,9 +821,15 @@
         if (!sFrom || !sTo) return;
 
         const isSelected = selectedItem && selectedItem.type === 'trans' && selectedItem.index === idx;
-        ctx.strokeStyle = isSelected ? '#2563eb' : '#000000';
-        ctx.fillStyle = isSelected ? '#2563eb' : '#000000';
-        ctx.lineWidth = isSelected ? 2.5 : 1.8;
+        const isActiveTrans = (idx === activeTransitionIndex);
+
+        let strokeColor = '#000000';
+        if (isActiveTrans) strokeColor = '#ea580c'; // Vibrant amber/orange for active simulation transition
+        else if (isSelected) strokeColor = '#2563eb';
+
+        ctx.strokeStyle = strokeColor;
+        ctx.fillStyle = strokeColor;
+        ctx.lineWidth = (isActiveTrans || isSelected) ? 2.8 : 1.8;
 
         if (sFrom === sTo) {
           const loopRadius = 18;
@@ -849,7 +862,7 @@
 
           ctx.font = '13px "Times New Roman", serif';
           ctx.textAlign = 'center';
-          ctx.fillStyle = isSelected ? '#2563eb' : '#000000';
+          ctx.fillStyle = strokeColor;
           ctx.fillText(`${t.read}`, labelX, labelY - 5);
         }
       });
@@ -898,7 +911,7 @@
         if (s.isFinal) {
           ctx.beginPath();
           ctx.arc(s.x, s.y, NODE_RADIUS - 5, 0, Math.PI * 2);
-          ctx.strokeStyle = isActiveState ? '#2563eb' : '#000005';
+          ctx.strokeStyle = isActiveState ? '#2563eb' : '#000000';
           ctx.lineWidth = 1.5;
           ctx.stroke();
         }

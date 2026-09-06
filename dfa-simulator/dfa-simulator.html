@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Interactive DFA Visual Designer & Simulator</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -140,7 +140,7 @@
     }
 
     .canvas-container { flex: 1; position: relative; background: #ffffff; overflow: hidden; }
-    canvas { width: 100%; height: 100%; display: block; cursor: default; }
+    canvas { width: 100%; height: 100%; display: block; cursor: default; touch-action: none; }
     
     /* Compact 1-Input Modal Popup */
     .modal-popup {
@@ -225,12 +225,11 @@
   <header>
     <h1>DFA Visual Designer & Simulator</h1>
     <div class="instructions">
-      <span><b>Add state:</b> Double-click canvas</span>
-      <span><b>Toggle accept:</b> Double-click state</span>
+      <span><b>Add state:</b> Double-click/Tap canvas</span>
+      <span><b>Toggle accept:</b> Double-click/Tap state</span>
       <span><b>Move node:</b> Drag node</span>
-      <span><b>Add arrow:</b> <kbd>Shift</kbd> + Drag node</span>
-      <span><b>Curve arrow:</b> <kbd>Shift</kbd> + Drag arrow</span>
-      <span><b>Delete:</b> Click + <kbd>Delete</kbd></span>
+      <span><b>Add arrow:</b> <kbd>Shift</kbd> + Drag (or Toggle Arrow Mode)</span>
+      <span><b>Delete:</b> Select + <kbd>Delete</kbd> (or UI button)</span>
     </div>
   </header>
 
@@ -255,6 +254,12 @@
   </div>
 
   <div class="canvas-container" id="canvasContainer">
+    <!-- Mobile/Touch Interaction Toolbar -->
+    <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; z-index: 10;">
+      <button class="btn" id="btnArrowMode">Arrow Mode: OFF</button>
+      <button class="btn" id="btnDeleteMode" style="display: none; background: #fee2e2; color: #991b1b; border-color: #f87171;">Delete</button>
+    </div>
+
     <canvas id="dfaCanvas"></canvas>
 
     <!-- Transition Popup -->
@@ -311,6 +316,12 @@
     const stringDisplay = document.getElementById('stringDisplay');
     const simStatus = document.getElementById('simStatus');
 
+    // Touch/Mobile State UI
+    const btnArrowMode = document.getElementById('btnArrowMode');
+    const btnDeleteMode = document.getElementById('btnDeleteMode');
+    let arrowMode = false;
+    let lastTapTime = 0;
+
     let states = [];       // { id: "q0", x, y, isFinal: false }
     let transitions = [];  // { from: "q0", read: "0", to: "q1", curve: 0 }
     let stateCounter = 0;
@@ -334,6 +345,32 @@
 
     const NODE_RADIUS = 30;
 
+    // Mobile/Toolbar Listeners
+    btnArrowMode.addEventListener('click', () => {
+      arrowMode = !arrowMode;
+      btnArrowMode.innerText = `Arrow Mode: ${arrowMode ? 'ON' : 'OFF'}`;
+      btnArrowMode.style.background = arrowMode ? '#e0e7ff' : '#ffffff';
+    });
+
+    btnDeleteMode.addEventListener('click', () => {
+      if (!selectedItem) return;
+      if (selectedItem.type === 'node') {
+        const id = selectedItem.ref.id;
+        states = states.filter(s => s.id !== id);
+        transitions = transitions.filter(t => t.from !== id && t.to !== id);
+        if (currentStateId === id) currentStateId = states[0] ? states[0].id : null;
+      } else if (selectedItem.type === 'trans') {
+        transitions.splice(selectedItem.index, 1);
+      }
+      setSelection(null);
+      updateDFA();
+    });
+
+    function setSelection(item) {
+      selectedItem = item;
+      if(btnDeleteMode) btnDeleteMode.style.display = item ? 'inline-flex' : 'none';
+    }
+
     function resizeCanvas() {
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
@@ -343,9 +380,13 @@
 
     function getMousePos(e) {
       const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : 
+                     (e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0].clientX : e.clientX);
+      const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : 
+                     (e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0].clientY : e.clientY);
       return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+        x: clientX - rect.left,
+        y: clientY - rect.top
       };
     }
 
@@ -361,7 +402,10 @@
         if (!sFrom || !sTo) continue;
 
         if (sFrom === sTo) {
-          if (Math.hypot(pos.x - sFrom.x, pos.y - (sFrom.y - NODE_RADIUS - 15)) <= 22) return i;
+          const loopRadius = 26;
+          const cx = sFrom.x;
+          const cy = sFrom.y - NODE_RADIUS - loopRadius + 2;
+          if (Math.hypot(pos.x - cx, pos.y - cy) <= loopRadius + 8) return i;
         } else {
           const { start, end, control } = getCurvePoints(sFrom, sTo, t.curve || 0);
           for (let u = 0; u <= 1; u += 0.05) {
@@ -699,56 +743,53 @@
     btnReset.addEventListener('click', resetSimulation);
     btnPrettyPrint.addEventListener('click', prettyPrintDFA);
 
-    // Canvas Events
-    canvas.addEventListener('dblclick', (e) => {
-      const pos = getMousePos(e);
-      const clickedNode = getNodeAt(pos);
-
-      if (clickedNode) {
-        clickedNode.isFinal = !clickedNode.isFinal;
-      } else {
-        const newState = {
-          id: 'q' + stateCounter++,
-          x: pos.x,
-          y: pos.y,
-          isFinal: false
-        };
-        states.push(newState);
-        if (states.length === 1 && !currentStateId) {
-          currentStateId = newState.id;
-        }
-        selectedItem = { type: 'node', ref: newState };
-      }
-      updateDFA();
-    });
-
-    canvas.addEventListener('mousedown', (e) => {
+    // Canvas Events (Unified Pointer/Touch handlers)
+    function handlePointerDown(e) {
       if (!modal.classList.contains('hidden')) return;
+      if (e.type === 'touchstart') e.preventDefault(); // Stop page scrolling on drag
 
       const pos = getMousePos(e);
       const clickedNode = getNodeAt(pos);
       const transIdx = getTransitionAt(pos);
 
-      if (e.shiftKey) {
+      // Handle Double-Tap / Double-Click
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - lastTapTime;
+      if (e.type === 'dblclick' || (tapLength < 300 && tapLength > 0)) {
+        if (clickedNode) {
+          clickedNode.isFinal = !clickedNode.isFinal;
+        } else {
+          const newState = { id: 'q' + stateCounter++, x: pos.x, y: pos.y, isFinal: false };
+          states.push(newState);
+          if (states.length === 1 && !currentStateId) currentStateId = newState.id;
+          setSelection({ type: 'node', ref: newState });
+        }
+        updateDFA();
+        return;
+      }
+      lastTapTime = currentTime;
+
+      // Handle Interactions (Shift key OR Mobile Arrow Mode)
+      if (e.shiftKey || arrowMode) {
         if (clickedNode) {
           arrowStartNode = clickedNode;
           currentMousePos = pos;
         } else if (transIdx !== -1) {
           draggedTransition = transitions[transIdx];
-          selectedItem = { type: 'trans', index: transIdx };
+          setSelection({ type: 'trans', index: transIdx });
         }
       } else if (clickedNode) {
         draggedNode = clickedNode;
-        selectedItem = { type: 'node', ref: clickedNode };
+        setSelection({ type: 'node', ref: clickedNode });
       } else if (transIdx !== -1) {
-        selectedItem = { type: 'trans', index: transIdx };
+        setSelection({ type: 'trans', index: transIdx });
       } else {
-        selectedItem = null;
+        setSelection(null);
       }
       draw();
-    });
+    }
 
-    canvas.addEventListener('mousemove', (e) => {
+    function handlePointerMove(e) {
       const pos = getMousePos(e);
       currentMousePos = pos;
 
@@ -762,37 +803,45 @@
       } else if (arrowStartNode) {
         draw();
       }
-    });
+    }
 
-    canvas.addEventListener('mouseup', (e) => {
+    function handlePointerUp(e) {
       if (arrowStartNode) {
         const pos = getMousePos(e);
         const targetNode = getNodeAt(pos);
 
         if (targetNode) {
-          pendingTransition = {
-            from: arrowStartNode.id,
-            to: targetNode.id,
-            isEdit: false
-          };
+          pendingTransition = { from: arrowStartNode.id, to: targetNode.id, isEdit: false };
           openModal(pos.x, pos.y);
         }
         arrowStartNode = null;
       }
+      
+      // Edit existing transition on tap/click
+      if (!draggedNode && !draggedTransition && !e.shiftKey && !arrowMode) {
+        const pos = getMousePos(e);
+        const transIdx = getTransitionAt(pos);
+        if (transIdx !== -1) {
+          const t = transitions[transIdx];
+          pendingTransition = { index: transIdx, isEdit: true };
+          openModal(pos.x, pos.y, { read: t.read });
+        }
+      }
+      
       draggedTransition = null;
       draggedNode = null;
       draw();
-    });
+    }
 
-    canvas.addEventListener('click', (e) => {
-      const pos = getMousePos(e);
-      const transIdx = getTransitionAt(pos);
-      if (transIdx !== -1 && !e.shiftKey) {
-        const t = transitions[transIdx];
-        pendingTransition = { index: transIdx, isEdit: true };
-        openModal(pos.x, pos.y, { read: t.read });
-      }
-    });
+    // Bind both mouse and touch events
+    canvas.addEventListener('mousedown', handlePointerDown);
+    canvas.addEventListener('mousemove', handlePointerMove);
+    canvas.addEventListener('mouseup', handlePointerUp);
+    canvas.addEventListener('dblclick', handlePointerDown);
+
+    canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
+    canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
+    canvas.addEventListener('touchend', handlePointerUp);
 
     window.addEventListener('keydown', (e) => {
       if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
@@ -806,7 +855,7 @@
         } else if (selectedItem.type === 'trans') {
           transitions.splice(selectedItem.index, 1);
         }
-        selectedItem = null;
+        setSelection(null);
         updateDFA();
       }
     });
@@ -972,7 +1021,6 @@
       }
 
       // 1. Draw states FIRST so they form the background layer
-      // 1. Draw states FIRST so they form the background layer
       states.forEach((s, idx) => {
         const isStart = (idx === 0);
         const isSelected = selectedItem && selectedItem.type === 'node' && selectedItem.ref === s;
@@ -1067,7 +1115,6 @@
           const endAngle = Math.PI * 0.35;   // Bottom-right of the loop
 
           ctx.beginPath();
-          // arc() draws clockwise by default
           ctx.arc(cx, cy, loopRadius, startAngle, endAngle);
           ctx.stroke();
 
@@ -1080,6 +1127,7 @@
 
           ctx.font = '13px "Times New Roman", serif';
           ctx.textAlign = 'center';
+          ctx.fillStyle = strokeColor;
           ctx.fillText(`${t.read}`, cx, cy - loopRadius - 5);
         } else {
           const curveVal = t.curve || 0;

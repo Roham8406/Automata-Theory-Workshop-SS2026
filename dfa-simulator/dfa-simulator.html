@@ -79,6 +79,8 @@
     .btn-play:hover { background: #15803d; color: #ffffff; }
     .btn-pause { background: #eab308; color: #ffffff; border-color: #ca8a04; }
     .btn-pause:hover { background: #ca8a04; color: #ffffff; }
+    .btn-pretty { background: #7c3aed; color: #ffffff; border-color: #7c3aed; }
+    .btn-pretty:hover { background: #6d28d9; color: #ffffff; }
 
     .status-badge {
       font-size: 0.72rem;
@@ -243,6 +245,7 @@
       <button class="btn btn-play" id="btnPlay">Play</button>
       <button class="btn" id="btnStep">Next Step</button>
       <button class="btn" id="btnReset">Reset</button>
+      <button class="btn btn-pretty" id="btnPrettyPrint">Pretty Print</button>
 
       <div id="simStatus" class="status-badge">Idle</div>
     </div>
@@ -304,6 +307,7 @@
     const btnPlay = document.getElementById('btnPlay');
     const btnStep = document.getElementById('btnStep');
     const btnReset = document.getElementById('btnReset');
+    const btnPrettyPrint = document.getElementById('btnPrettyPrint');
     const stringDisplay = document.getElementById('stringDisplay');
     const simStatus = document.getElementById('simStatus');
 
@@ -322,7 +326,7 @@
     let inputString = '';
     let charIndex = 0;
     let currentStateId = null;
-    let activeTransitionIndex = null; // Tracks the currently active transition during step/play execution
+    let activeTransitionIndex = null;
     let isPlaying = false;
     let playInterval = null;
     let machineState = 'idle'; // 'idle' | 'running' | 'accepted' | 'rejected' | 'paused'
@@ -387,7 +391,7 @@
       };
 
       const angleFrom = Math.atan2(control.y - sFrom.y, control.x - sFrom.x);
-      const angleTo = Math.atan2(control.y - sTo.y, control.x - sTo.x);
+      const angleTo = Math.atan2(control.y - sTo.y, control.x - sTo.y);
 
       const start = {
         x: sFrom.x + NODE_RADIUS * Math.cos(angleFrom),
@@ -418,6 +422,77 @@
       const my = pos.y - (sFrom.y + sTo.y) / 2;
 
       t.curve = mx * nx + my * ny;
+    }
+
+    // Pretty Print Algorithm (Hierarchical Layered Layout)
+    function prettyPrintDFA() {
+      if (states.length === 0) return;
+
+      // 1. BFS traversal from start state (states[0]) to assign layers
+      const startState = states[0];
+      const layers = {}; // layerIndex -> array of state objects
+      const visited = new Set();
+      const queue = [{ state: startState, layer: 0 }];
+
+      visited.add(startState.id);
+
+      while (queue.length > 0) {
+        const { state, layer } = queue.shift();
+        if (!layers[layer]) layers[layer] = [];
+        layers[layer].push(state);
+
+        const outTrans = transitions.filter(t => t.from === state.id);
+        for (const t of outTrans) {
+          const targetState = states.find(s => s.id === t.to);
+          if (targetState && !visited.has(targetState.id)) {
+            visited.add(targetState.id);
+            queue.push({ state: targetState, layer: layer + 1 });
+          }
+        }
+      }
+
+      // Handle unvisited states (disconnected components)
+      let maxLayer = Math.max(...Object.keys(layers).map(Number), 0);
+      states.forEach(s => {
+        if (!visited.has(s.id)) {
+          maxLayer++;
+          if (!layers[maxLayer]) layers[maxLayer] = [];
+          layers[maxLayer].push(s);
+          visited.add(s.id);
+        }
+      });
+
+      // 2. Compute coordinates based on layer distribution
+      const cWidth = canvas.width || container.clientWidth || 800;
+      const cHeight = canvas.height || container.clientHeight || 600;
+
+      const layerKeys = Object.keys(layers).map(Number).sort((a, b) => a - b);
+      const totalLayers = layerKeys.length;
+      const xSpacing = Math.max(160, cWidth / (totalLayers + 1));
+
+      layerKeys.forEach((lIndex, lIdx) => {
+        const layerStates = layers[lIndex];
+        const totalNodesInLayer = layerStates.length;
+        const ySpacing = Math.max(120, cHeight / (totalNodesInLayer + 1));
+
+        layerStates.forEach((state, nIdx) => {
+          state.x = xSpacing * (lIdx + 1);
+          state.y = ySpacing * (nIdx + 1);
+        });
+      });
+
+      // 3. Optimize curves for parallel or bidirectional transitions
+      transitions.forEach(t => {
+        t.curve = 0;
+        if (t.from !== t.to) {
+          const hasReverse = transitions.some(rev => rev.from === t.to && rev.to === t.from);
+          if (hasReverse) {
+            t.curve = 35; // Give parallel/bidirectional edges a clean default curve
+          }
+        }
+      });
+
+      updateDFA();
     }
 
     // Modal Handlers
@@ -626,6 +701,7 @@
     });
     btnPlay.addEventListener('click', togglePlay);
     btnReset.addEventListener('click', resetSimulation);
+    btnPrettyPrint.addEventListener('click', prettyPrintDFA);
 
     // Canvas Events
     canvas.addEventListener('dblclick', (e) => {

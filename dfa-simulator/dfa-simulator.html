@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Turing Machine Designer & Simulator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #f8f9fa; color: #1a1a1a; display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none; }
+    
+    header { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    h1 { font-size: 1.1rem; font-weight: 600; color: #0f172a; }
+    
+    .instructions { font-size: 0.8rem; color: #64748b; display: flex; gap: 10px; flex-wrap: wrap; }
+    .instructions span { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; }
+    .instructions kbd { background: #ffffff; color: #0f172a; padding: 1px 4px; border-radius: 3px; border: 1px solid #cbd5e1; font-family: monospace; font-weight: bold; }
+    
+    /* Tape Control Bar */
+    .sim-bar {
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sim-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .input-group label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .sim-input {
+      padding: 4px 10px;
+      font-size: 0.85rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      outline: none;
+      font-family: monospace;
+      width: 160px;
+      background: #f8fafc;
+    }
+    .sim-input:focus { border-color: #2563eb; background: #ffffff; }
+
+    .btn {
+      padding: 5px 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+    .btn:hover { background: #f1f5f9; color: #0f172a; }
+    .btn-primary { background: #2563eb; color: #ffffff; border-color: #2563eb; }
+    .btn-primary:hover { background: #1d4ed8; color: #ffffff; }
+    .btn-play { background: #16a34a; color: #ffffff; border-color: #16a34a; }
+    .btn-play:hover { background: #15803d; color: #ffffff; }
+    .btn-pause { background: #eab308; color: #ffffff; border-color: #ca8a04; }
+    .btn-pause:hover { background: #ca8a04; color: #ffffff; }
+
+    .status-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 12px;
+      margin-left: auto;
+      letter-spacing: 0.5px;
+      background: #e2e8f0;
+      color: #475569;
+    }
+    .status-badge.running { background: #dbeafe; color: #1e40af; }
+    .status-badge.accepted { background: #dcfce7; color: #166534; }
+    .status-badge.rejected { background: #fee2e2; color: #991b1b; }
+
+    /* Tape Display */
+    .tape-container {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      overflow-x: auto;
+      padding: 6px 0;
+      scrollbar-width: thin;
+    }
+
+    .tape-cell {
+      min-width: 34px;
+      height: 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
+      font-size: 0.95rem;
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .tape-cell.active {
+      border: 2px solid #2563eb;
+      background: #dbeafe;
+      color: #1e40af;
+      transform: scale(1.05);
+      z-index: 2;
+    }
+
+    .tape-cell.active::after {
+      content: '▲';
+      position: absolute;
+      bottom: -13px;
+      font-size: 0.65rem;
+      color: #2563eb;
+    }
+
+    .canvas-container { flex: 1; position: relative; background: #ffffff; overflow: hidden; }
+    canvas { width: 100%; height: 100%; display: block; cursor: default; }
+    
+    /* Compact 3-Input Modal Popup */
+    .modal-popup {
+      position: absolute;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 8px 10px;
+      box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.12);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 100;
+      width: 165px;
+    }
+    .modal-popup.hidden { display: none; }
+    .modal-title { font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
+    
+    .modal-inputs { display: flex; justify-content: space-between; gap: 4px; align-items: center; }
+    .field { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 2px; }
+    .field label { font-size: 0.65rem; color: #64748b; font-weight: 600; }
+    .field input, .field select {
+      width: 38px;
+      height: 26px;
+      padding: 2px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      text-align: center;
+      outline: none;
+      background: #f8fafc;
+    }
+    .field select { width: 42px; cursor: pointer; }
+    .field input:focus, .field select:focus { border-color: #2563eb; background: #ffffff; }
+    
+    .modal-actions { display: flex; gap: 4px; margin-top: 2px; }
+    .modal-actions button {
+      flex: 1;
+      padding: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      border: none;
+      transition: 0.15s;
+    }
+    .btn-save { background: #2563eb; color: #ffffff; }
+    .btn-save:hover { background: #1d4ed8; }
+    .btn-cancel { background: #e2e8f0; color: #475569; }
+    .btn-cancel:hover { background: #cbd5e1; }
+
+    /* Output Panel */
+    .output-panel { background: #ffffff; border-top: 1px solid #e2e8f0; padding: 10px 20px; display: flex; flex-direction: column; gap: 8px; }
+    .output-group { display: flex; flex-direction: column; gap: 4px; }
+    
+    .output-header { display: flex; justify-content: space-between; align-items: center; }
+    .output-header label { font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+    
+    .copy-btn {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      padding: 2px 8px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .copy-btn:hover { background: #e2e8f0; color: #0f172a; }
+    .copy-btn.copied { background: #22c55e; color: #ffffff; border-color: #16a34a; }
+
+    .output-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 0.82rem; color: #0f172a; min-height: 32px; word-break: break-all; max-height: 55px; overflow-y: auto; }
+    
+    /* Increased height specifically for ASCII Binary Box */
+    #binaryNotation {
+      min-height: 58px;
+      max-height: 90px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Turing Machine Visual Designer & Simulator</h1>
+    <div class="instructions">
+      <span><b>Add state:</b> Double-click canvas</span>
+      <span><b>Toggle accept:</b> Double-click state</span>
+      <span><b>Move node:</b> Drag node</span>
+      <span><b>Add arrow:</b> <kbd>Shift</kbd> + Drag node</span>
+      <span><b>Curve arrow:</b> <kbd>Shift</kbd> + Drag arrow</span>
+      <span><b>Delete:</b> Click + <kbd>Delete</kbd></span>
+    </div>
+  </header>
+
+  <!-- Tape Simulator Controls -->
+  <div class="sim-bar">
+    <div class="sim-controls">
+      <div class="input-group">
+        <label for="tapeInput">Tape Input</label>
+        <input type="text" id="tapeInput" class="sim-input" placeholder="e.g. 10110" value="10110">
+      </div>
+      <button class="btn btn-primary" id="btnLoad">Load Tape</button>
+      <button class="btn btn-play" id="btnPlay">Play</button>
+      <button class="btn" id="btnStep">Next Step</button>
+      <button class="btn" id="btnReset">Reset</button>
+
+      <div id="simStatus" class="status-badge">Idle</div>
+    </div>
+
+    <!-- Visual Tape Strip -->
+    <div class="tape-container" id="tapeDisplay"></div>
+  </div>
+
+  <div class="canvas-container" id="canvasContainer">
+    <canvas id="tmCanvas"></canvas>
+
+    <!-- Transition Popup -->
+    <div id="transitionModal" class="modal-popup hidden">
+      <div class="modal-title">Transition</div>
+      <div class="modal-inputs">
+        <div class="field">
+          <label for="modalRead">Read</label>
+          <input type="text" id="modalRead" maxlength="1" value="a">
+        </div>
+        <div class="field">
+          <label for="modalWrite">Write</label>
+          <input type="text" id="modalWrite" maxlength="1" value="b">
+        </div>
+        <div class="field">
+          <label for="modalDir">Move</label>
+          <select id="modalDir">
+            <option value="R">R</option>
+            <option value="L">L</option>
+            <option value="N">N</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save" id="modalSaveBtn">Save</button>
+        <button class="btn-cancel" id="modalCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="output-panel">
+    <div class="output-group">
+      <div class="output-header">
+        <label>Turing Machine String Notation</label>
+        <button class="copy-btn" onclick="copyToClipboard('textNotation', this)">Copy</button>
+      </div>
+      <div id="textNotation" class="output-box"></div>
+    </div>
+
+    <div class="output-group">
+      <div class="output-header">
+        <label>ASCII Binary Encoding</label>
+        <button class="copy-btn" onclick="copyToClipboard('binaryNotation', this)">Copy</button>
+      </div>
+      <div id="binaryNotation" class="output-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('tmCanvas');
+    const container = document.getElementById('canvasContainer');
+    const ctx = canvas.getContext('2d');
+
+    const modal = document.getElementById('transitionModal');
+    const modalRead = document.getElementById('modalRead');
+    const modalWrite = document.getElementById('modalWrite');
+    const modalDir = document.getElementById('modalDir');
+    const modalSaveBtn = document.getElementById('modalSaveBtn');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+    // Controls Elements
+    const tapeInput = document.getElementById('tapeInput');
+    const btnLoad = document.getElementById('btnLoad');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnStep = document.getElementById('btnStep');
+    const btnReset = document.getElementById('btnReset');
+    const tapeDisplay = document.getElementById('tapeDisplay');
+    const simStatus = document.getElementById('simStatus');
+
+    let states = [];       // { id: "q0", x, y, isFinal: false }
+    let transitions = [];  // { from: "q0", read: "a", to: "q1", write: "b", dir: "R", curve: 0 }
+    let stateCounter = 0;
+
+    let selectedItem = null;        
+    let draggedNode = null;
+    let draggedTransition = null;  
+    let arrowStartNode = null;
+    let currentMousePos = { x: 0, y: 0 };
+    let pendingTransition = null; 
+
+    // Simulation Engine State
+    let tape = ['_'];
+    let headIndex = 0;
+    let currentStateId = null;
+    let isPlaying = false;
+    let playInterval = null;
+    let machineState = 'idle'; // 'idle' | 'running' | 'accepted' | 'rejected' | 'paused'
+    let initialTapeString = '';
+
+    const NODE_RADIUS = 30;
+    const BLANK_SYMBOL = '_';
+
+    function resizeCanvas() {
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+      draw();
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function getMousePos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+
+    function getNodeAt(pos) {
+      return states.find(s => Math.hypot(s.x - pos.x, s.y - pos.y) <= NODE_RADIUS);
+    }
+
+    function getTransitionAt(pos) {
+      for (let i = 0; i < transitions.length; i++) {
+        const t = transitions[i];
+        const sFrom = states.find(s => s.id === t.from);
+        const sTo = states.find(s => s.id === t.to);
+        if (!sFrom || !sTo) continue;
+
+        if (sFrom === sTo) {
+          if (Math.hypot(pos.x - sFrom.x, pos.y - (sFrom.y - NODE_RADIUS - 15)) <= 22) return i;
+        } else {
+          const { start, end, control } = getCurvePoints(sFrom, sTo, t.curve || 0);
+          for (let u = 0; u <= 1; u += 0.05) {
+            const px = (1 - u) ** 2 * start.x + 2 * (1 - u) * u * control.x + u ** 2 * end.x;
+            const py = (1 - u) ** 2 * start.y + 2 * (1 - u) * u * control.y + u ** 2 * end.y;
+            if (Math.hypot(pos.x - px, pos.y - py) < 12) return i;
+          }
+        }
+      }
+      return -1;
+    }
+
+    function getCurvePoints(sFrom, sTo, curveOffset = 0) {
+      const dx = sTo.x - sFrom.x;
+      const dy = sTo.y - sFrom.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      
+      const nx = -dy / dist;
+      const ny = dx / dist;
+
+      const midX = (sFrom.x + sTo.x) / 2;
+      const midY = (sFrom.y + sTo.y) / 2;
+
+      const control = {
+        x: midX + nx * (2 * curveOffset),
+        y: midY + ny * (2 * curveOffset)
+      };
+
+      const angleFrom = Math.atan2(control.y - sFrom.y, control.x - sFrom.x);
+      const angleTo = Math.atan2(control.y - sTo.y, control.x - sTo.x);
+
+      const start = {
+        x: sFrom.x + NODE_RADIUS * Math.cos(angleFrom),
+        y: sFrom.y + NODE_RADIUS * Math.sin(angleFrom)
+      };
+
+      const end = {
+        x: sTo.x + NODE_RADIUS * Math.cos(angleTo),
+        y: sTo.y + NODE_RADIUS * Math.sin(angleTo)
+      };
+
+      return { start, end, control };
+    }
+
+    function updateTransitionCurvature(t, pos) {
+      const sFrom = states.find(s => s.id === t.from);
+      const sTo = states.find(s => s.id === t.to);
+      if (!sFrom || !sTo) return;
+
+      const dx = sTo.x - sFrom.x;
+      const dy = sTo.y - sFrom.y;
+      const dist = Math.hypot(dx, dy) || 1;
+
+      const nx = -dy / dist;
+      const ny = dx / dist;
+
+      const mx = pos.x - (sFrom.x + sTo.x) / 2;
+      const my = pos.y - (sFrom.y + sTo.y) / 2;
+
+      t.curve = mx * nx + my * ny;
+    }
+
+    // Modal Handlers
+    function openModal(x, y, initialData = { read: 'a', write: 'b', dir: 'R' }) {
+      modalRead.value = initialData.read;
+      modalWrite.value = initialData.write;
+      modalDir.value = initialData.dir;
+
+      const modalWidth = 165;
+      const modalHeight = 90;
+      let left = Math.min(Math.max(10, x), container.clientWidth - modalWidth - 10);
+      let top = Math.min(Math.max(10, y), container.clientHeight - modalHeight - 10);
+
+      modal.style.left = left + 'px';
+      modal.style.top = top + 'px';
+      modal.classList.remove('hidden');
+      modalRead.focus();
+      modalRead.select();
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+      pendingTransition = null;
+    }
+
+    modalSaveBtn.addEventListener('click', saveModalData);
+    modalCancelBtn.addEventListener('click', closeModal);
+
+    [modalRead, modalWrite, modalDir].forEach(input => {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') saveModalData();
+        if (e.key === 'Escape') closeModal();
+      });
+    });
+
+    function saveModalData() {
+      if (!pendingTransition) return;
+
+      const read = modalRead.value || BLANK_SYMBOL;
+      const write = modalWrite.value || BLANK_SYMBOL;
+      const dir = modalDir.value || 'R';
+
+      if (pendingTransition.isEdit) {
+        transitions[pendingTransition.index].read = read;
+        transitions[pendingTransition.index].write = write;
+        transitions[pendingTransition.index].dir = dir;
+      } else {
+        transitions.push({
+          from: pendingTransition.from,
+          to: pendingTransition.to,
+          read, write, dir,
+          curve: 0 
+        });
+      }
+
+      closeModal();
+      updateTM();
+    }
+
+    // Dynamic Simulation Logic
+    function loadTape() {
+      pauseSimulation();
+      initialTapeString = tapeInput.value.trim();
+      const rawChars = initialTapeString.length > 0 ? initialTapeString.split('') : [BLANK_SYMBOL];
+      
+      tape = [BLANK_SYMBOL, BLANK_SYMBOL, ...rawChars, BLANK_SYMBOL, BLANK_SYMBOL];
+      headIndex = 2; 
+      
+      if (states.length > 0) {
+        currentStateId = states[0].id; 
+        setSimStatus('idle', 'Ready');
+      } else {
+        currentStateId = null;
+        setSimStatus('idle', 'No States');
+      }
+
+      renderTape();
+      draw();
+    }
+
+    function stepSimulation() {
+      if (states.length === 0) {
+        setSimStatus('rejected', 'No States');
+        pauseSimulation();
+        return false;
+      }
+
+      if (!currentStateId) {
+        currentStateId = states[0].id;
+      }
+
+      const currentChar = tape[headIndex] || BLANK_SYMBOL;
+
+      const trans = transitions.find(t => {
+        if (t.from !== currentStateId) return false;
+        const matchRead = (t.read === ' ' || t.read === BLANK_SYMBOL) ? (currentChar === ' ' || currentChar === BLANK_SYMBOL) : t.read === currentChar;
+        return matchRead;
+      });
+
+      const currStateObj = states.find(s => s.id === currentStateId);
+
+      if (!trans) {
+        if (currStateObj && currStateObj.isFinal) {
+          setSimStatus('accepted', 'Accepted');
+        } else {
+          setSimStatus('rejected', 'Rejected');
+        }
+        pauseSimulation();
+        return false;
+      }
+
+      setSimStatus('running', 'Running');
+      tape[headIndex] = trans.write === ' ' ? BLANK_SYMBOL : trans.write;
+
+      if (trans.dir === 'R') headIndex++;
+      else if (trans.dir === 'L') headIndex--;
+
+      if (headIndex < 0) {
+        tape.unshift(BLANK_SYMBOL);
+        headIndex = 0;
+      } else if (headIndex >= tape.length) {
+        tape.push(BLANK_SYMBOL);
+      }
+
+      currentStateId = trans.to;
+
+      renderTape();
+      draw();
+      return true;
+    }
+
+    function togglePlay() {
+      if (isPlaying) {
+        pauseSimulation();
+      } else {
+        if (machineState === 'accepted' || machineState === 'rejected') {
+          loadTape();
+        }
+        isPlaying = true;
+        btnPlay.innerText = 'Pause';
+        btnPlay.className = 'btn btn-pause';
+        setSimStatus('running', 'Running');
+        
+        playInterval = setInterval(() => {
+          const continued = stepSimulation();
+          if (!continued) pauseSimulation();
+        }, 1000);
+      }
+    }
+
+    function pauseSimulation() {
+      isPlaying = false;
+      if (playInterval) clearInterval(playInterval);
+      playInterval = null;
+      btnPlay.innerText = 'Play';
+      btnPlay.className = 'btn btn-play';
+      if (machineState === 'running') setSimStatus('paused', 'Paused');
+    }
+
+    function resetSimulation() {
+      pauseSimulation();
+      loadTape();
+    }
+
+    function setSimStatus(statusClass, label) {
+      machineState = statusClass;
+      simStatus.className = `status-badge ${statusClass}`;
+      simStatus.innerText = label;
+    }
+
+    function renderTape() {
+      tapeDisplay.innerHTML = '';
+      tape.forEach((symbol, idx) => {
+        const cell = document.createElement('div');
+        cell.className = `tape-cell ${idx === headIndex ? 'active' : ''}`;
+        cell.innerText = symbol;
+        tapeDisplay.appendChild(cell);
+      });
+
+      const activeCell = tapeDisplay.children[headIndex];
+      if (activeCell) {
+        activeCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+
+    // Controls Event Listeners
+    btnLoad.addEventListener('click', loadTape);
+    btnStep.addEventListener('click', () => {
+      pauseSimulation();
+      stepSimulation();
+    });
+    btnPlay.addEventListener('click', togglePlay);
+    btnReset.addEventListener('click', resetSimulation);
+
+    // Canvas Events
+    canvas.addEventListener('dblclick', (e) => {
+      const pos = getMousePos(e);
+      const clickedNode = getNodeAt(pos);
+
+      if (clickedNode) {
+        clickedNode.isFinal = !clickedNode.isFinal;
+      } else {
+        const newState = {
+          id: 'q' + stateCounter++,
+          x: pos.x,
+          y: pos.y,
+          isFinal: false
+        };
+        states.push(newState);
+        if (states.length === 1 && !currentStateId) {
+          currentStateId = newState.id;
+        }
+        selectedItem = { type: 'node', ref: newState };
+      }
+      updateTM();
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+      if (!modal.classList.contains('hidden')) return;
+
+      const pos = getMousePos(e);
+      const clickedNode = getNodeAt(pos);
+      const transIdx = getTransitionAt(pos);
+
+      if (e.shiftKey) {
+        if (clickedNode) {
+          arrowStartNode = clickedNode;
+          currentMousePos = pos;
+        } else if (transIdx !== -1) {
+          draggedTransition = transitions[transIdx];
+          selectedItem = { type: 'trans', index: transIdx };
+        }
+      } else if (clickedNode) {
+        draggedNode = clickedNode;
+        selectedItem = { type: 'node', ref: clickedNode };
+      } else if (transIdx !== -1) {
+        selectedItem = { type: 'trans', index: transIdx };
+      } else {
+        selectedItem = null;
+      }
+      draw();
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      const pos = getMousePos(e);
+      currentMousePos = pos;
+
+      if (draggedNode) {
+        draggedNode.x = pos.x;
+        draggedNode.y = pos.y;
+        draw();
+      } else if (draggedTransition) {
+        updateTransitionCurvature(draggedTransition, pos);
+        draw();
+      } else if (arrowStartNode) {
+        draw();
+      }
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+      if (arrowStartNode) {
+        const pos = getMousePos(e);
+        const targetNode = getNodeAt(pos);
+
+        if (targetNode) {
+          pendingTransition = {
+            from: arrowStartNode.id,
+            to: targetNode.id,
+            isEdit: false
+          };
+          openModal(pos.x, pos.y);
+        }
+        arrowStartNode = null;
+      }
+      draggedTransition = null;
+      draggedNode = null;
+      draw();
+    });
+
+    canvas.addEventListener('click', (e) => {
+      const pos = getMousePos(e);
+      const transIdx = getTransitionAt(pos);
+      if (transIdx !== -1 && !e.shiftKey) {
+        const t = transitions[transIdx];
+        pendingTransition = { index: transIdx, isEdit: true };
+        openModal(pos.x, pos.y, { read: t.read, write: t.write, dir: t.dir });
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
+
+      if (e.key === 'Delete' && selectedItem) {
+        if (selectedItem.type === 'node') {
+          const id = selectedItem.ref.id;
+          states = states.filter(s => s.id !== id);
+          transitions = transitions.filter(t => t.from !== id && t.to !== id);
+          if (currentStateId === id) currentStateId = states[0] ? states[0].id : null;
+        } else if (selectedItem.type === 'trans') {
+          transitions.splice(selectedItem.index, 1);
+        }
+        selectedItem = null;
+        updateTM();
+      }
+    });
+
+    // Copy to Clipboard (Strips out all spaces)
+    function copyToClipboard(elementId, btn) {
+      const text = document.getElementById(elementId).innerText;
+      if (!text) return;
+
+      // Removes all whitespace/spaces when copying
+      const unspacedText = text.replace(/\s+/g, '');
+
+      navigator.clipboard.writeText(unspacedText).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.classList.remove('copied');
+        }, 1200);
+      });
+    }
+
+    function updateTM() {
+      draw();
+      encodeTM();
+    }
+
+    function encodeTM() {
+      if (states.length === 0) {
+        document.getElementById('textNotation').innerText = '';
+        document.getElementById('binaryNotation').innerText = '';
+        return;
+      }
+
+      const startState = states[0].id;
+      const transStr = transitions.map(t => `(${t.from},${t.read},${t.to},${t.write},${t.dir})`).join('');
+      const finalStates = states.filter(s => s.isFinal).map(s => s.id).join(',');
+
+      const textRepresentation = `${startState}${transStr}${finalStates ? ' ' + finalStates : ''}`;
+
+      const binaryRepresentation = textRepresentation
+        .split('')
+        .map(char => char.charCodeAt(0).toString(2).padStart(8, '0'))
+        .join(' ');
+
+      document.getElementById('textNotation').innerText = textRepresentation;
+      document.getElementById('binaryNotation').innerText = binaryRepresentation;
+    }
+
+    function drawArrowhead(toX, toY, angle) {
+      const headLength = 10;
+      ctx.save();
+      ctx.translate(toX, toY);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-headLength, -4.5);
+      ctx.lineTo(-headLength, 4.5);
+      ctx.closePath();
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (arrowStartNode) {
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 1.8;
+
+        ctx.beginPath();
+        ctx.moveTo(arrowStartNode.x, arrowStartNode.y);
+        ctx.lineTo(currentMousePos.x, currentMousePos.y);
+        ctx.stroke();
+
+        const angle = Math.atan2(currentMousePos.y - arrowStartNode.y, currentMousePos.x - arrowStartNode.x);
+        drawArrowhead(currentMousePos.x, currentMousePos.y, angle);
+      }
+
+      transitions.forEach((t, idx) => {
+        const sFrom = states.find(s => s.id === t.from);
+        const sTo = states.find(s => s.id === t.to);
+        if (!sFrom || !sTo) return;
+
+        const isSelected = selectedItem && selectedItem.type === 'trans' && selectedItem.index === idx;
+        ctx.strokeStyle = isSelected ? '#2563eb' : '#000000';
+        ctx.fillStyle = isSelected ? '#2563eb' : '#000000';
+        ctx.lineWidth = isSelected ? 2.5 : 1.8;
+
+        if (sFrom === sTo) {
+          const loopRadius = 18;
+          const cx = sFrom.x;
+          const cy = sFrom.y - NODE_RADIUS - loopRadius + 4;
+
+          ctx.beginPath();
+          ctx.arc(cx, cy, loopRadius, 0, Math.PI * 2);
+          ctx.stroke();
+
+          drawArrowhead(sFrom.x + 8, sFrom.y - NODE_RADIUS + 2, Math.PI / 3);
+
+          ctx.font = '13px "Times New Roman", serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`${t.read}, ${t.write}; ${t.dir}`, cx, cy - loopRadius - 5);
+        } else {
+          const curveVal = t.curve || 0;
+          const { start, end, control } = getCurvePoints(sFrom, sTo, curveVal);
+
+          ctx.beginPath();
+          ctx.moveTo(start.x, start.y);
+          ctx.quadraticCurveTo(control.x, control.y, end.x, end.y);
+          ctx.stroke();
+
+          const angle = Math.atan2(end.y - control.y, end.x - control.x);
+          drawArrowhead(end.x, end.y, angle);
+
+          const labelX = 0.25 * start.x + 0.5 * control.x + 0.25 * end.x;
+          const labelY = 0.25 * start.y + 0.5 * control.y + 0.25 * end.y;
+
+          ctx.font = '13px "Times New Roman", serif';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = isSelected ? '#2563eb' : '#000000';
+          ctx.fillText(`${t.read}, ${t.write}; ${t.dir}`, labelX, labelY - 5);
+        }
+      });
+
+      states.forEach((s, idx) => {
+        const isStart = (idx === 0);
+        const isSelected = selectedItem && selectedItem.type === 'node' && selectedItem.ref === s;
+        const isActiveState = (s.id === currentStateId);
+
+        if (isStart) {
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(s.x - NODE_RADIUS - 32, s.y);
+          ctx.lineTo(s.x - NODE_RADIUS, s.y);
+          ctx.stroke();
+          drawArrowhead(s.x - NODE_RADIUS, s.y, 0);
+        }
+
+        if (isActiveState) {
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, NODE_RADIUS + 7, 0, Math.PI * 2);
+          ctx.fillStyle = machineState === 'accepted' ? 'rgba(34, 197, 94, 0.25)' : (machineState === 'rejected' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(37, 99, 235, 0.2)');
+          ctx.fill();
+          ctx.strokeStyle = machineState === 'accepted' ? '#22c55e' : (machineState === 'rejected' ? '#ef4444' : '#2563eb');
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        if (isSelected) {
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, NODE_RADIUS + 4, 0, Math.PI * 2);
+          ctx.strokeStyle = '#2563eb';
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, NODE_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = isActiveState ? '#eff6ff' : '#ffffff';
+        ctx.fill();
+        ctx.strokeStyle = isActiveState ? '#2563eb' : '#000000';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        if (s.isFinal) {
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, NODE_RADIUS - 5, 0, Math.PI * 2);
+          ctx.strokeStyle = isActiveState ? '#2563eb' : '#000000';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = '#000000';
+        ctx.font = 'italic 16px "Times New Roman", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(s.id, s.x, s.y);
+      });
+    }
+
+    resizeCanvas();
+    loadTape();
+  </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Interactive Turing Machine Designer & Simulator</title>
+  <title>Interactive DFA Visual Designer & Simulator</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     body { background-color: #f8f9fa; color: #1a1a1a; display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none; }
@@ -15,7 +15,7 @@
     .instructions span { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; }
     .instructions kbd { background: #ffffff; color: #0f172a; padding: 1px 4px; border-radius: 3px; border: 1px solid #cbd5e1; font-family: monospace; font-weight: bold; }
     
-    /* Tape Control Bar */
+    /* Input Control Bar */
     .sim-bar {
       background: #ffffff;
       border-bottom: 1px solid #e2e8f0;
@@ -95,7 +95,7 @@
     .status-badge.accepted { background: #dcfce7; color: #166534; }
     .status-badge.rejected { background: #fee2e2; color: #991b1b; }
 
-    /* Tape Display */
+    /* String Display */
     .tape-container {
       display: flex;
       align-items: center;
@@ -140,7 +140,7 @@
     .canvas-container { flex: 1; position: relative; background: #ffffff; overflow: hidden; }
     canvas { width: 100%; height: 100%; display: block; cursor: default; }
     
-    /* Compact 3-Input Modal Popup */
+    /* Compact 1-Input Modal Popup */
     .modal-popup {
       position: absolute;
       background: #ffffff;
@@ -152,16 +152,16 @@
       flex-direction: column;
       gap: 6px;
       z-index: 100;
-      width: 165px;
+      width: 120px;
     }
     .modal-popup.hidden { display: none; }
     .modal-title { font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
     
-    .modal-inputs { display: flex; justify-content: space-between; gap: 4px; align-items: center; }
+    .modal-inputs { display: flex; justify-content: center; gap: 4px; align-items: center; }
     .field { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 2px; }
     .field label { font-size: 0.65rem; color: #64748b; font-weight: 600; }
-    .field input, .field select {
-      width: 38px;
+    .field input {
+      width: 45px;
       height: 26px;
       padding: 2px;
       border: 1px solid #cbd5e1;
@@ -171,8 +171,7 @@
       outline: none;
       background: #f8fafc;
     }
-    .field select { width: 42px; cursor: pointer; }
-    .field input:focus, .field select:focus { border-color: #2563eb; background: #ffffff; }
+    .field input:focus { border-color: #2563eb; background: #ffffff; }
     
     .modal-actions { display: flex; gap: 4px; margin-top: 2px; }
     .modal-actions button {
@@ -213,7 +212,6 @@
 
     .output-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 0.82rem; color: #0f172a; min-height: 32px; word-break: break-all; max-height: 55px; overflow-y: auto; }
     
-    /* Increased height specifically for ASCII Binary Box */
     #binaryNotation {
       min-height: 58px;
       max-height: 90px;
@@ -223,7 +221,7 @@
 <body>
 
   <header>
-    <h1>Turing Machine Visual Designer & Simulator</h1>
+    <h1>DFA Visual Designer & Simulator</h1>
     <div class="instructions">
       <span><b>Add state:</b> Double-click canvas</span>
       <span><b>Toggle accept:</b> Double-click state</span>
@@ -234,14 +232,14 @@
     </div>
   </header>
 
-  <!-- Tape Simulator Controls -->
+  <!-- Input Simulator Controls -->
   <div class="sim-bar">
     <div class="sim-controls">
       <div class="input-group">
-        <label for="tapeInput">Tape Input</label>
-        <input type="text" id="tapeInput" class="sim-input" placeholder="e.g. 10110" value="10110">
+        <label for="stringInput">Input String</label>
+        <input type="text" id="stringInput" class="sim-input" placeholder="e.g. 10110" value="10110">
       </div>
-      <button class="btn btn-primary" id="btnLoad">Load Tape</button>
+      <button class="btn btn-primary" id="btnLoad">Load Input</button>
       <button class="btn btn-play" id="btnPlay">Play</button>
       <button class="btn" id="btnStep">Next Step</button>
       <button class="btn" id="btnReset">Reset</button>
@@ -249,32 +247,20 @@
       <div id="simStatus" class="status-badge">Idle</div>
     </div>
 
-    <!-- Visual Tape Strip -->
-    <div class="tape-container" id="tapeDisplay"></div>
+    <!-- Visual String Strip -->
+    <div class="tape-container" id="stringDisplay"></div>
   </div>
 
   <div class="canvas-container" id="canvasContainer">
-    <canvas id="tmCanvas"></canvas>
+    <canvas id="dfaCanvas"></canvas>
 
     <!-- Transition Popup -->
     <div id="transitionModal" class="modal-popup hidden">
       <div class="modal-title">Transition</div>
       <div class="modal-inputs">
         <div class="field">
-          <label for="modalRead">Read</label>
-          <input type="text" id="modalRead" maxlength="1" value="a">
-        </div>
-        <div class="field">
-          <label for="modalWrite">Write</label>
-          <input type="text" id="modalWrite" maxlength="1" value="b">
-        </div>
-        <div class="field">
-          <label for="modalDir">Move</label>
-          <select id="modalDir">
-            <option value="R">R</option>
-            <option value="L">L</option>
-            <option value="N">N</option>
-          </select>
+          <label for="modalRead">Symbol</label>
+          <input type="text" id="modalRead" maxlength="1" value="0">
         </div>
       </div>
       <div class="modal-actions">
@@ -287,7 +273,7 @@
   <div class="output-panel">
     <div class="output-group">
       <div class="output-header">
-        <label>Turing Machine String Notation</label>
+        <label>DFA Formal Notation</label>
         <button class="copy-btn" onclick="copyToClipboard('textNotation', this)">Copy</button>
       </div>
       <div id="textNotation" class="output-box"></div>
@@ -303,28 +289,26 @@
   </div>
 
   <script>
-    const canvas = document.getElementById('tmCanvas');
+    const canvas = document.getElementById('dfaCanvas');
     const container = document.getElementById('canvasContainer');
     const ctx = canvas.getContext('2d');
 
     const modal = document.getElementById('transitionModal');
     const modalRead = document.getElementById('modalRead');
-    const modalWrite = document.getElementById('modalWrite');
-    const modalDir = document.getElementById('modalDir');
     const modalSaveBtn = document.getElementById('modalSaveBtn');
     const modalCancelBtn = document.getElementById('modalCancelBtn');
 
     // Controls Elements
-    const tapeInput = document.getElementById('tapeInput');
+    const stringInput = document.getElementById('stringInput');
     const btnLoad = document.getElementById('btnLoad');
     const btnPlay = document.getElementById('btnPlay');
     const btnStep = document.getElementById('btnStep');
     const btnReset = document.getElementById('btnReset');
-    const tapeDisplay = document.getElementById('tapeDisplay');
+    const stringDisplay = document.getElementById('stringDisplay');
     const simStatus = document.getElementById('simStatus');
 
     let states = [];       // { id: "q0", x, y, isFinal: false }
-    let transitions = [];  // { from: "q0", read: "a", to: "q1", write: "b", dir: "R", curve: 0 }
+    let transitions = [];  // { from: "q0", read: "0", to: "q1", curve: 0 }
     let stateCounter = 0;
 
     let selectedItem = null;        
@@ -335,16 +319,15 @@
     let pendingTransition = null; 
 
     // Simulation Engine State
-    let tape = ['_'];
-    let headIndex = 0;
+    let inputString = '';
+    let charIndex = 0;
     let currentStateId = null;
     let isPlaying = false;
     let playInterval = null;
     let machineState = 'idle'; // 'idle' | 'running' | 'accepted' | 'rejected' | 'paused'
-    let initialTapeString = '';
+    let initialInputString = '';
 
     const NODE_RADIUS = 30;
-    const BLANK_SYMBOL = '_';
 
     function resizeCanvas() {
       canvas.width = container.clientWidth;
@@ -437,13 +420,11 @@
     }
 
     // Modal Handlers
-    function openModal(x, y, initialData = { read: 'a', write: 'b', dir: 'R' }) {
+    function openModal(x, y, initialData = { read: '0' }) {
       modalRead.value = initialData.read;
-      modalWrite.value = initialData.write;
-      modalDir.value = initialData.dir;
 
-      const modalWidth = 165;
-      const modalHeight = 90;
+      const modalWidth = 120;
+      const modalHeight = 85;
       let left = Math.min(Math.max(10, x), container.clientWidth - modalWidth - 10);
       let top = Math.min(Math.max(10, y), container.clientHeight - modalHeight - 10);
 
@@ -462,45 +443,37 @@
     modalSaveBtn.addEventListener('click', saveModalData);
     modalCancelBtn.addEventListener('click', closeModal);
 
-    [modalRead, modalWrite, modalDir].forEach(input => {
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') saveModalData();
-        if (e.key === 'Escape') closeModal();
-      });
+    modalRead.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') saveModalData();
+      if (e.key === 'Escape') closeModal();
     });
 
     function saveModalData() {
       if (!pendingTransition) return;
 
-      const read = modalRead.value || BLANK_SYMBOL;
-      const write = modalWrite.value || BLANK_SYMBOL;
-      const dir = modalDir.value || 'R';
+      const read = modalRead.value || '0';
 
       if (pendingTransition.isEdit) {
         transitions[pendingTransition.index].read = read;
-        transitions[pendingTransition.index].write = write;
-        transitions[pendingTransition.index].dir = dir;
       } else {
         transitions.push({
           from: pendingTransition.from,
           to: pendingTransition.to,
-          read, write, dir,
+          read,
           curve: 0 
         });
       }
 
       closeModal();
-      updateTM();
+      updateDFA();
     }
 
     // Dynamic Simulation Logic
-    function loadTape() {
+    function loadInput() {
       pauseSimulation();
-      initialTapeString = tapeInput.value.trim();
-      const rawChars = initialTapeString.length > 0 ? initialTapeString.split('') : [BLANK_SYMBOL];
-      
-      tape = [BLANK_SYMBOL, BLANK_SYMBOL, ...rawChars, BLANK_SYMBOL, BLANK_SYMBOL];
-      headIndex = 2; 
+      initialInputString = stringInput.value.trim();
+      inputString = initialInputString;
+      charIndex = 0;
       
       if (states.length > 0) {
         currentStateId = states[0].id; 
@@ -510,7 +483,7 @@
         setSimStatus('idle', 'No States');
       }
 
-      renderTape();
+      renderStringDisplay();
       draw();
     }
 
@@ -525,17 +498,9 @@
         currentStateId = states[0].id;
       }
 
-      const currentChar = tape[headIndex] || BLANK_SYMBOL;
-
-      const trans = transitions.find(t => {
-        if (t.from !== currentStateId) return false;
-        const matchRead = (t.read === ' ' || t.read === BLANK_SYMBOL) ? (currentChar === ' ' || currentChar === BLANK_SYMBOL) : t.read === currentChar;
-        return matchRead;
-      });
-
-      const currStateObj = states.find(s => s.id === currentStateId);
-
-      if (!trans) {
+      // Check if we have consumed the entire input string
+      if (charIndex >= inputString.length) {
+        const currStateObj = states.find(s => s.id === currentStateId);
         if (currStateObj && currStateObj.isFinal) {
           setSimStatus('accepted', 'Accepted');
         } else {
@@ -546,22 +511,34 @@
       }
 
       setSimStatus('running', 'Running');
-      tape[headIndex] = trans.write === ' ' ? BLANK_SYMBOL : trans.write;
+      const currentChar = inputString[charIndex];
 
-      if (trans.dir === 'R') headIndex++;
-      else if (trans.dir === 'L') headIndex--;
+      const trans = transitions.find(t => t.from === currentStateId && t.read === currentChar);
 
-      if (headIndex < 0) {
-        tape.unshift(BLANK_SYMBOL);
-        headIndex = 0;
-      } else if (headIndex >= tape.length) {
-        tape.push(BLANK_SYMBOL);
+      if (!trans) {
+        setSimStatus('rejected', 'Rejected');
+        pauseSimulation();
+        return false;
       }
 
       currentStateId = trans.to;
+      charIndex++;
 
-      renderTape();
+      renderStringDisplay();
       draw();
+
+      // If we've reached the end after consuming this character, evaluate final acceptance
+      if (charIndex >= inputString.length) {
+        const currStateObj = states.find(s => s.id === currentStateId);
+        if (currStateObj && currStateObj.isFinal) {
+          setSimStatus('accepted', 'Accepted');
+        } else {
+          setSimStatus('rejected', 'Rejected');
+        }
+        pauseSimulation();
+        return false;
+      }
+
       return true;
     }
 
@@ -570,7 +547,7 @@
         pauseSimulation();
       } else {
         if (machineState === 'accepted' || machineState === 'rejected') {
-          loadTape();
+          loadInput();
         }
         isPlaying = true;
         btnPlay.innerText = 'Pause';
@@ -595,7 +572,7 @@
 
     function resetSimulation() {
       pauseSimulation();
-      loadTape();
+      loadInput();
     }
 
     function setSimStatus(statusClass, label) {
@@ -604,23 +581,38 @@
       simStatus.innerText = label;
     }
 
-    function renderTape() {
-      tapeDisplay.innerHTML = '';
-      tape.forEach((symbol, idx) => {
+    function renderStringDisplay() {
+      stringDisplay.innerHTML = '';
+      if (inputString.length === 0) {
         const cell = document.createElement('div');
-        cell.className = `tape-cell ${idx === headIndex ? 'active' : ''}`;
+        cell.className = `tape-cell ${charIndex === 0 ? 'active' : ''}`;
+        cell.innerText = 'ε';
+        stringDisplay.appendChild(cell);
+        return;
+      }
+
+      inputString.split('').forEach((symbol, idx) => {
+        const cell = document.createElement('div');
+        cell.className = `tape-cell ${idx === charIndex ? 'active' : ''}`;
         cell.innerText = symbol;
-        tapeDisplay.appendChild(cell);
+        stringDisplay.appendChild(cell);
       });
 
-      const activeCell = tapeDisplay.children[headIndex];
+      if (charIndex === inputString.length) {
+        const cell = document.createElement('div');
+        cell.className = 'tape-cell active';
+        cell.innerText = '✓';
+        stringDisplay.appendChild(cell);
+      }
+
+      const activeCell = stringDisplay.children[charIndex];
       if (activeCell) {
         activeCell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
     }
 
     // Controls Event Listeners
-    btnLoad.addEventListener('click', loadTape);
+    btnLoad.addEventListener('click', loadInput);
     btnStep.addEventListener('click', () => {
       pauseSimulation();
       stepSimulation();
@@ -648,7 +640,7 @@
         }
         selectedItem = { type: 'node', ref: newState };
       }
-      updateTM();
+      updateDFA();
     });
 
     canvas.addEventListener('mousedown', (e) => {
@@ -719,7 +711,7 @@
       if (transIdx !== -1 && !e.shiftKey) {
         const t = transitions[transIdx];
         pendingTransition = { index: transIdx, isEdit: true };
-        openModal(pos.x, pos.y, { read: t.read, write: t.write, dir: t.dir });
+        openModal(pos.x, pos.y, { read: t.read });
       }
     });
 
@@ -736,7 +728,7 @@
           transitions.splice(selectedItem.index, 1);
         }
         selectedItem = null;
-        updateTM();
+        updateDFA();
       }
     });
 
@@ -745,7 +737,6 @@
       const text = document.getElementById(elementId).innerText;
       if (!text) return;
 
-      // Removes all whitespace/spaces when copying
       const unspacedText = text.replace(/\s+/g, '');
 
       navigator.clipboard.writeText(unspacedText).then(() => {
@@ -759,12 +750,12 @@
       });
     }
 
-    function updateTM() {
+    function updateDFA() {
       draw();
-      encodeTM();
+      encodeDFA();
     }
 
-    function encodeTM() {
+    function encodeDFA() {
       if (states.length === 0) {
         document.getElementById('textNotation').innerText = '';
         document.getElementById('binaryNotation').innerText = '';
@@ -772,10 +763,10 @@
       }
 
       const startState = states[0].id;
-      const transStr = transitions.map(t => `(${t.from},${t.read},${t.to},${t.write},${t.dir})`).join('');
+      const transStr = transitions.map(t => `(${t.from},${t.read},${t.to})`).join('');
       const finalStates = states.filter(s => s.isFinal).map(s => s.id).join(',');
 
-      const textRepresentation = `${startState}${transStr}${finalStates ? ' ' + finalStates : ''}`;
+      const textRepresentation = `${startState} ${transStr}${finalStates ? ' ' + finalStates : ''}`;
 
       const binaryRepresentation = textRepresentation
         .split('')
@@ -840,7 +831,7 @@
 
           ctx.font = '13px "Times New Roman", serif';
           ctx.textAlign = 'center';
-          ctx.fillText(`${t.read}, ${t.write}; ${t.dir}`, cx, cy - loopRadius - 5);
+          ctx.fillText(`${t.read}`, cx, cy - loopRadius - 5);
         } else {
           const curveVal = t.curve || 0;
           const { start, end, control } = getCurvePoints(sFrom, sTo, curveVal);
@@ -859,7 +850,7 @@
           ctx.font = '13px "Times New Roman", serif';
           ctx.textAlign = 'center';
           ctx.fillStyle = isSelected ? '#2563eb' : '#000000';
-          ctx.fillText(`${t.read}, ${t.write}; ${t.dir}`, labelX, labelY - 5);
+          ctx.fillText(`${t.read}`, labelX, labelY - 5);
         }
       });
 
@@ -907,7 +898,7 @@
         if (s.isFinal) {
           ctx.beginPath();
           ctx.arc(s.x, s.y, NODE_RADIUS - 5, 0, Math.PI * 2);
-          ctx.strokeStyle = isActiveState ? '#2563eb' : '#000000';
+          ctx.strokeStyle = isActiveState ? '#2563eb' : '#000005';
           ctx.lineWidth = 1.5;
           ctx.stroke();
         }
@@ -921,7 +912,7 @@
     }
 
     resizeCanvas();
-    loadTape();
+    loadInput();
   </script>
 </body>
 </html>

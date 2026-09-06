@@ -972,6 +972,7 @@
       }
 
       // 1. Draw states FIRST so they form the background layer
+      // 1. Draw states FIRST so they form the background layer
       states.forEach((s, idx) => {
         const isStart = (idx === 0);
         const isSelected = selectedItem && selectedItem.type === 'node' && selectedItem.ref === s;
@@ -987,16 +988,7 @@
           drawArrowhead(s.x - NODE_RADIUS, s.y, 0);
         }
 
-        if (isActiveState) {
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, NODE_RADIUS + 7, 0, Math.PI * 2);
-          ctx.fillStyle = machineState === 'accepted' ? 'rgba(34, 197, 94, 0.25)' : (machineState === 'rejected' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(37, 99, 235, 0.2)');
-          ctx.fill();
-          ctx.strokeStyle = machineState === 'accepted' ? '#22c55e' : (machineState === 'rejected' ? '#ef4444' : '#2563eb');
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-
+        // Draw selection ring
         if (isSelected) {
           ctx.beginPath();
           ctx.arc(s.x, s.y, NODE_RADIUS + 4, 0, Math.PI * 2);
@@ -1005,22 +997,42 @@
           ctx.stroke();
         }
 
+        // Determine node colors based on simulation state
+        let nodeBgColor = '#ffffff';
+        let nodeBorderColor = '#000000';
+
+        if (isActiveState) {
+          if (machineState === 'accepted') {
+            nodeBgColor = '#dcfce7'; // Light green
+            nodeBorderColor = '#16a34a'; // Dark green border
+          } else if (machineState === 'rejected') {
+            nodeBgColor = '#fee2e2'; // Light red
+            nodeBorderColor = '#dc2626'; // Dark red border
+          } else {
+            nodeBgColor = '#dbeafe'; // Light blue for running/idle
+            nodeBorderColor = '#2563eb'; // Blue border
+          }
+        }
+
+        // Main Node Circle
         ctx.beginPath();
         ctx.arc(s.x, s.y, NODE_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = isActiveState ? '#eff6ff' : '#ffffff';
+        ctx.fillStyle = nodeBgColor;
         ctx.fill();
-        ctx.strokeStyle = isActiveState ? '#2563eb' : '#000000';
+        ctx.strokeStyle = nodeBorderColor;
         ctx.lineWidth = 2;
         ctx.stroke();
 
+        // Final State Inner Circle
         if (s.isFinal) {
           ctx.beginPath();
           ctx.arc(s.x, s.y, NODE_RADIUS - 5, 0, Math.PI * 2);
-          ctx.strokeStyle = isActiveState ? '#2563eb' : '#000000';
+          ctx.strokeStyle = nodeBorderColor;
           ctx.lineWidth = 1.5;
           ctx.stroke();
         }
 
+        // Node Label
         ctx.fillStyle = '#000000';
         ctx.font = 'italic 16px "Times New Roman", serif';
         ctx.textAlign = 'center';
@@ -1046,15 +1058,25 @@
         ctx.lineWidth = (isActiveTrans || isSelected) ? 2.8 : 1.8;
 
         if (sFrom === sTo) {
-          const loopRadius = 18;
+          const loopRadius = 26;
           const cx = sFrom.x;
-          const cy = sFrom.y - NODE_RADIUS - loopRadius + 4;
+          const cy = sFrom.y - NODE_RADIUS - loopRadius + 2;
+
+          // Open the gap at the bottom so it connects perfectly to the node boundary
+          const startAngle = Math.PI * 0.65; // Bottom-left of the loop
+          const endAngle = Math.PI * 0.35;   // Bottom-right of the loop
 
           ctx.beginPath();
-          ctx.arc(cx, cy, loopRadius, 0, Math.PI * 2);
+          // arc() draws clockwise by default
+          ctx.arc(cx, cy, loopRadius, startAngle, endAngle);
           ctx.stroke();
 
-          drawArrowhead(sFrom.x + 8, sFrom.y - NODE_RADIUS + 2, Math.PI / 3);
+          // Calculate exact arrowhead position on the circle boundary
+          const arrowX = cx + loopRadius * Math.cos(endAngle);
+          const arrowY = cy + loopRadius * Math.sin(endAngle);
+          const arrowAngle = endAngle + Math.PI / 2; // Tangent angle for the arrow
+          
+          drawArrowhead(arrowX, arrowY, arrowAngle);
 
           ctx.font = '13px "Times New Roman", serif';
           ctx.textAlign = 'center';

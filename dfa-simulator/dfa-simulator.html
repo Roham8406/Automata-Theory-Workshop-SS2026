@@ -338,6 +338,8 @@
     const btnZoomReset = document.getElementById('btnZoomReset');
     let arrowMode = false;
     let lastTapTime = 0;
+    let lastTapPos = null;
+    let pointerDownPos = null;
 
     let states = [];       // { id: "q0", x, y, isFinal: false }
     let transitions = [];  // { from: "q0", read: "0,1", to: "q1", curve: 0 }
@@ -445,6 +447,7 @@
     }
 
     function getTransitionAt(pos) {
+      const hitRadius = 15 / scale; // Dynamic Hit Radius based on zoom
       for (let i = 0; i < transitions.length; i++) {
         const t = transitions[i];
         const sFrom = states.find(s => s.id === t.from);
@@ -455,13 +458,25 @@
           const loopRadius = 26;
           const cx = sFrom.x;
           const cy = sFrom.y - NODE_RADIUS - loopRadius + 2;
-          if (Math.hypot(pos.x - cx, pos.y - cy) <= loopRadius + 8) return i;
+          const dist = Math.hypot(pos.x - cx, pos.y - cy);
+          const labelCx = cx;
+          const labelCy = cy - loopRadius - 8;
+          
+          if (Math.abs(dist - loopRadius) <= hitRadius || Math.hypot(pos.x - labelCx, pos.y - labelCy) <= hitRadius + 10) {
+            return i;
+          }
         } else {
           const { start, end, control } = getCurvePoints(sFrom, sTo, t.curve || 0);
-          for (let u = 0; u <= 1; u += 0.05) {
+          
+          const labelX = 0.25 * start.x + 0.5 * control.x + 0.25 * end.x;
+          const labelY = 0.25 * start.y + 0.5 * control.y + 0.25 * end.y - 8;
+          
+          if (Math.hypot(pos.x - labelX, pos.y - labelY) <= hitRadius + 10) return i;
+
+          for (let u = 0; u <= 1; u += 0.01) {
             const px = (1 - u) ** 2 * start.x + 2 * (1 - u) * u * control.x + u ** 2 * end.x;
             const py = (1 - u) ** 2 * start.y + 2 * (1 - u) * u * control.y + u ** 2 * end.y;
-            if (Math.hypot(pos.x - px, pos.y - py) < 12) return i;
+            if (Math.hypot(pos.x - px, pos.y - py) < hitRadius) return i;
           }
         }
       }
@@ -591,7 +606,7 @@
       const screenX = worldX * scale + offsetX;
       const screenY = worldY * scale + offsetY;
 
-      const modalWidth = 140; // Updated Width
+      const modalWidth = 140; 
       const modalHeight = 85;
       let left = Math.min(Math.max(10, screenX), container.clientWidth - modalWidth - 10);
       let top = Math.min(Math.max(10, screenY), container.clientHeight - modalHeight - 10);
@@ -624,11 +639,9 @@
       if (pendingTransition.isEdit) {
         transitions[pendingTransition.index].read = read;
       } else {
-        // Check if an edge already exists between these nodes
         const existingTrans = transitions.find(t => t.from === pendingTransition.from && t.to === pendingTransition.to);
         
         if (existingTrans) {
-          // Merge the new symbol into the existing transition string
           const reads = existingTrans.read.split(',').map(r => r.trim());
           const newReads = read.split(',').map(r => r.trim());
           const combined = [...new Set([...reads, ...newReads])].filter(r=>r).join(',');
@@ -815,25 +828,30 @@
       }
 
       const pos = getMousePos(e);
+      pointerDownPos = pos;
       const clickedNode = getNodeAt(pos);
       const transIdx = getTransitionAt(pos);
 
-      // Handle Double-Tap / Double-Click
+      // Handle Double-Tap / Double-Click Safely
       const currentTime = new Date().getTime();
       const tapLength = currentTime - lastTapTime;
-      if (e.type === 'dblclick' || (tapLength < 300 && tapLength > 0)) {
+      const isSameSpot = lastTapPos && Math.hypot(lastTapPos.x - pos.x, lastTapPos.y - pos.y) < 30 / scale;
+
+      if (e.type === 'dblclick' || (e.type === 'touchstart' && tapLength < 300 && tapLength > 0 && isSameSpot)) {
         if (clickedNode) {
           clickedNode.isFinal = !clickedNode.isFinal;
-        } else {
+        } else if (transIdx === -1) {
           const newState = { id: 'q' + stateCounter++, x: pos.x, y: pos.y, isFinal: false };
           states.push(newState);
           if (states.length === 1 && !currentStateId) currentStateId = newState.id;
           setSelection({ type: 'node', ref: newState });
         }
         updateDFA();
+        lastTapTime = 0;
         return;
       }
       lastTapTime = currentTime;
+      lastTapPos = pos;
 
       // Handle Interactions
       if (e.shiftKey || arrowMode) {
@@ -921,8 +939,11 @@
         arrowStartNode = null;
       }
       
-      if (!draggedNode && !draggedTransition && !e.shiftKey && !arrowMode) {
-        const pos = getMousePos(e);
+      const pos = getMousePos(e);
+      const distMoved = pointerDownPos ? Math.hypot(pointerDownPos.x - pos.x, pointerDownPos.y - pos.y) : 0;
+      
+      // Ensure we don't pop up the modal if the user was actively dragging
+      if (!draggedNode && !draggedTransition && !e.shiftKey && !arrowMode && distMoved < (10 / scale)) {
         const transIdx = getTransitionAt(pos);
         if (transIdx !== -1) {
           const t = transitions[transIdx];
@@ -938,12 +959,16 @@
 
     canvas.addEventListener('mousedown', handlePointerDown);
     canvas.addEventListener('mousemove', handlePointerMove);
-    canvas.addEventListener('mouseup', handlePointerUp);
+    window.addEventListener('mouseup', (e) => {
+       if (isPanning || draggedNode || draggedTransition || arrowStartNode || e.target === canvas) handlePointerUp(e);
+    });
     canvas.addEventListener('dblclick', handlePointerDown);
 
     canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
     canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
-    canvas.addEventListener('touchend', handlePointerUp);
+    window.addEventListener('touchend', (e) => {
+       if (isPanning || draggedNode || draggedTransition || arrowStartNode || e.target === canvas) handlePointerUp(e);
+    });
 
     window.addEventListener('keydown', (e) => {
       if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Correspondence Problem - Single Board</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --text-color: #333;
+            --domino-bg: #fff;
+            --border-color: #ccc;
+            --primary-color: #2c3e50;
+            --success-color: #27ae60;
+            --accent-color: #3498db;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 3rem 1rem;
+            margin: 0;
+        }
+
+        h1 {
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        p.instructions {
+            margin-bottom: 3rem;
+            text-align: center;
+            max-width: 600px;
+            color: #555;
+            line-height: 1.5;
+            padding: 0 10px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .board {
+            display: flex;
+            min-height: 180px;
+            padding: 20px;
+            background-color: #e9ecef;
+            border: 4px dashed var(--border-color);
+            border-radius: 16px;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            transition: all 0.3s ease;
+            /* Prevents weird selection highlights on mobile */
+            -webkit-tap-highlight-color: transparent; 
+        }
+
+        .board.win {
+            border-color: var(--success-color);
+            border-style: solid;
+            background-color: #eafaf1;
+            box-shadow: 0 0 20px rgba(39, 174, 96, 0.3);
+        }
+
+        .domino {
+            display: flex;
+            flex-direction: column;
+            width: 70px;
+            height: 120px;
+            background-color: var(--domino-bg);
+            border: 3px solid var(--primary-color);
+            border-radius: 10px;
+            cursor: grab;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            user-select: none;
+            /* CRITICAL FOR MOBILE: Prevents page scrolling when swiping on dominos */
+            touch-action: none; 
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .domino:active {
+            cursor: grabbing;
+        }
+
+        /* Floating ghost styling */
+        .domino.dragging {
+            opacity: 0.85;
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            border-color: var(--accent-color);
+        }
+
+        /* Placeholder styling */
+        .domino.placeholder {
+            border: 3px dashed var(--accent-color);
+            background-color: transparent;
+            box-shadow: none;
+        }
+
+        .domino .top, .domino .bot {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.6rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            pointer-events: none; /* Let the container handle dragging */
+        }
+
+        .domino .top {
+            border-bottom: 3px solid var(--primary-color);
+            background-color: #fdfbfb;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .domino .bot {
+            background-color: #f1f2f6;
+            border-radius: 0 0 6px 6px;
+        }
+        
+        .board.win .domino:not(.placeholder) {
+            border-color: var(--success-color);
+        }
+        
+        .board.win .domino:not(.placeholder) .top {
+            border-bottom-color: var(--success-color);
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="board" class="board">
+            <div class="domino" data-top="nde" data-bot="nden">
+                <div class="top">de</div>
+                <div class="bot">nden</div>
+            </div>
+            
+            <div class="domino" data-top="spo" data-bot="espo">
+                <div class="top">pon</div>
+                <div class="bot">espo</div>
+            </div>
+                        <div class="domino" data-top="re" data-bot="orr">
+                <div class="top">res</div>
+                <div class="bot">rr</div>
+            </div>
+            
+            
+            <div class="domino" data-top="nce" data-bot="ce">
+                <div class="top">nce</div>
+                <div class="bot">ce</div>
+            </div>
+
+  <div class="domino" data-top="cor" data-bot="c">
+                  <div class="top">cor</div>
+                  <div class="bot">co</div>
+              </div>
+        </div>
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        const dominos = document.querySelectorAll('.domino');
+
+        let pendingDrag = null;
+        let dragInfo = null;
+
+        // Initialize drag listeners on all dominos
+        dominos.forEach(domino => {
+            domino.addEventListener('pointerdown', (e) => initPointerDown(e, domino));
+        });
+
+        function initPointerDown(e, element) {
+            // Only respond to left mouse clicks or touch
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            
+            const rect = element.getBoundingClientRect();
+            pendingDrag = {
+                element,
+                startX: e.clientX,
+                startY: e.clientY,
+                offsetX: e.clientX - rect.left,
+                offsetY: e.clientY - rect.top
+            };
+
+            document.addEventListener('pointermove', checkDragStart, { passive: false });
+            document.addEventListener('pointerup', cancelPendingDrag);
+            document.addEventListener('pointercancel', cancelPendingDrag);
+        }
+
+        function cancelPendingDrag() {
+            pendingDrag = null;
+            document.removeEventListener('pointermove', checkDragStart);
+            document.removeEventListener('pointerup', cancelPendingDrag);
+            document.removeEventListener('pointercancel', cancelPendingDrag);
+        }
+
+        function checkDragStart(e) {
+            if (!pendingDrag) return;
+            const dx = e.clientX - pendingDrag.startX;
+            const dy = e.clientY - pendingDrag.startY;
+            
+            // Start drag if user moves pointer more than 5px
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                startRealDrag(pendingDrag, e);
+                cancelPendingDrag(); 
+            }
+        }
+
+        function startRealDrag(info, e) {
+            e.preventDefault(); 
+            const { element, offsetX, offsetY } = info;
+            
+            // Create the floating visual ghost
+            const ghost = element.cloneNode(true);
+            ghost.classList.add('dragging');
+            ghost.style.position = 'fixed';
+            ghost.style.left = (e.clientX - offsetX) + 'px';
+            ghost.style.top = (e.clientY - offsetY) + 'px';
+            ghost.style.margin = '0';
+            ghost.style.zIndex = '9999';
+            ghost.style.pointerEvents = 'none'; 
+            document.body.appendChild(ghost);
+
+            // Create placeholder
+            const placeholder = document.createElement('div');
+            placeholder.className = 'domino placeholder';
+
+            // Hide original and put placeholder in its place
+            element.style.display = 'none';
+            element.parentNode.insertBefore(placeholder, element);
+
+            dragInfo = { element, ghost, placeholder, offsetX, offsetY };
+
+            document.addEventListener('pointermove', onPointerMove, { passive: false });
+            document.addEventListener('pointerup', onPointerUp);
+            document.addEventListener('pointercancel', onPointerUp);
+        }
+
+        function onPointerMove(e) {
+            if (!dragInfo) return;
+            e.preventDefault(); 
+
+            // Move the ghost
+            dragInfo.ghost.style.left = (e.clientX - dragInfo.offsetX) + 'px';
+            dragInfo.ghost.style.top = (e.clientY - dragInfo.offsetY) + 'px';
+
+            // Calculate the new position based on X coordinate
+            const siblings = [...board.querySelectorAll('.domino:not(.placeholder)')]
+                .filter(el => el.style.display !== 'none'); // Only visible siblings
+            
+            // Find which element we are hovering over horizontally
+            const nextSibling = siblings.find(sibling => {
+                const box = sibling.getBoundingClientRect();
+                return e.clientX < box.left + box.width / 2;
+            });
+
+            if (nextSibling) {
+                board.insertBefore(dragInfo.placeholder, nextSibling);
+            } else {
+                board.appendChild(dragInfo.placeholder);
+            }
+        }
+
+        function onPointerUp(e) {
+            if (!dragInfo) return;
+
+            // Remove listeners
+            document.removeEventListener('pointermove', onPointerMove);
+            document.removeEventListener('pointerup', onPointerUp);
+            document.removeEventListener('pointercancel', onPointerUp);
+
+            // Clean up visual drag elements
+            dragInfo.ghost.remove();
+            
+            // Place actual element where placeholder is
+            board.insertBefore(dragInfo.element, dragInfo.placeholder);
+            dragInfo.element.style.display = 'flex';
+            dragInfo.placeholder.remove();
+
+            dragInfo = null;
+            
+            // Validate the board
+            checkWinCondition();
+        }
+
+        function checkWinCondition() {
+            const currentDominos = board.querySelectorAll('.domino:not(.placeholder)');
+            
+            let topStr = "";
+            let botStr = "";
+
+            currentDominos.forEach(d => {
+                topStr += d.dataset.top.replace(/\s+/g, '');
+                botStr += d.dataset.bot.replace(/\s+/g, '');
+            });
+
+            // Apply success styles if they match
+            if (topStr === botStr) {
+                board.classList.add('win');
+            } else {
+                board.classList.remove('win');
+            }
+        }
+    </script>
+</body>
+</html>

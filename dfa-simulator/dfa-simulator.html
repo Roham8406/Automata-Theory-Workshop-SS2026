@@ -154,7 +154,7 @@
       flex-direction: column;
       gap: 6px;
       z-index: 100;
-      width: 140px; /* Widened for comma separated characters */
+      width: 140px; 
     }
     .modal-popup.hidden { display: none; }
     .modal-title { font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
@@ -163,7 +163,7 @@
     .field { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 2px; }
     .field label { font-size: 0.65rem; color: #64748b; font-weight: 600; }
     .field input {
-      width: 65px; /* Widened */
+      width: 65px; 
       height: 26px;
       padding: 2px;
       border: 1px solid #cbd5e1;
@@ -1221,10 +1221,26 @@
           
           drawArrowhead(arrowX, arrowY, arrowAngle);
 
-          ctx.font = '13px "Times New Roman", serif';
+          const text = `${t.read}`;
+          ctx.font = 'bold 13px sans-serif';
           ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          
+          const textWidth = ctx.measureText(text).width;
+          const labelCx = cx;
+          const labelCy = cy - loopRadius - 8;
+          
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+          if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(labelCx - textWidth/2 - 4, labelCy - 10, textWidth + 8, 20, 4);
+            ctx.fill();
+          } else {
+            ctx.fillRect(labelCx - textWidth/2 - 4, labelCy - 10, textWidth + 8, 20);
+          }
+
           ctx.fillStyle = strokeColor;
-          ctx.fillText(`${t.read}`, cx, cy - loopRadius - 5);
+          ctx.fillText(text, labelCx, labelCy);
         } else {
           const curveVal = t.curve || 0;
           const { start, end, control } = getCurvePoints(sFrom, sTo, curveVal);
@@ -1237,13 +1253,26 @@
           const angle = Math.atan2(end.y - control.y, end.x - control.x);
           drawArrowhead(end.x, end.y, angle);
 
-          const labelX = 0.25 * start.x + 0.5 * control.x + 0.25 * end.x;
-          const labelY = 0.25 * start.y + 0.5 * control.y + 0.25 * end.y;
-
-          ctx.font = '13px "Times New Roman", serif';
+          const text = `${t.read}`;
+          ctx.font = 'bold 13px sans-serif';
           ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          
+          const textWidth = ctx.measureText(text).width;
+          const labelCx = 0.25 * start.x + 0.5 * control.x + 0.25 * end.x;
+          const labelCy = (0.25 * start.y + 0.5 * control.y + 0.25 * end.y) - 8;
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+          if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(labelCx - textWidth/2 - 4, labelCy - 10, textWidth + 8, 20, 4);
+            ctx.fill();
+          } else {
+            ctx.fillRect(labelCx - textWidth/2 - 4, labelCy - 10, textWidth + 8, 20);
+          }
+
           ctx.fillStyle = strokeColor;
-          ctx.fillText(`${t.read}`, labelX, labelY - 5);
+          ctx.fillText(text, labelCx, labelCy);
         }
       });
       

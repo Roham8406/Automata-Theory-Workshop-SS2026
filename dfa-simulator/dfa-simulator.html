@@ -538,6 +538,7 @@
 
       const startState = states[0];
       const layers = {};
+      const nodeToLayer = {}; // Track layers to calculate smart curves
       const visited = new Set();
       const queue = [{ state: startState, layer: 0 }];
 
@@ -547,6 +548,7 @@
         const { state, layer } = queue.shift();
         if (!layers[layer]) layers[layer] = [];
         layers[layer].push(state);
+        nodeToLayer[state.id] = layer;
 
         const outTrans = transitions.filter(t => t.from === state.id);
         for (const t of outTrans) {
@@ -564,38 +566,59 @@
           maxLayer++;
           if (!layers[maxLayer]) layers[maxLayer] = [];
           layers[maxLayer].push(s);
+          nodeToLayer[s.id] = maxLayer;
           visited.add(s.id);
         }
       });
 
-      const cWidth = canvas.width || container.clientWidth || 800;
-      const cHeight = canvas.height || container.clientHeight || 600;
+      // 1. Fixed Spacing to prevent compactness
+      const xSpacing = 420; 
+      const ySpacing = 360; 
 
       const layerKeys = Object.keys(layers).map(Number).sort((a, b) => a - b);
-      const totalLayers = layerKeys.length;
-      const xSpacing = Math.max(160, cWidth / (totalLayers + 1));
+      
+      // Calculate tallest layer to center everything vertically
+      const maxNodesInLayer = Math.max(...layerKeys.map(k => layers[k].length));
+      const totalHeight = maxNodesInLayer * ySpacing;
 
       layerKeys.forEach((lIndex, lIdx) => {
         const layerStates = layers[lIndex];
         const totalNodesInLayer = layerStates.length;
-        const ySpacing = Math.max(120, cHeight / (totalNodesInLayer + 1));
+        
+        // Center nodes vertically relative to the tallest layer
+        const startY = (totalHeight - (totalNodesInLayer - 1) * ySpacing) / 2 + 100;
 
         layerStates.forEach((state, nIdx) => {
-          state.x = xSpacing * (lIdx + 1);
-          state.y = ySpacing * (nIdx + 1);
+          state.x = xSpacing * (lIdx + 1) - 100; 
+          state.y = startY + (ySpacing * nIdx);
         });
       });
 
+      // 2. Smart Edge Routing to avoid passing through nodes
       transitions.forEach(t => {
         t.curve = 0;
         if (t.from !== t.to) {
+          const lFrom = nodeToLayer[t.from];
+          const lTo = nodeToLayer[t.to];
           const hasReverse = transitions.some(rev => rev.from === t.to && rev.to === t.from);
-          if (hasReverse) {
-            t.curve = 35;
+          const layerDiff = Math.abs(lTo - lFrom);
+
+          if (hasReverse && layerDiff <= 1) {
+            t.curve = 30; // Standard bidirectional curve
+          } else if (lTo > lFrom + 1) {
+            // Forward edge spanning multiple layers (arc over the top)
+            t.curve = 25 + (layerDiff * 25);
+          } else if (lTo < lFrom) {
+            // Back edge (arc underneath)
+            t.curve = -30 - (layerDiff * 25);
+          } else if (lTo === lFrom) {
+            // Same layer transition (arc wide to the side)
+            t.curve = 60;
           }
         }
       });
 
+      // Reset view to origin so the layout is immediately visible
       scale = 1; offsetX = 0; offsetY = 0;
       updateDFA();
     }

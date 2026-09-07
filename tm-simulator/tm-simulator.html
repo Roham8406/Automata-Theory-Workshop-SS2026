@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Interactive Turing Machine Visual Designer & Simulator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: #f8f9fa; color: #1a1a1a; display: flex; flex-direction: column; height: 100vh; overflow: hidden; user-select: none; }
+    
+    header { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    h1 { font-size: 1.1rem; font-weight: 600; color: #0f172a; }
+    
+    .instructions { font-size: 0.8rem; color: #64748b; display: flex; gap: 10px; flex-wrap: wrap; }
+    .instructions span { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; }
+    .instructions kbd { background: #ffffff; color: #0f172a; padding: 1px 4px; border-radius: 3px; border: 1px solid #cbd5e1; font-family: monospace; font-weight: bold; }
+    
+    .sim-bar { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 10px 20px; display: flex; flex-direction: column; gap: 8px; }
+    .sim-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    .input-group { display: flex; align-items: center; gap: 6px; }
+    .input-group label { font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+    .sim-input { padding: 4px 10px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; font-family: monospace; width: 160px; background: #f8fafc; }
+    .sim-input:focus { border-color: #2563eb; background: #ffffff; }
+
+    .btn { padding: 5px 12px; font-size: 0.78rem; font-weight: 600; border-radius: 4px; border: 1px solid #cbd5e1; background: #ffffff; color: #334155; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s ease; }
+    .btn:hover { background: #f1f5f9; color: #0f172a; }
+    .btn-primary { background: #2563eb; color: #ffffff; border-color: #2563eb; }
+    .btn-primary:hover { background: #1d4ed8; color: #ffffff; }
+    .btn-play { background: #16a34a; color: #ffffff; border-color: #16a34a; }
+    .btn-play:hover { background: #15803d; color: #ffffff; }
+    .btn-pause { background: #eab308; color: #ffffff; border-color: #ca8a04; }
+    .btn-pause:hover { background: #ca8a04; color: #ffffff; }
+    .btn-pretty { background: #7c3aed; color: #ffffff; border-color: #7c3aed; }
+    .btn-pretty:hover { background: #6d28d9; color: #ffffff; }
+
+    .status-badge { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 12px; margin-left: auto; letter-spacing: 0.5px; background: #e2e8f0; color: #475569; }
+    .status-badge.running { background: #dbeafe; color: #1e40af; }
+    .status-badge.accepted { background: #dcfce7; color: #166534; }
+    .status-badge.rejected { background: #fee2e2; color: #991b1b; }
+
+    /* Infinite Tape Visualization */
+    .tape-wrapper {
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 85%, transparent 100%);
+    }
+    
+    .tape-container {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 10px 0;
+      transition: transform 0.2s ease-in-out;
+    }
+
+    .tape-cell {
+      min-width: 36px;
+      height: 38px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
+      font-size: 0.95rem;
+      border-radius: 4px;
+      position: relative;
+    }
+
+    .tape-cell.active {
+      border: 2px solid #2563eb;
+      background: #dbeafe;
+      color: #1e40af;
+      transform: scale(1.1);
+      z-index: 2;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .tape-cell.active::after {
+      content: '▲';
+      position: absolute;
+      bottom: -16px;
+      font-size: 0.75rem;
+      color: #2563eb;
+    }
+
+    .canvas-container { flex: 1; position: relative; background: #ffffff; overflow: hidden; }
+    canvas { width: 100%; height: 100%; display: block; cursor: default; touch-action: none; }
+    
+    /* Modified TM Modal */
+    .modal-popup { position: absolute; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.12); display: flex; flex-direction: column; gap: 8px; z-index: 100; width: 160px; }
+    .modal-popup.hidden { display: none; }
+    .modal-title { font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
+    
+    .field { display: flex; flex-direction: column; flex: 1; gap: 4px; }
+    .field label { font-size: 0.65rem; color: #64748b; font-weight: 600; }
+    .field textarea {
+      width: 100%;
+      padding: 4px;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-family: monospace;
+      outline: none;
+      background: #f8fafc;
+      resize: none;
+      white-space: pre;
+    }
+    .field textarea:focus { border-color: #2563eb; background: #ffffff; }
+    
+    .modal-actions { display: flex; gap: 4px; margin-top: 2px; }
+    .modal-actions button { flex: 1; padding: 6px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; border: none; transition: 0.15s; }
+    .btn-save { background: #2563eb; color: #ffffff; }
+    .btn-save:hover { background: #1d4ed8; }
+    .btn-cancel { background: #e2e8f0; color: #475569; }
+    .btn-cancel:hover { background: #cbd5e1; }
+
+    .output-panel { background: #ffffff; border-top: 1px solid #e2e8f0; padding: 10px 20px; display: flex; flex-direction: column; gap: 8px; }
+    .output-group { display: flex; flex-direction: column; gap: 4px; }
+    .output-header { display: flex; justify-content: space-between; align-items: center; }
+    .output-header label { font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+    
+    .copy-btn { background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; padding: 2px 8px; font-size: 0.7rem; font-weight: 600; border-radius: 4px; cursor: pointer; transition: all 0.15s ease; }
+    .copy-btn:hover { background: #e2e8f0; color: #0f172a; }
+    .copy-btn.copied { background: #22c55e; color: #ffffff; border-color: #16a34a; }
+    .output-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 0.82rem; color: #0f172a; min-height: 32px; word-break: break-all; max-height: 55px; overflow-y: auto; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Turing Machine Designer & Simulator</h1>
+    <div class="instructions">
+      <span><b>Add state:</b> Double-click</span>
+      <span><b>Move:</b> Drag</span>
+      <span><b>Zoom:</b> Scroll/Pinch</span>
+      <span><b>Add rule:</b> <kbd>Shift</kbd> + Drag</span>
+    </div>
+  </header>
+
+  <div class="sim-bar">
+    <div class="sim-controls">
+      <div class="input-group">
+        <label for="stringInput">Initial Tape</label>
+        <input type="text" id="stringInput" class="sim-input" placeholder="e.g. 10110" value="10110">
+      </div>
+      <button class="btn btn-primary" id="btnLoad">Initialize</button>
+      <button class="btn btn-play" id="btnPlay">Play</button>
+      <button class="btn" id="btnStep">Step</button>
+      <button class="btn" id="btnReset">Reset</button>
+      <button class="btn btn-pretty" id="btnPrettyPrint">Auto-Layout</button>
+
+      <div id="simStatus" class="status-badge">Idle</div>
+    </div>
+
+    <!-- Infinite Tape Display -->
+    <div class="tape-wrapper">
+      <div class="tape-container" id="stringDisplay"></div>
+    </div>
+  </div>
+
+  <div class="canvas-container" id="canvasContainer">
+    <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; z-index: 10;">
+      <button class="btn" id="btnZoomIn" style="padding: 4px 8px;" title="Zoom In">➕</button>
+      <button class="btn" id="btnZoomOut" style="padding: 4px 8px;" title="Zoom Out">➖</button>
+      <button class="btn" id="btnZoomReset" style="padding: 4px 8px;" title="Reset View">⌂</button>
+      <div style="width: 2px; background: #e2e8f0; margin: 0 2px;"></div>
+      <button class="btn" id="btnArrowMode">Arrow Mode: OFF</button>
+      <button class="btn" id="btnDeleteMode" style="display: none; background: #fee2e2; color: #991b1b; border-color: #f87171;">Delete</button>
+    </div>
+
+    <canvas id="tmCanvas"></canvas>
+
+    <div id="transitionModal" class="modal-popup hidden">
+      <div class="modal-title">TM Transitions</div>
+      <div class="field">
+        <label for="modalRules">Rules (Read,Write,Dir)</label>
+        <textarea id="modalRules" placeholder="0,1,R&#10;_,0,L" rows="3"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save" id="modalSaveBtn">Save</button>
+        <button class="btn-cancel" id="modalCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="output-panel">
+    <div class="output-group">
+      <div class="output-header">
+        <label>TM Formal Notation</label>
+        <button class="copy-btn" onclick="copyToClipboard('textNotation', this)">Copy</button>
+      </div>
+      <div id="textNotation" class="output-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('tmCanvas');
+    const container = document.getElementById('canvasContainer');
+    const ctx = canvas.getContext('2d');
+
+    const modal = document.getElementById('transitionModal');
+    const modalRules = document.getElementById('modalRules');
+    const modalSaveBtn = document.getElementById('modalSaveBtn');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+    const stringInput = document.getElementById('stringInput');
+    const btnLoad = document.getElementById('btnLoad');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnStep = document.getElementById('btnStep');
+    const btnReset = document.getElementById('btnReset');
+    const btnPrettyPrint = document.getElementById('btnPrettyPrint');
+    const stringDisplay = document.getElementById('stringDisplay');
+    const simStatus = document.getElementById('simStatus');
+
+    let scale = 1; let offsetX = 0; let offsetY = 0;
+    let isPanning = false; let panStartX = 0; let panStartY = 0;
+    let initialPinchDistance = null; let initialScale = 1;
+
+    const btnArrowMode = document.getElementById('btnArrowMode');
+    const btnDeleteMode = document.getElementById('btnDeleteMode');
+    const btnZoomIn = document.getElementById('btnZoomIn');
+    const btnZoomOut = document.getElementById('btnZoomOut');
+    const btnZoomReset = document.getElementById('btnZoomReset');
+    let arrowMode = false; let lastTapTime = 0; let lastTapPos = null; let pointerDownPos = null;
+
+    // TM Core Data Structures
+    let states = [];       // { id: "q0", x, y, isFinal: false }
+    let transitions = [];  // { from: "q0", to: "q1", rules: [{read: '0', write: '1', dir: 'R'}], curve: 0 }
+    let stateCounter = 0;
+
+    let selectedItem = null;        
+    let draggedNode = null;
+    let draggedTransition = null;  
+    let arrowStartNode = null;
+    let currentMousePos = { x: 0, y: 0 };
+    let pendingTransition = null; 
+
+    // TM Engine State
+    let tape = {};
+    let headPos = 0;
+    const BLANK = '_';
+    let currentStateId = null;
+    let activeTransitionIndex = null;
+    let isPlaying = false;
+    let playInterval = null;
+    let machineState = 'idle'; 
+
+    const NODE_RADIUS = 30;
+
+    function getTapeSymbol(pos) { return tape[pos] !== undefined ? tape[pos] : BLANK; }
+    function setTapeSymbol(pos, sym) { tape[pos] = sym; }
+
+    function setZoom(newScale, centerScreenX = canvas.width / 2, centerScreenY = canvas.height / 2) {
+      const oldScale = scale;
+      scale = Math.max(0.1, Math.min(newScale, 5));
+      offsetX = centerScreenX - (centerScreenX - offsetX) * (scale / oldScale);
+      offsetY = centerScreenY - (centerScreenY - offsetY) * (scale / oldScale);
+      draw();
+    }
+
+    btnZoomIn.addEventListener('click', () => setZoom(scale * 1.2));
+    btnZoomOut.addEventListener('click', () => setZoom(scale / 1.2));
+    btnZoomReset.addEventListener('click', () => { scale = 1; offsetX = 0; offsetY = 0; draw(); });
+
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+      setZoom(scale * zoomFactor, e.clientX - rect.left, e.clientY - rect.top);
+    }, { passive: false });
+
+    btnArrowMode.addEventListener('click', () => {
+      arrowMode = !arrowMode;
+      btnArrowMode.innerText = `Arrow Mode: ${arrowMode ? 'ON' : 'OFF'}`;
+      btnArrowMode.style.background = arrowMode ? '#e0e7ff' : '#ffffff';
+    });
+
+    btnDeleteMode.addEventListener('click', () => {
+      if (!selectedItem) return;
+      if (selectedItem.type === 'node') {
+        states = states.filter(s => s.id !== selectedItem.ref.id);
+        transitions = transitions.filter(t => t.from !== selectedItem.ref.id && t.to !== selectedItem.ref.id);
+      } else if (selectedItem.type === 'trans') {
+        transitions.splice(selectedItem.index, 1);
+      }
+      setSelection(null);
+      updateTM();
+    });
+
+    function setSelection(item) {
+      selectedItem = item;
+      btnDeleteMode.style.display = item ? 'inline-flex' : 'none';
+    }
+
+    function resizeCanvas() { canvas.width = container.clientWidth; canvas.height = container.clientHeight; draw(); }
+    window.addEventListener('resize', resizeCanvas);
+
+    function getMousePos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : (e.changedTouches ? e.changedTouches[0].clientX : e.clientX);
+      const clientY = e.touches ? e.touches[0].clientY : (e.changedTouches ? e.changedTouches[0].clientY : e.clientY);
+      return { x: (clientX - rect.left - offsetX) / scale, y: (clientY - rect.top - offsetY) / scale, screenX: clientX - rect.left, screenY: clientY - rect.top };
+    }
+
+    function getNodeAt(pos) { return states.find(s => Math.hypot(s.x - pos.x, s.y - pos.y) <= NODE_RADIUS); }
+
+    function getTransitionAt(pos) {
+      const hitRadius = 15 / scale; 
+      for (let i = 0; i < transitions.length; i++) {
+        const t = transitions[i];
+        const sFrom = states.find(s => s.id === t.from);
+        const sTo = states.find(s => s.id === t.to);
+        if (!sFrom || !sTo) continue;
+
+        if (sFrom === sTo) {
+          const cx = sFrom.x, cy = sFrom.y - NODE_RADIUS - 26 + 2;
+          if (Math.abs(Math.hypot(pos.x - cx, pos.y - cy) - 26) <= hitRadius || Math.hypot(pos.x - cx, pos.y - (cy - 34)) <= hitRadius + 10) return i;
+        } else {
+          const { start, end, control } = getCurvePoints(sFrom, sTo, t.curve || 0);
+          const labelX = 0.25 * start.x + 0.5 * control.x + 0.25 * end.x;
+          const labelY = 0.25 * start.y + 0.5 * control.y + 0.25 * end.y - 8;
+          if (Math.hypot(pos.x - labelX, pos.y - labelY) <= hitRadius + 10) return i;
+          for (let u = 0; u <= 1; u += 0.05) {
+            const px = (1 - u) ** 2 * start.x + 2 * (1 - u) * u * control.x + u ** 2 * end.x;
+            const py = (1 - u) ** 2 * start.y + 2 * (1 - u) * u * control.y + u ** 2 * end.y;
+            if (Math.hypot(pos.x - px, pos.y - py) < hitRadius) return i;
+          }
+        }
+      }
+      return -1;
+    }
+
+    function getCurvePoints(sFrom, sTo, curveOffset = 0) {
+      const dx = sTo.x - sFrom.x, dy = sTo.y - sFrom.y, dist = Math.hypot(dx, dy) || 1;
+      const control = { x: (sFrom.x + sTo.x)/2 + (-dy/dist)*(2*curveOffset), y: (sFrom.y + sTo.y)/2 + (dx/dist)*(2*curveOffset) };
+      const angleFrom = Math.atan2(control.y - sFrom.y, control.x - sFrom.x);
+      const angleTo = Math.atan2(control.y - sTo.y, control.x - sTo.x);
+      return { 
+        start: { x: sFrom.x + NODE_RADIUS * Math.cos(angleFrom), y: sFrom.y + NODE_RADIUS * Math.sin(angleFrom) }, 
+        end: { x: sTo.x + NODE_RADIUS * Math.cos(angleTo), y: sTo.y + NODE_RADIUS * Math.sin(angleTo) }, 
+        control 
+      };
+    }
+
+    function updateTransitionCurvature(t, pos) {
+      const sFrom = states.find(s => s.id === t.from), sTo = states.find(s => s.id === t.to);
+      if (!sFrom || !sTo) return;
+      const dx = sTo.x - sFrom.x, dy = sTo.y - sFrom.y, dist = Math.hypot(dx, dy) || 1;
+      t.curve = (pos.x - (sFrom.x + sTo.x) / 2) * (-dy/dist) + (pos.y - (sFrom.y + sTo.y) / 2) * (dx/dist);
+    }
+
+    function prettyPrintTM() {
+      // Basic Auto-Layout for visual clarity
+      states.forEach((s, i) => { s.x = 150 + (i % 4) * 200; s.y = 150 + Math.floor(i / 4) * 150; });
+      transitions.forEach(t => t.curve = (t.from === t.to) ? 0 : 20);
+      scale = 1; offsetX = 0; offsetY = 0;
+      updateTM();
+    }
+
+    function openModal(worldX, worldY, existingRules = []) {
+      modalRules.value = existingRules.map(r => `${r.read},${r.write},${r.dir}`).join('\n');
+      if (!modalRules.value) modalRules.value = '_,_,R';
+
+      const screenX = worldX * scale + offsetX, screenY = worldY * scale + offsetY;
+      modal.style.left = Math.min(Math.max(10, screenX), container.clientWidth - 170) + 'px';
+      modal.style.top = Math.min(Math.max(10, screenY), container.clientHeight - 120) + 'px';
+      modal.classList.remove('hidden');
+      modalRules.focus();
+    }
+
+    function closeModal() { modal.classList.add('hidden'); pendingTransition = null; }
+
+    modalSaveBtn.addEventListener('click', saveModalData);
+    modalCancelBtn.addEventListener('click', closeModal);
+
+    function saveModalData() {
+      if (!pendingTransition) return;
+      const val = modalRules.value.trim();
+      let rules = [];
+      if (val) {
+        rules = val.split('\n').map(line => {
+          const parts = line.split(',').map(s => s.trim());
+          if (parts.length >= 3) return { read: parts[0], write: parts[1], dir: parts[2].toUpperCase() };
+          return null;
+        }).filter(r => r);
+      }
+      if (rules.length === 0) rules = [{ read: BLANK, write: BLANK, dir: 'R' }];
+
+      if (pendingTransition.isEdit) {
+        transitions[pendingTransition.index].rules = rules;
+      } else {
+        const existingTrans = transitions.find(t => t.from === pendingTransition.from && t.to === pendingTransition.to);
+        if (existingTrans) {
+          existingTrans.rules = existingTrans.rules.concat(rules);
+        } else {
+          transitions.push({ from: pendingTransition.from, to: pendingTransition.to, rules, curve: 0 });
+        }
+      }
+      closeModal(); updateTM();
+    }
+
+    function loadInput() {
+      pauseSimulation();
+      tape = {};
+      const str = stringInput.value.trim();
+      for (let i = 0; i < str.length; i++) tape[i] = str[i];
+      
+      headPos = 0; activeTransitionIndex = null;
+      if (states.length > 0) {
+        currentStateId = states[0].id;
+        setSimStatus('idle', 'Ready');
+      } else {
+        currentStateId = null; setSimStatus('idle', 'No States');
+      }
+      renderStringDisplay(); draw();
+    }
+
+    function stepSimulation() {
+      if (states.length === 0 || !currentStateId) return false;
+
+      const currSym = getTapeSymbol(headPos);
+      let matchedRule = null, transIdx = -1;
+
+      for (let i = 0; i < transitions.length; i++) {
+        if (transitions[i].from === currentStateId) {
+          const rule = transitions[i].rules.find(r => r.read === currSym);
+          if (rule) { matchedRule = rule; transIdx = i; break; }
+        }
+      }
+
+      if (!matchedRule) {
+        activeTransitionIndex = null;
+        const currStateObj = states.find(s => s.id === currentStateId);
+        if (currStateObj && currStateObj.isFinal) setSimStatus('accepted', 'Halted (Accept)');
+        else setSimStatus('rejected', 'Halted (Reject)');
+        pauseSimulation();
+        return false;
+      }
+
+      setSimStatus('running', 'Running');
+      activeTransitionIndex = transIdx;
+      const trans = transitions[transIdx];
+
+      // Execute TM Action
+      setTapeSymbol(headPos, matchedRule.write);
+      if (matchedRule.dir === 'R') headPos++;
+      else if (matchedRule.dir === 'L') headPos--;
+      
+      currentStateId = trans.to;
+      renderStringDisplay(); draw();
+
+      const nextStateObj = states.find(s => s.id === currentStateId);
+      if (nextStateObj && nextStateObj.isFinal) {
+         setSimStatus('accepted', 'Halted (Accept)');
+         pauseSimulation();
+         return false;
+      }
+      return true;
+    }
+
+    function togglePlay() {
+      if (isPlaying) pauseSimulation();
+      else {
+        if (machineState === 'accepted' || machineState === 'rejected') loadInput();
+        isPlaying = true; btnPlay.innerText = 'Pause'; btnPlay.className = 'btn btn-pause';
+        setSimStatus('running', 'Running');
+        playInterval = setInterval(() => { if (!stepSimulation()) pauseSimulation(); }, 600);
+      }
+    }
+
+    function pauseSimulation() {
+      isPlaying = false;
+      if (playInterval) clearInterval(playInterval);
+      playInterval = null;
+      btnPlay.innerText = 'Play'; btnPlay.className = 'btn btn-play';
+      if (machineState === 'running') setSimStatus('paused', 'Paused');
+    }
+
+    function resetSimulation() { pauseSimulation(); loadInput(); }
+
+    function setSimStatus(statusClass, label) {
+      machineState = statusClass;
+      simStatus.className = `status-badge ${statusClass}`; simStatus.innerText = label;
+    }
+
+    function renderStringDisplay() {
+      stringDisplay.innerHTML = '';
+      const RADIUS = 11; // Ensure enough cells map to the gradient bounds
+      for (let i = headPos - RADIUS; i <= headPos + RADIUS; i++) {
+        const cell = document.createElement('div');
+        cell.className = `tape-cell ${i === headPos ? 'active' : ''}`;
+        cell.innerText = getTapeSymbol(i);
+        stringDisplay.appendChild(cell);
+      }
+    }
+
+    btnLoad.addEventListener('click', loadInput);
+    btnStep.addEventListener('click', () => { pauseSimulation(); stepSimulation(); });
+    btnPlay.addEventListener('click', togglePlay);
+    btnReset.addEventListener('click', resetSimulation);
+    btnPrettyPrint.addEventListener('click', prettyPrintTM);
+
+    // Canvas Events
+    function handlePointerDown(e) {
+      if (!modal.classList.contains('hidden')) return;
+      if (e.type === 'touchstart') e.preventDefault(); 
+      if (e.touches && e.touches.length === 2) return; 
+
+      const pos = getMousePos(e); pointerDownPos = pos;
+      const clickedNode = getNodeAt(pos); const transIdx = getTransitionAt(pos);
+      const currentTime = new Date().getTime(); const tapLength = currentTime - lastTapTime;
+      const isSameSpot = lastTapPos && Math.hypot(lastTapPos.x - pos.x, lastTapPos.y - pos.y) < 30 / scale;
+
+      if (e.type === 'dblclick' || (e.type === 'touchstart' && tapLength < 300 && tapLength > 0 && isSameSpot)) {
+        if (clickedNode) clickedNode.isFinal = !clickedNode.isFinal;
+        else if (transIdx === -1) {
+          const newState = { id: 'q' + stateCounter++, x: pos.x, y: pos.y, isFinal: false };
+          states.push(newState);
+          if (states.length === 1 && !currentStateId) currentStateId = newState.id;
+          setSelection({ type: 'node', ref: newState });
+        }
+        updateTM(); lastTapTime = 0; return;
+      }
+      lastTapTime = currentTime; lastTapPos = pos;
+
+      if (e.shiftKey || arrowMode) {
+        if (clickedNode) { arrowStartNode = clickedNode; currentMousePos = pos; }
+        else if (transIdx !== -1) { draggedTransition = transitions[transIdx]; setSelection({ type: 'trans', index: transIdx }); }
+      } else if (clickedNode) { draggedNode = clickedNode; setSelection({ type: 'node', ref: clickedNode });
+      } else if (transIdx !== -1) { setSelection({ type: 'trans', index: transIdx });
+      } else { isPanning = true; panStartX = pos.screenX - offsetX; panStartY = pos.screenY - offsetY; setSelection(null); }
+      draw();
+    }
+
+    function handlePointerMove(e) {
+      if (e.touches && e.touches.length === 2) {
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        if (!initialPinchDistance) { initialPinchDistance = dist; initialScale = scale; }
+        else {
+          const rect = canvas.getBoundingClientRect();
+          setZoom(initialScale * (dist / initialPinchDistance), (e.touches[0].clientX + e.touches[1].clientX)/2 - rect.left, (e.touches[0].clientY + e.touches[1].clientY)/2 - rect.top);
+        }
+        return;
+      }
+      const pos = getMousePos(e); currentMousePos = pos;
+      if (isPanning) { offsetX = pos.screenX - panStartX; offsetY = pos.screenY - panStartY; draw(); return; }
+      if (draggedNode) { draggedNode.x = pos.x; draggedNode.y = pos.y; draw(); } 
+      else if (draggedTransition) { updateTransitionCurvature(draggedTransition, pos); draw(); } 
+      else if (arrowStartNode) draw();
+    }
+
+    function handlePointerUp(e) {
+      if (!e.touches || e.touches.length < 2) initialPinchDistance = null;
+      if (isPanning) { isPanning = false; return; }
+
+      if (arrowStartNode) {
+        const pos = getMousePos(e); const targetNode = getNodeAt(pos);
+        if (targetNode) { pendingTransition = { from: arrowStartNode.id, to: targetNode.id, isEdit: false }; openModal(pos.x, pos.y); }
+        arrowStartNode = null;
+      }
+      
+      const pos = getMousePos(e);
+      const distMoved = pointerDownPos ? Math.hypot(pointerDownPos.x - pos.x, pointerDownPos.y - pos.y) : 0;
+      
+      if (!draggedNode && !draggedTransition && !e.shiftKey && !arrowMode && distMoved < (10 / scale)) {
+        const transIdx = getTransitionAt(pos);
+        if (transIdx !== -1) {
+          pendingTransition = { index: transIdx, isEdit: true };
+          openModal(pos.x, pos.y, transitions[transIdx].rules);
+        }
+      }
+      draggedTransition = null; draggedNode = null; draw();
+    }
+
+    canvas.addEventListener('mousedown', handlePointerDown);
+    canvas.addEventListener('mousemove', handlePointerMove);
+    window.addEventListener('mouseup', (e) => { if (isPanning || draggedNode || draggedTransition || arrowStartNode || e.target === canvas) handlePointerUp(e); });
+    canvas.addEventListener('dblclick', handlePointerDown);
+    canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
+    canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
+    window.addEventListener('touchend', (e) => { if (isPanning || draggedNode || draggedTransition || arrowStartNode || e.target === canvas) handlePointerUp(e); });
+
+    window.addEventListener('keydown', (e) => {
+      if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+      if (e.key === 'Delete' && selectedItem) { btnDeleteMode.click(); }
+    });
+
+    function copyToClipboard(elementId, btn) {
+      navigator.clipboard.writeText(document.getElementById(elementId).innerText).then(() => {
+        const originalText = btn.innerText; btn.innerText = 'Copied!'; btn.classList.add('copied');
+        setTimeout(() => { btn.innerText = originalText; btn.classList.remove('copied'); }, 1200);
+      });
+    }
+
+    function updateTM() { draw(); encodeTM(); }
+
+    function encodeTM() {
+      if (states.length === 0) { document.getElementById('textNotation').innerText = ''; return; }
+      const transStrs = transitions.map(t => t.rules.map(r => `δ(${t.from}, ${r.read}) = (${t.to}, ${r.write}, ${r.dir})`).join('\n')).join('\n');
+      document.getElementById('textNotation').innerText = `Start: ${states[0].id}\nFinals: ${states.filter(s=>s.isFinal).map(s=>s.id).join(',') || 'None'}\n${transStrs}`;
+    }
+
+    function drawArrowhead(toX, toY, angle) {
+      ctx.save(); ctx.translate(toX, toY); ctx.rotate(angle); ctx.beginPath();
+      ctx.moveTo(0, 0); ctx.lineTo(-10, -4.5); ctx.lineTo(-10, 4.5); ctx.closePath();
+      ctx.fillStyle = ctx.strokeStyle; ctx.fill(); ctx.restore();
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save(); ctx.translate(offsetX, offsetY); ctx.scale(scale, scale);
+
+      if (arrowStartNode) {
+        ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.8; ctx.beginPath();
+        ctx.moveTo(arrowStartNode.x, arrowStartNode.y); ctx.lineTo(currentMousePos.x, currentMousePos.y); ctx.stroke();
+        drawArrowhead(currentMousePos.x, currentMousePos.y, Math.atan2(currentMousePos.y - arrowStartNode.y, currentMousePos.x - arrowStartNode.x));
+      }
+
+      states.forEach((s, idx) => {
+        const isStart = (idx === 0);
+        const isSelected = selectedItem && selectedItem.type === 'node' && selectedItem.ref === s;
+        const isActiveState = (s.id === currentStateId);
+
+        if (isStart) {
+          ctx.strokeStyle = '#000000'; ctx.lineWidth = 1.8; ctx.beginPath();
+          ctx.moveTo(s.x - NODE_RADIUS - 32, s.y); ctx.lineTo(s.x - NODE_RADIUS, s.y); ctx.stroke();
+          drawArrowhead(s.x - NODE_RADIUS, s.y, 0);
+        }
+
+        if (isSelected) {
+          ctx.beginPath(); ctx.arc(s.x, s.y, NODE_RADIUS + 4, 0, Math.PI * 2);
+          ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2.5; ctx.stroke();
+        }
+
+        let nodeBgColor = '#ffffff'; let nodeBorderColor = '#000000';
+        if (isActiveState) {
+          if (machineState === 'accepted') { nodeBgColor = '#dcfce7'; nodeBorderColor = '#16a34a'; }
+          else if (machineState === 'rejected') { nodeBgColor = '#fee2e2'; nodeBorderColor = '#dc2626'; }
+          else { nodeBgColor = '#dbeafe'; nodeBorderColor = '#2563eb'; }
+        }
+
+        ctx.beginPath(); ctx.arc(s.x, s.y, NODE_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = nodeBgColor; ctx.fill(); ctx.strokeStyle = nodeBorderColor; ctx.lineWidth = 2; ctx.stroke();
+
+        if (s.isFinal) {
+          ctx.beginPath(); ctx.arc(s.x, s.y, NODE_RADIUS - 5, 0, Math.PI * 2);
+          ctx.lineWidth = 1.5; ctx.stroke();
+        }
+
+        ctx.fillStyle = '#000000'; ctx.font = 'italic 16px "Times New Roman", serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s.id, s.x, s.y);
+      });
+
+      transitions.forEach((t, idx) => {
+        const sFrom = states.find(s => s.id === t.from); const sTo = states.find(s => s.id === t.to);
+        if (!sFrom || !sTo) return;
+
+        const isSelected = selectedItem && selectedItem.type === 'trans' && selectedItem.index === idx;
+        const isActiveTrans = (idx === activeTransitionIndex);
+        let strokeColor = isActiveTrans ? '#ea580c' : (isSelected ? '#2563eb' : '#000000');
+        
+        ctx.strokeStyle = strokeColor; ctx.fillStyle = strokeColor; ctx.lineWidth = (isActiveTrans || isSelected) ? 2.8 : 1.8;
+
+        let labelCx, labelCy;
+
+        if (sFrom === sTo) {
+          const loopRadius = 26; const cx = sFrom.x; const cy = sFrom.y - NODE_RADIUS - loopRadius + 2;
+          ctx.beginPath(); ctx.arc(cx, cy, loopRadius, Math.PI * 0.65, Math.PI * 0.35); ctx.stroke();
+          drawArrowhead(cx + loopRadius * Math.cos(Math.PI * 0.35), cy + loopRadius * Math.sin(Math.PI * 0.35), Math.PI * 0.35 + Math.PI / 2);
+          labelCx = cx; labelCy = cy - loopRadius - 8;
+        } else {
+          const { start, end, control } = getCurvePoints(sFrom, sTo, t.curve || 0);
+          ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.quadraticCurveTo(control.x, control.y, end.x, end.y); ctx.stroke();
+          drawArrowhead(end.x, end.y, Math.atan2(end.y - control.y, end.x - control.x));
+          labelCx = 0.25 * start.x + 0.5 * control.x + 0.25 * end.x;
+          labelCy = (0.25 * start.y + 0.5 * control.y + 0.25 * end.y) - 8;
+        }
+
+        const textLines = t.rules.map(r => `${r.read}→${r.write},${r.dir}`);
+        ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        
+        const lineHeight = 15;
+        const textWidth = Math.max(...textLines.map(txt => ctx.measureText(txt).width));
+        const startY = labelCy - ((textLines.length - 1) * lineHeight) / 2;
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        if (ctx.roundRect) {
+          ctx.beginPath(); ctx.roundRect(labelCx - textWidth/2 - 4, startY - 9, textWidth + 8, textLines.length * lineHeight + 4, 4); ctx.fill();
+        } else ctx.fillRect(labelCx - textWidth/2 - 4, startY - 9, textWidth + 8, textLines.length * lineHeight + 4);
+
+        ctx.fillStyle = strokeColor;
+        textLines.forEach((txt, i) => ctx.fillText(txt, labelCx, startY + (i * lineHeight)));
+      });
+      ctx.restore();
+    }
+
+    resizeCanvas();
+    loadInput();
+  </script>
+</body>
+</html>

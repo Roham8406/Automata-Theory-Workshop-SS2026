@@ -39,7 +39,6 @@
     .status-badge.accepted { background: #dcfce7; color: #166534; }
     .status-badge.rejected { background: #fee2e2; color: #991b1b; }
 
-    /* Infinite Tape Visualization */
     .tape-wrapper {
       width: 100%;
       overflow: hidden;
@@ -92,25 +91,13 @@
     .canvas-container { flex: 1; position: relative; background: #ffffff; overflow: hidden; }
     canvas { width: 100%; height: 100%; display: block; cursor: default; touch-action: none; }
     
-    /* Modified TM Modal */
     .modal-popup { position: absolute; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.12); display: flex; flex-direction: column; gap: 8px; z-index: 100; width: 160px; }
     .modal-popup.hidden { display: none; }
     .modal-title { font-size: 0.68rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
     
     .field { display: flex; flex-direction: column; flex: 1; gap: 4px; }
     .field label { font-size: 0.65rem; color: #64748b; font-weight: 600; }
-    .field textarea {
-      width: 100%;
-      padding: 4px;
-      border: 1px solid #cbd5e1;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-family: monospace;
-      outline: none;
-      background: #f8fafc;
-      resize: none;
-      white-space: pre;
-    }
+    .field textarea { width: 100%; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 0.75rem; font-family: monospace; outline: none; background: #f8fafc; resize: none; white-space: pre; }
     .field textarea:focus { border-color: #2563eb; background: #ffffff; }
     
     .modal-actions { display: flex; gap: 4px; margin-top: 2px; }
@@ -129,6 +116,8 @@
     .copy-btn:hover { background: #e2e8f0; color: #0f172a; }
     .copy-btn.copied { background: #22c55e; color: #ffffff; border-color: #16a34a; }
     .output-box { background: #f8fafc; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 0.82rem; color: #0f172a; min-height: 32px; word-break: break-all; max-height: 55px; overflow-y: auto; }
+    
+    #binaryNotation { min-height: 58px; max-height: 90px; }
   </style>
 </head>
 <body>
@@ -154,11 +143,9 @@
       <button class="btn" id="btnStep">Step</button>
       <button class="btn" id="btnReset">Reset</button>
       <button class="btn btn-pretty" id="btnPrettyPrint">Auto-Layout</button>
-
       <div id="simStatus" class="status-badge">Idle</div>
     </div>
 
-    <!-- Infinite Tape Display -->
     <div class="tape-wrapper">
       <div class="tape-container" id="stringDisplay"></div>
     </div>
@@ -173,7 +160,6 @@
       <button class="btn" id="btnArrowMode">Arrow Mode: OFF</button>
       <button class="btn" id="btnDeleteMode" style="display: none; background: #fee2e2; color: #991b1b; border-color: #f87171;">Delete</button>
     </div>
-
     <canvas id="tmCanvas"></canvas>
 
     <div id="transitionModal" class="modal-popup hidden">
@@ -196,6 +182,14 @@
         <button class="copy-btn" onclick="copyToClipboard('textNotation', this)">Copy</button>
       </div>
       <div id="textNotation" class="output-box"></div>
+    </div>
+
+    <div class="output-group">
+      <div class="output-header">
+        <label>ASCII Binary Encoding</label>
+        <button class="copy-btn" onclick="copyToClipboard('binaryNotation', this)">Copy</button>
+      </div>
+      <div id="binaryNotation" class="output-box"></div>
     </div>
   </div>
 
@@ -229,9 +223,8 @@
     const btnZoomReset = document.getElementById('btnZoomReset');
     let arrowMode = false; let lastTapTime = 0; let lastTapPos = null; let pointerDownPos = null;
 
-    // TM Core Data Structures
-    let states = [];       // { id: "q0", x, y, isFinal: false }
-    let transitions = [];  // { from: "q0", to: "q1", rules: [{read: '0', write: '1', dir: 'R'}], curve: 0 }
+    let states = [];       
+    let transitions = [];  
     let stateCounter = 0;
 
     let selectedItem = null;        
@@ -241,7 +234,6 @@
     let currentMousePos = { x: 0, y: 0 };
     let pendingTransition = null; 
 
-    // TM Engine State
     let tape = {};
     let headPos = 0;
     const BLANK = '_';
@@ -356,7 +348,6 @@
     }
 
     function prettyPrintTM() {
-      // Basic Auto-Layout for visual clarity
       states.forEach((s, i) => { s.x = 150 + (i % 4) * 200; s.y = 150 + Math.floor(i / 4) * 150; });
       transitions.forEach(t => t.curve = (t.from === t.to) ? 0 : 20);
       scale = 1; offsetX = 0; offsetY = 0;
@@ -447,7 +438,6 @@
       activeTransitionIndex = transIdx;
       const trans = transitions[transIdx];
 
-      // Execute TM Action
       setTapeSymbol(headPos, matchedRule.write);
       if (matchedRule.dir === 'R') headPos++;
       else if (matchedRule.dir === 'L') headPos--;
@@ -491,7 +481,7 @@
 
     function renderStringDisplay() {
       stringDisplay.innerHTML = '';
-      const RADIUS = 11; // Ensure enough cells map to the gradient bounds
+      const RADIUS = 11; 
       for (let i = headPos - RADIUS; i <= headPos + RADIUS; i++) {
         const cell = document.createElement('div');
         cell.className = `tape-cell ${i === headPos ? 'active' : ''}`;
@@ -506,7 +496,6 @@
     btnReset.addEventListener('click', resetSimulation);
     btnPrettyPrint.addEventListener('click', prettyPrintTM);
 
-    // Canvas Events
     function handlePointerDown(e) {
       if (!modal.classList.contains('hidden')) return;
       if (e.type === 'touchstart') e.preventDefault(); 
@@ -592,7 +581,10 @@
     });
 
     function copyToClipboard(elementId, btn) {
-      navigator.clipboard.writeText(document.getElementById(elementId).innerText).then(() => {
+      const text = document.getElementById(elementId).innerText;
+      if (!text) return;
+      const unspacedText = text.replace(/\s+/g, '');
+      navigator.clipboard.writeText(unspacedText).then(() => {
         const originalText = btn.innerText; btn.innerText = 'Copied!'; btn.classList.add('copied');
         setTimeout(() => { btn.innerText = originalText; btn.classList.remove('copied'); }, 1200);
       });
@@ -601,9 +593,118 @@
     function updateTM() { draw(); encodeTM(); }
 
     function encodeTM() {
-      if (states.length === 0) { document.getElementById('textNotation').innerText = ''; return; }
-      const transStrs = transitions.map(t => t.rules.map(r => `δ(${t.from}, ${r.read}) = (${t.to}, ${r.write}, ${r.dir})`).join('\n')).join('\n');
-      document.getElementById('textNotation').innerText = `Start: ${states[0].id}\nFinals: ${states.filter(s=>s.isFinal).map(s=>s.id).join(',') || 'None'}\n${transStrs}`;
+      if (states.length === 0) {
+        document.getElementById('textNotation').innerText = '';
+        document.getElementById('binaryNotation').innerText = '';
+        return;
+      }
+      const startState = states[0].id;
+      
+      const transStr = transitions.map(t => {
+        return t.rules.map(r => `(${t.from},${r.read},${t.to},${r.write},${r.dir})`).join('');
+      }).join('');
+      
+      const finalStates = states.filter(s => s.isFinal).map(s => s.id).join(',');
+      const textRepresentation = `${startState} ${transStr}${finalStates ? ' ' + finalStates : ''}`;
+      
+      const binaryRepresentation = textRepresentation
+        .split('')
+        .map(char => char.charCodeAt(0).toString(2).padStart(8, '0'))
+        .join(' ');
+        
+      document.getElementById('textNotation').innerText = textRepresentation;
+      document.getElementById('binaryNotation').innerText = binaryRepresentation;
+    }
+
+    function parseAndLoadTMNotation(str) {
+      str = str.trim();
+      if (!str) return;
+
+      let firstSpaceIdx = str.indexOf(' ');
+      let firstOpenParenIdx = str.indexOf('(');
+      
+      let startStateId = 'q0';
+      let rest = str;
+
+      if (firstOpenParenIdx !== -1 && (firstSpaceIdx === -1 || firstOpenParenIdx < firstSpaceIdx)) {
+        startStateId = str.substring(0, firstOpenParenIdx).trim();
+        rest = str.substring(firstOpenParenIdx);
+      } else if (firstSpaceIdx !== -1) {
+        startStateId = str.substring(0, firstSpaceIdx).trim();
+        rest = str.substring(firstSpaceIdx).trim();
+      }
+
+      states = [];
+      transitions = [];
+      
+      let stateMap = new Map();
+      let addState = (id, isFinal = false) => {
+        if (!stateMap.has(id)) {
+          let s = { id, x: 0, y: 0, isFinal };
+          stateMap.set(id, s);
+          states.push(s);
+        } else if (isFinal) {
+          stateMap.get(id).isFinal = true;
+        }
+        return stateMap.get(id);
+      };
+
+      addState(startStateId);
+
+      const transRegex = /\(([^,]+),([^,]+),([^,]+),([^,]+),([^)]+)\)/g;
+      let match;
+      let lastTransEndIndex = 0;
+
+      while ((match = transRegex.exec(rest)) !== null) {
+        let from = match[1].trim();
+        let read = match[2].trim();
+        let to = match[3].trim();
+        let write = match[4].trim();
+        let dir = match[5].trim().toUpperCase();
+        
+        addState(from);
+        addState(to);
+        
+        let existingTrans = transitions.find(t => t.from === from && t.to === to);
+        let newRule = { read, write, dir };
+        
+        if (existingTrans) {
+          if (!existingTrans.rules.some(r => r.read === read)) {
+            existingTrans.rules.push(newRule);
+          }
+        } else {
+          transitions.push({ from, to, rules: [newRule], curve: 0 });
+        }
+        
+        lastTransEndIndex = transRegex.lastIndex;
+      }
+
+      let finalPart = rest.substring(lastTransEndIndex).trim();
+      if (finalPart) {
+        let finalIds = finalPart.split(/[,\s]+/);
+        finalIds.forEach(fid => {
+          fid = fid.trim();
+          if (fid) addState(fid, true);
+        });
+      }
+
+      stateCounter = states.length;
+      prettyPrintTM();
+    }
+
+    function loadFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      const inputParam = params.get('input') || params.get('tape');
+      if (inputParam !== null) stringInput.value = inputParam;
+
+      const notationParam = params.get('tm') || params.get('notation') || params.get('spec');
+      if (notationParam) {
+        parseAndLoadTMNotation(notationParam);
+      } else if (states.length === 0) {
+        states.push({ id: 'q0', x: 200, y: 200, isFinal: false });
+        stateCounter = 1;
+      }
+      loadInput();
     }
 
     function drawArrowhead(toX, toY, angle) {
@@ -701,7 +802,7 @@
     }
 
     resizeCanvas();
-    loadInput();
+    loadFromURL();
   </script>
 </body>
 </html>

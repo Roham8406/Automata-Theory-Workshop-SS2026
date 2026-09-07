@@ -348,9 +348,101 @@
     }
 
     function prettyPrintTM() {
-      states.forEach((s, i) => { s.x = 150 + (i % 4) * 200; s.y = 150 + Math.floor(i / 4) * 150; });
-      transitions.forEach(t => t.curve = (t.from === t.to) ? 0 : 20);
-      scale = 1; offsetX = 0; offsetY = 0;
+      if (states.length === 0) return;
+
+      const layers = {};
+      const nodeToLayer = {};
+      const visited = new Set();
+      
+      // 1. Topological Sorting via BFS
+      const queue = [{ state: states[0], layer: 0 }];
+      visited.add(states[0].id);
+
+      while (queue.length > 0) {
+        const { state, layer } = queue.shift();
+        
+        if (!layers[layer]) layers[layer] = [];
+        layers[layer].push(state);
+        nodeToLayer[state.id] = layer;
+
+        // Find outgoing transitions
+        const outTrans = transitions.filter(t => t.from === state.id);
+        for (const t of outTrans) {
+          const targetState = states.find(s => s.id === t.to);
+          if (targetState && !visited.has(targetState.id)) {
+            visited.add(targetState.id);
+            queue.push({ state: targetState, layer: layer + 1 });
+          }
+        }
+      }
+
+      // Catch any disconnected states (e.g. isolated reject/accept nodes)
+      let maxLayer = Math.max(...Object.keys(layers).map(Number), 0);
+      states.forEach(s => {
+        if (!visited.has(s.id)) {
+          maxLayer++;
+          if (!layers[maxLayer]) layers[maxLayer] = [];
+          layers[maxLayer].push(s);
+          nodeToLayer[s.id] = maxLayer;
+          visited.add(s.id);
+        }
+      });
+
+      // 2. Structural Positioning
+      const X_SPACING = 320; 
+      const Y_SPACING = 180; 
+      
+      const layerKeys = Object.keys(layers).map(Number).sort((a, b) => a - b);
+      const maxNodesInLayer = Math.max(...layerKeys.map(k => layers[k].length));
+      const totalHeight = maxNodesInLayer * Y_SPACING;
+
+      layerKeys.forEach((lIndex, lIdx) => {
+        const layerStates = layers[lIndex];
+        const totalNodesInLayer = layerStates.length;
+        
+        // Center nodes vertically relative to the tallest layer
+        const startY = (totalHeight - (totalNodesInLayer - 1) * Y_SPACING) / 2 + 150;
+
+        layerStates.forEach((state, nIdx) => {
+          state.x = X_SPACING * lIdx + 150; 
+          state.y = startY + (Y_SPACING * nIdx);
+        });
+      });
+
+      // 3. Dynamic Edge Routing
+      transitions.forEach(t => {
+        if (t.from === t.to) {
+          t.curve = 0; // Self-loops handled natively by rendering logic
+          return;
+        }
+
+        const lFrom = nodeToLayer[t.from];
+        const lTo = nodeToLayer[t.to];
+        const hasReverse = transitions.some(rev => rev.from === t.to && rev.to === t.from);
+        const layerDiff = lTo - lFrom;
+
+        if (hasReverse && Math.abs(layerDiff) <= 1) {
+          // Push bidirectional edges apart symmetrically
+          t.curve = 25;
+        } else if (layerDiff > 1) {
+          // Forward edges skipping layers arc high over the top
+          t.curve = 35 + (Math.abs(layerDiff) * 15);
+        } else if (layerDiff < 0) {
+          // Backward return edges arc deep underneath
+          t.curve = -35 - (Math.abs(layerDiff) * 15);
+        } else if (layerDiff === 0) {
+          // Transitions within the same vertical layer bulge to the side
+          t.curve = 60;
+        } else {
+          // Direct forward neighbor
+          t.curve = 0; 
+        }
+      });
+
+      // Reset view with slight zoom-out to show the full hierarchy
+      scale = 0.85; 
+      offsetX = 0; 
+      offsetY = 0;
       updateTM();
     }
 

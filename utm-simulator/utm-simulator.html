@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>شبیه‌ساز UTM بدون انتزاع (Real Elementary Multi-Tape Turing Machine)</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; font-family:Vazirmatn,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  body { background:#f8fafc; color:#0f172a; display:flex; flex-direction:column; align-items:center; padding:20px; }
+  .wrap { background:#fff; padding:22px; border-radius:16px; box-shadow:0 10px 25px -5px rgba(0,0,0,.08); border:1px solid #e2e8f0; display:flex; flex-direction:column; gap:16px; max-width:960px; width:100%; }
+  h1 { font-size:1.25rem; font-weight:800; color:#1e293b; text-align:center; }
+  .subtitle { font-size:.78rem; color:#64748b; text-align:center; margin-top:-8px; line-height:1.6; }
+  .box { background:#f1f5f9; border:1px solid #cbd5e1; border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:10px; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .field { display:flex; flex-direction:column; gap:4px; }
+  .field.full { grid-column:span 2; }
+  label { font-size:.76rem; font-weight:700; color:#334155; }
+  input[type=text], input[type=number] { padding:8px 10px; font-size:.8rem; border:2px solid #cbd5e1; border-radius:8px; outline:none; font-family:monospace; direction:ltr; text-align:left; background:#fff; }
+  input[type=text]:focus, input[type=number]:focus { border-color:#2563eb; }
+  .hint { font-size:.68rem; color:#94a3b8; }
+  .btnrow { display:flex; gap:8px; flex-wrap:wrap; }
+  .btn { flex:1; min-width:110px; padding:9px 10px; font-size:.78rem; font-weight:700; border-radius:8px; border:none; cursor:pointer; color:#fff; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .b-gen { background:#7c3aed; } .b-gen:hover{background:#6d28d9;}
+  .b-load { background:#2563eb; } .b-load:hover{background:#1d4ed8;}
+  .b-step { background:#0284c7; } .b-step:hover{background:#0369a1;}
+  .b-run  { background:#16a34a; } .b-run:hover{background:#15803d;}
+  .b-ff   { background:#ea580c; } .b-ff:hover{background:#c2410c;}
+  .b-reset{ background:#ef4444; } .b-reset:hover{background:#dc2626;}
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .stat { background:#fff; border:1px solid #cbd5e1; border-radius:10px; padding:8px 10px; text-align:center; }
+  .stat .k { font-size:.65rem; color:#64748b; font-weight:700; }
+  .stat .v { font-size:.82rem; font-weight:800; color:#0f172a; font-family:monospace; direction:ltr; word-break:break-all; }
+  .graph-card { background:#fff; border:2px solid #cbd5e1; border-radius:12px; overflow:hidden; }
+  .graph-title { background:#f1f5f9; padding:8px 12px; font-size:.78rem; font-weight:700; color:#334155; border-bottom:1px solid #cbd5e1; }
+  canvas { display:block; width:100%; }
+  .status-msg { font-weight:700; font-size:.85rem; min-height:22px; text-align:center; padding:8px; border-radius:8px; }
+  .status-msg.info{ color:#16a34a; background:#f0fdf4; border:1px solid #bbf7d0; }
+  .status-msg.warn{ color:#dc2626; background:#fef2f2; border:1px solid #fecaca; }
+  .status-msg.running{ color:#2563eb; background:#eff6ff; border:1px solid #bfdbfe; }
+  .tape-card { background:#fff; border:1.5px solid #cbd5e1; border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; gap:6px; }
+  .tape-header { display:flex; justify-content:space-between; align-items:center; font-size:.75rem; font-weight:700; color:#475569; gap:8px; }
+  .tape-container { display:flex; gap:3px; overflow-x:auto; padding:6px 0; scroll-behavior:smooth; }
+  .tape-cell { min-width:26px; height:32px; background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:monospace; font-size:.78rem; font-weight:700; position:relative; flex-shrink:0; }
+  .tape-cell.sentinel { background:#fef3c7; border-color:#f59e0b; color:#92400e; }
+  .tape-cell.blank { color:#cbd5e1; }
+  .tape-cell.head-active { border-color:#2563eb; background:#dbeafe; color:#1d4ed8; box-shadow:0 3px 6px rgba(37,99,235,.25); }
+  .tape-cell.head-active::after { content:'▲'; position:absolute; bottom:-13px; font-size:.55rem; color:#2563eb; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚙️ شبیه‌ساز UTM «واقعاً بدون انتزاع» 🤖</h1>
+  <div class="subtitle">
+    هر گام کلاک، دقیقاً یک تاپل رسمی (q, a, p, b, L/R/N) روی نوارها است.<br>
+    استیت شروع و استیت‌های نهایی در داخل کدگذاری برنامه وارد می‌شوند.
+  </div>
+
+  <div class="box">
+    <div class="row">
+      <div class="field full">
+        <label>۰. (اختیاری) کدگذاری متنی برنامه — فرمت: &lt;استیت_شروع&gt;(q,a,p,b,D)...&lt;استیت‌های_پذیرش_با_کاما&gt;</label>
+        <input type="text" id="progText" value="q0(q0,0,q1,0,R)(q0,1,q0,_,R)(q0,_,q3,_,R)(q1,_,q3,_,R)(q2,_,q3,_,R)(q1,1,q2,_,R)(q2,0,q1,0,R)(q1,0,q0,0,L)(q2,1,q2,_,R)q2,q3">
+        <div class="hint">مثال: q0 استیت شروع، تاپل‌ها بین پرانتزها و q2,q3 استیت‌های پذیرش هستند.</div>
+      </div>
+      <div class="field full">
+        <button class="btn b-gen" id="btnGen" style="flex:0 0 auto; width:240px;">🔁 تبدیل برنامه متنی به باینری ASCII</button>
+      </div>
+      <div class="field full">
+        <label>۱. ورودی باینری ASCII برنامه (نوار ۱ - Program Tape):</label>
+        <input type="text" id="inputBin" value="">
+      </div>
+      <div class="field full">
+        <label>۲. رشتهٔ نوار دادهٔ ورودی (بدون نیاز به فاصله، بلنک=_):</label>
+        <input type="text" id="inputTape" value="1011">
+      </div>
+      <div class="field">
+        <label>سرعت هر کلاک (میلی‌ثانیه):</label>
+        <input type="range" id="simSpeed" min="1" max="500" step="1" value="15">
+      </div>
+      <div class="field">
+        <label>تعداد کلاک در هر فریم رندر:</label>
+        <input type="number" id="ticksPerFrame" min="1" max="2000" value="1">
+      </div>
+      <div class="field full">
+        <label>پرش سریع (تعداد کلاک):</label>
+        <input type="number" id="ffAmount" min="1" max="100000" value="500">
+      </div>
+    </div>
+    <div class="btnrow">
+      <button class="btn b-load" id="btnLoad">📥 بارگذاری و کامپایل جدول انتقال</button>
+      <button class="btn b-step" id="btnStep" disabled>🐾 یک کلاک</button>
+      <button class="btn b-run" id="btnRun" disabled>▶ اجرا</button>
+      <button class="btn b-ff" id="btnFF" disabled>⏭ پرش سریع</button>
+      <button class="btn b-reset" id="btnReset">🔄 بازنشانی</button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="k">کلاک</div><div class="v" id="statClock">0</div></div>
+    <div class="stat"><div class="k">استیت رسمی فعلی</div><div class="v" id="statState">-</div></div>
+    <div class="stat"><div class="k">تعداد کل استیت‌ها (ثابت)</div><div class="v" id="statStates">-</div></div>
+    <div class="stat"><div class="k">تعداد کل تاپل‌های δ (ثابت)</div><div class="v" id="statDelta">-</div></div>
+  </div>
+
+  <div class="graph-card">
+    <div class="graph-title">🌐 نمای فازی کنترل‌کننده ماشین تورینگ جهانی</div>
+    <canvas id="phaseCanvas" width="900" height="260"></canvas>
+  </div>
+
+  <div id="statusMsg" class="status-msg" style="display: none;">برنامه و ورودی را وارد کرده و «بارگذاری» را بزنید.</div>
+
+  <div class="tape-card">
+    <div class="tape-header"><span>⚙️ نوار ۱: برنامهٔ باینری (Program Tape) — فقط خواندنی</span><span id="s1">هد: 0</span></div>
+    <div class="tape-container" id="t1" dir="ltr"></div>
+  </div>
+  <div class="tape-card">
+    <div class="tape-header"><span>📜 نوار ۲: متن رمزگشایی‌شدهٔ برنامه (Scan/Decode Tape)</span><span id="s2">هد: 0</span></div>
+    <div class="tape-container" id="t2" dir="ltr"></div>
+  </div>
+  <div class="tape-card">
+    <div class="tape-header"><span>💾 نوار ۳: نوار دادهٔ ماشین شبیه‌سازی‌شده (Data Tape)</span><span id="s3">هد: 0</span></div>
+    <div class="tape-container" id="t3" dir="ltr"></div>
+  </div>
+  <div class="tape-card">
+    <div class="tape-header"><span>🏷️ نوار ۴: ثبات استیت فعلی ماشین شبیه‌سازی‌شده</span><span id="s4">هد: 0</span></div>
+    <div class="tape-container" id="t4" dir="ltr"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const LETTERS_LOWER = 'abcdefghijklmnopqrstuvwxyz'.split('');
+const LETTERS_UPPER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const DIGITS = '0123456789'.split('');
+const PUNCT = ['_', ',', '(', ')', '$'];
+const ALPHABET = [...LETTERS_LOWER, ...LETTERS_UPPER, ...DIGITS, ...PUNCT];
+
+// ============================================================
+// جدول انتقال کاملاً ثابت ماشین تورینگ جهانی (Static & Universal)
+// ============================================================
+function buildUTMControlTable() {
+  const delta = new Map();
+  const readSpec = new Map();
+
+  function addRule(state, tapeIndices, symbolTuple, action) {
+    if (!readSpec.has(state)) readSpec.set(state, tapeIndices);
+    const key = state + '|' + symbolTuple.join(';');
+    if (delta.has(key)) throw new Error('Duplicate rule for ' + key);
+    delta.set(key, action);
+  }
+
+  function nodeName(prefix) { return prefix === '' ? 'D' : 'D_' + prefix; }
+
+  // ---------- PHASE A: رمزگشایی ASCII روی نوار ۲ ----------
+  for (let depth = 0; depth < 8; depth++) {
+    const prefixes = depth === 0 ? [''] : allBitStrings(depth);
+    for (const prefix of prefixes) {
+      const st = nodeName(prefix);
+      addRule(st, [1], ['0'], { newState: nodeName(prefix + '0'), writes: [], moves: [{ tape: 1, dir: 'R' }] });
+      addRule(st, [1], ['1'], { newState: nodeName(prefix + '1'), writes: [], moves: [{ tape: 1, dir: 'R' }] });
+      if (depth === 0) {
+        addRule(st, [1], ['_'], { newState: 'D_END_WRITE', writes: [], moves: [] });
+      } else {
+        addRule(st, [1], ['_'], { newState: 'REJECT_MALFORMED', writes: [], moves: [] });
+      }
+    }
+  }
+
+  for (const prefix of allBitStrings(8)) {
+    const st = nodeName(prefix);
+    const byteVal = parseInt(prefix, 2);
+    const ch = String.fromCharCode(byteVal);
+    for (const s2 of ALPHABET) {
+      addRule(st, [2], [s2], { newState: 'D', writes: [{ tape: 2, symbol: ch }], moves: [{ tape: 2, dir: 'R' }] });
+    }
+  }
+
+  for (const s2 of ALPHABET) {
+    addRule('D_END_WRITE', [2], [s2], { newState: 'REWIND2', writes: [{ tape: 2, symbol: '$' }], moves: [{ tape: 2, dir: 'R' }] });
+  }
+
+  // ---------- REWIND2: بازگشت به ابتدای نوار ۲ ----------
+  for (const s2 of ALPHABET) {
+    if (s2 === '#') continue;
+    addRule('REWIND2', [2], [s2], { newState: 'REWIND2', writes: [], moves: [{ tape: 2, dir: 'L' }] });
+  }
+  addRule('REWIND2', [2], ['#'], { newState: 'SEEK_DOLLAR', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+
+  // ---------- فاز بررسی پذیرش پویای استیت (ACCCHK) روی نوار ۲ ----------
+  for (const s2 of ALPHABET) {
+    if (s2 === '$') continue;
+    addRule('SEEK_DOLLAR', [2], [s2], { newState: 'SEEK_DOLLAR', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+  }
+  addRule('SEEK_DOLLAR', [2], ['$'], { newState: 'SEEK_CLOSE_PAREN', writes: [], moves: [{ tape: 2, dir: 'L' }] });
+
+  for (const s2 of ALPHABET) {
+    if (s2 === ')') continue;
+    addRule('SEEK_CLOSE_PAREN', [2], [s2], { newState: 'SEEK_CLOSE_PAREN', writes: [], moves: [{ tape: 2, dir: 'L' }] });
+  }
+  addRule('SEEK_CLOSE_PAREN', [2], [')'], { newState: 'REWIND4_FOR_ACC', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+
+  for (const s4 of ALPHABET) {
+    if (s4 === '#') continue;
+    addRule('REWIND4_FOR_ACC', [4], [s4], { newState: 'REWIND4_FOR_ACC', writes: [], moves: [{ tape: 4, dir: 'L' }] });
+  }
+  addRule('REWIND4_FOR_ACC', [4], ['#'], { newState: 'CMP_ACC_LOOP', writes: [], moves: [{ tape: 4, dir: 'R' }] });
+
+  for (const s4 of ALPHABET) {
+    for (const s2 of ALPHABET) {
+      let action;
+      if (s4 !== '_') {
+        if (s2 === s4) {
+          action = { newState: 'CMP_ACC_LOOP', writes: [], moves: [{ tape: 2, dir: 'R' }, { tape: 4, dir: 'R' }] };
+        } else {
+          action = { newState: 'SKIP_ACC_STATE', writes: [], moves: [] };
+        }
+      } else {
+        if (s2 === ',' || s2 === '$') {
+          action = { newState: 'ACCEPT', writes: [], moves: [] };
+        } else {
+          action = { newState: 'SKIP_ACC_STATE', writes: [], moves: [] };
+        }
+      }
+      addRule('CMP_ACC_LOOP', [2, 4], [s2, s4], action);
+    }
+  }
+
+  for (const s2 of ALPHABET) {
+    if (s2 === ',' || s2 === '$') continue;
+    addRule('SKIP_ACC_STATE', [2], [s2], { newState: 'SKIP_ACC_STATE', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+  }
+  addRule('SKIP_ACC_STATE', [2], [','], { newState: 'REWIND4_FOR_ACC', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+  addRule('SKIP_ACC_STATE', [2], ['$'], { newState: 'REWIND2_FOR_SEEK', writes: [], moves: [] });
+
+  for (const s2 of ALPHABET) {
+    if (s2 === '#') continue;
+    addRule('REWIND2_FOR_SEEK', [2], [s2], { newState: 'REWIND2_FOR_SEEK', writes: [], moves: [{ tape: 2, dir: 'L' }] });
+  }
+  addRule('REWIND2_FOR_SEEK', [2], ['#'], { newState: 'SEEK_OPEN', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+
+  // ---------- فاز جست‌وجو و تطبیق ترنزیشن‌ها ----------
+  for (const s2 of ALPHABET) {
+    if (s2 === '(' || s2 === '$') continue;
+    addRule('SEEK_OPEN', [2], [s2], { newState: 'SEEK_OPEN', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+  }
+  addRule('SEEK_OPEN', [2], ['('], { newState: 'REWIND4_FOR_CMPQ', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+  addRule('SEEK_OPEN', [2], ['$'], { newState: 'REJECT', writes: [], moves: [] });
+
+  for (const s4 of ALPHABET) {
+    if (s4 === '#') continue;
+    addRule('REWIND4_FOR_CMPQ', [4], [s4], { newState: 'REWIND4_FOR_CMPQ', writes: [], moves: [{ tape: 4, dir: 'L' }] });
+  }
+  addRule('REWIND4_FOR_CMPQ', [4], ['#'], { newState: 'CMPQ_LOOP', writes: [], moves: [{ tape: 4, dir: 'R' }] });
+
+  for (const s4 of ALPHABET) {
+    for (const s2 of ALPHABET) {
+      let action;
+      if (s4 !== '_') {
+        if (s2 === s4) action = { newState: 'CMPQ_LOOP', writes: [], moves: [{ tape: 2, dir: 'R' }, { tape: 4, dir: 'R' }] };
+        else action = { newState: 'SKIP_TUPLE', writes: [], moves: [] };
+      } else {
+        if (s2 === ',') action = { newState: 'CMPA_CHECK', writes: [], moves: [{ tape: 2, dir: 'R' }] };
+        else action = { newState: 'SKIP_TUPLE', writes: [], moves: [] };
+      }
+      addRule('CMPQ_LOOP', [2, 4], [s2, s4], action);
+    }
+  }
+
+  for (const s2 of ALPHABET) {
+    if (s2 === ')' || s2 === '$') continue;
+    addRule('SKIP_TUPLE', [2], [s2], { newState: 'SKIP_TUPLE', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+  }
+  addRule('SKIP_TUPLE', [2], [')'], { newState: 'SEEK_OPEN', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+  addRule('SKIP_TUPLE', [2], ['$'], { newState: 'REJECT', writes: [], moves: [] });
+
+  for (const s2 of ALPHABET) {
+    for (const s3 of ALPHABET) {
+      const action = (s2 === s3)
+        ? { newState: 'EXPECT_COMMA1', writes: [], moves: [{ tape: 2, dir: 'R' }] }
+        : { newState: 'SKIP_TUPLE', writes: [], moves: [] };
+      addRule('CMPA_CHECK', [2, 3], [s2, s3], action);
+    }
+  }
+
+  for (const s2 of ALPHABET) {
+    if (s2 === ',') continue;
+    addRule('EXPECT_COMMA1', [2], [s2], { newState: 'REJECT_MALFORMED', writes: [], moves: [] });
+  }
+  addRule('EXPECT_COMMA1', [2], [','], { newState: 'REWIND4_FOR_EXTRACT', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+
+  for (const s4 of ALPHABET) {
+    if (s4 === '#') continue;
+    addRule('REWIND4_FOR_EXTRACT', [4], [s4], { newState: 'REWIND4_FOR_EXTRACT', writes: [], moves: [{ tape: 4, dir: 'L' }] });
+  }
+  addRule('REWIND4_FOR_EXTRACT', [4], ['#'], { newState: 'EXTRACT_QOUT_LOOP', writes: [], moves: [{ tape: 4, dir: 'R' }] });
+
+  for (const s2 of ALPHABET) {
+    if (s2 === ',') continue;
+    addRule('EXTRACT_QOUT_LOOP', [2], [s2], {
+      newState: 'EXTRACT_QOUT_LOOP',
+      writes: [{ tape: 4, symbol: s2 }],
+      moves: [{ tape: 2, dir: 'R' }, { tape: 4, dir: 'R' }]
+    });
+  }
+  addRule('EXTRACT_QOUT_LOOP', [2], [','], { newState: 'CLEAR_QOUT_TAIL', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+
+  for (const s4 of ALPHABET) {
+    if (s4 === '_') continue;
+    addRule('CLEAR_QOUT_TAIL', [4], [s4], { newState: 'CLEAR_QOUT_TAIL', writes: [{ tape: 4, symbol: '_' }], moves: [{ tape: 4, dir: 'R' }] });
+  }
+  addRule('CLEAR_QOUT_TAIL', [4], ['_'], { newState: 'WRITE_BOUT_INIT', writes: [], moves: [] });
+
+  for (const s2 of ALPHABET) {
+    addRule('WRITE_BOUT_INIT', [2], [s2], { newState: 'EXPECT_COMMA2', writes: [{ tape: 3, symbol: s2 }], moves: [{ tape: 2, dir: 'R' }] });
+  }
+
+  for (const s2 of ALPHABET) {
+    if (s2 === ',') continue;
+    addRule('EXPECT_COMMA2', [2], [s2], { newState: 'REJECT_MALFORMED', writes: [], moves: [] });
+  }
+  addRule('EXPECT_COMMA2', [2], [','], { newState: 'READ_DIR', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+
+  for (const s2 of ALPHABET) {
+    if (['L', 'R', 'N'].includes(s2)) continue;
+    addRule('READ_DIR', [2], [s2], { newState: 'REJECT_MALFORMED', writes: [], moves: [] });
+  }
+  addRule('READ_DIR', [2], ['R'], { newState: 'MOVE_HEAD_RIGHT', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+  addRule('READ_DIR', [2], ['L'], { newState: 'MOVE_HEAD_LEFT', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+  addRule('READ_DIR', [2], ['N'], { newState: 'MOVE_HEAD_NONE', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+
+  for (const s3 of ALPHABET) {
+    addRule('MOVE_HEAD_RIGHT', [3], [s3], { newState: 'CONSUME_CLOSE', writes: [], moves: [{ tape: 3, dir: 'R' }] });
+    addRule('MOVE_HEAD_LEFT', [3], [s3], { newState: 'CONSUME_CLOSE', writes: [], moves: [{ tape: 3, dir: 'L' }] });
+    addRule('MOVE_HEAD_NONE', [3], [s3], { newState: 'CONSUME_CLOSE', writes: [], moves: [] });
+  }
+
+  for (const s2 of ALPHABET) {
+    if (s2 === ')') continue;
+    addRule('CONSUME_CLOSE', [2], [s2], { newState: 'REJECT_MALFORMED', writes: [], moves: [] });
+  }
+  addRule('CONSUME_CLOSE', [2], [')'], { newState: 'SEEK_DOLLAR', writes: [], moves: [{ tape: 2, dir: 'R' }] });
+
+  return { delta, readSpec };
+}
+
+// ساخت یک‌بارهٔ جدول ثابت کنترل‌کننده UTM
+const GLOBAL_UTM_CONTROL_TABLE = buildUTMControlTable();
+
+function allBitStrings(n) {
+  if (n === 0) return [''];
+  const out = [];
+  for (let i = 0; i < (1 << n); i++) {
+    out.push(i.toString(2).padStart(n, '0'));
+  }
+  return out;
+}
+
+function textToBinary(programText){
+  let bits='';
+  for(const ch of programText){
+    bits += ch.charCodeAt(0).toString(2).padStart(8,'0');
+  }
+  return bits;
+}
+
+function extractStartState(bin) {
+  let decoded = '';
+  for (let i = 0; i < bin.length; i += 8) {
+    const byte = bin.slice(i, i + 8);
+    if (byte.length === 8) decoded += String.fromCharCode(parseInt(byte, 2));
+  }
+  const idx = decoded.indexOf('(');
+  if (idx !== -1) return decoded.substring(0, idx).trim();
+  return decoded.trim() || 'q0';
+}
+
+class UTM {
+  constructor(programBinary, dataSymbols, startState){
+    this.delta = GLOBAL_UTM_CONTROL_TABLE.delta;
+    this.readSpec = GLOBAL_UTM_CONTROL_TABLE.readSpec;
+    this.state = 'D';
+    this.clock = 0;
+    this.tapes = {
+      1: { arr: programBinary.split(''), head:0 },
+      2: { arr: ['#'], head:1 },
+      3: { arr: dataSymbols.slice(), head:0 },
+      4: { arr: ['#', ...startState.split('')], head:0 }
+    };
+    this.halted = false;
+    this.haltReason = null;
+  }
+  readSymbol(tapeIdx){
+    const t=this.tapes[tapeIdx];
+    if(t.head<0 || t.head>=t.arr.length) return '_';
+    return t.arr[t.head]===undefined?'_':t.arr[t.head];
+  }
+  ensureIndex(tapeIdx, idx){
+    const t=this.tapes[tapeIdx];
+    while(t.arr.length<=idx) t.arr.push('_');
+  }
+  step(){
+    if(this.halted) return false;
+    const spec = this.readSpec.get(this.state);
+    if(!spec){ this.halted=true; this.haltReason=this.state; return false; }
+    const symbols = spec.map(t=>this.readSymbol(t));
+    const key = this.state+'|'+symbols.join(';');
+    const action = this.delta.get(key);
+    if(!action){ this.halted=true; this.haltReason='REJECT_MALFORMED'; return false; }
+    for(const w of action.writes){
+      this.ensureIndex(w.tape, this.tapes[w.tape].head);
+      this.tapes[w.tape].arr[this.tapes[w.tape].head]=w.symbol;
+    }
+    for(const m of action.moves){
+      const t=this.tapes[m.tape];
+      if(m.dir==='R'){ t.head++; if(t.head>=t.arr.length) t.arr.push('_'); }
+      else if(m.dir==='L'){ if(t.head===0){ t.arr.unshift('_'); } else t.head--; }
+    }
+    this.state = action.newState;
+    this.clock++;
+    return true;
+  }
+}
+
+// ============================================================
+// نگاشت گراف فازی کنترل‌کننده UTM
+// ============================================================
+const PHASES = [
+  { id:'DECODE',   label:'رمزگشایی بیت‌به‌بیت ASCII',        x:90,  y:55, test:s=>s==='D'||s.startsWith('D_')&&s!=='D_END_WRITE' },
+  { id:'ENDMARK',  label:'درج نشانهٔ پایان برنامه ($)',        x:250, y:55, test:s=>s==='D_END_WRITE' },
+  { id:'REWIND2',  label:'بازگشت نوار۲ به ابتدا',              x:410, y:55, test:s=>s==='REWIND2'||s==='REWIND2_FOR_SEEK' },
+  { id:'SEEKOPEN', label:'جست‌وجوی «(» بعدی',                  x:570, y:55, test:s=>s==='SEEK_OPEN' },
+  { id:'REWIND4Q', label:'بازگشت نوار۴ برای مقایسه استیت',     x:730, y:55, test:s=>s==='REWIND4_FOR_CMPQ' },
+  { id:'CMPQ',     label:'مقایسه نمادبه‌نماد استیت (۴و۲)',     x:820, y:120,test:s=>s==='CMPQ_LOOP' },
+  { id:'CMPA',     label:'مقایسه تک‌نماد ورودی (۳و۲)',         x:730, y:185,test:s=>s==='CMPA_CHECK'||s==='EXPECT_COMMA1' },
+  { id:'SKIP',     label:'رد قانون نامنطبق تا «)»',            x:570, y:185,test:s=>s==='SKIP_TUPLE' },
+  { id:'EXTRACT',  label:'کپی استیت جدید ۲➔۴',                x:410, y:185,test:s=>s==='REWIND4_FOR_EXTRACT'||s==='EXTRACT_QOUT_LOOP'||s==='CLEAR_QOUT_TAIL' },
+  { id:'WRITEB',   label:'نوشتن نماد خروجی روی نوار۳',         x:250, y:185,test:s=>s==='WRITE_BOUT_INIT'||s==='EXPECT_COMMA2' },
+  { id:'MOVE',     label:'خواندن جهت و حرکت هد نوار۳',         x:90,  y:185,test:s=>s==='READ_DIR'||s.startsWith('MOVE_HEAD_')||s==='CONSUME_CLOSE' },
+  { id:'ACCCHK',   label:'بررسی نمادبه‌نماد پذیرش',            x:90,  y:120,test:s=>s==='SEEK_DOLLAR'||s==='SEEK_CLOSE_PAREN'||s==='REWIND4_FOR_ACC'||s==='CMP_ACC_LOOP'||s==='SKIP_ACC_STATE' },
+  { id:'ACCEPT',   label:'✅ پذیرش',                            x:250, y:120,test:s=>s==='ACCEPT' },
+  { id:'REJECT',   label:'⛔ رد / خطای کدگذاری',                x:410, y:120,test:s=>s==='REJECT'||s==='REJECT_MALFORMED' }
+];
+
+const PHASE_EDGES = [
+  ['DECODE','ENDMARK'],['ENDMARK','REWIND2'],['REWIND2','ACCCHK'],
+  ['ACCCHK','ACCEPT'],['ACCCHK','REWIND2'],['REWIND2','SEEKOPEN'],
+  ['SEEKOPEN','REWIND4Q'],['SEEKOPEN','REJECT'],['REWIND4Q','CMPQ'],
+  ['CMPQ','CMPA'],['CMPQ','SKIP'],['CMPA','SKIP'],['CMPA','EXTRACT'],
+  ['SKIP','SEEKOPEN'],['EXTRACT','WRITEB'],['WRITEB','MOVE'],
+  ['MOVE','ACCCHK']
+];
+
+function findPhase(state){
+  for(const p of PHASES) if(p.test(state)) return p;
+  return null;
+}
+
+const $ = id => document.getElementById(id);
+const canvas = $('phaseCanvas'), ctx = canvas.getContext('2d');
+let utm = null;
+let isRunning = false;
+let runTimer = null;
+
+function drawPhaseGraph(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const active = utm ? findPhase(utm.state) : PHASES[0];
+  PHASE_EDGES.forEach(([a,b])=>{
+    const A=PHASES.find(p=>p.id===a), B=PHASES.find(p=>p.id===b);
+    const isActive = active && active.id===a;
+    ctx.strokeStyle = isActive? '#2563eb':'#cbd5e1';
+    ctx.lineWidth = isActive?2.2:1.2;
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.stroke();
+    const angle=Math.atan2(B.y-A.y,B.x-A.x);
+    const ax=B.x-Math.cos(angle)*26, ay=B.y-Math.sin(angle)*26;
+    ctx.fillStyle= isActive? '#2563eb':'#cbd5e1';
+    ctx.save(); ctx.translate(ax,ay); ctx.rotate(angle);
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-6,-3); ctx.lineTo(-6,3); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  });
+  PHASES.forEach(p=>{
+    const isActive = active && active.id===p.id;
+    ctx.beginPath(); ctx.arc(p.x,p.y,26,0,Math.PI*2);
+    if(isActive){ ctx.fillStyle='#dbeafe'; ctx.strokeStyle='#2563eb'; ctx.lineWidth=3; }
+    else { ctx.fillStyle='#fff'; ctx.strokeStyle='#64748b'; ctx.lineWidth=1.4; }
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = isActive? '#1d4ed8':'#334155';
+    ctx.font='8px -apple-system,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    wrapText(p.label, p.x, p.y, 62, 9);
+  });
+}
+
+function wrapText(text,x,y,maxW,lh){
+  const words=text.split(' ');
+  let line='', lines=[];
+  for(const w of words){
+    const test=line?line+' '+w:w;
+    if(ctx.measureText(test).width>maxW && line){ lines.push(line); line=w; }
+    else line=test;
+  }
+  lines.push(line);
+  const startY = y-(lines.length-1)*lh/2;
+  lines.forEach((l,i)=>ctx.fillText(l,x,startY+i*lh));
+}
+
+function renderTape(containerId, statId, tapeObj, headLabel){
+  const cont = $(containerId);
+  cont.innerHTML='';
+  let activeCell=null;
+  tapeObj.arr.forEach((sym, idx)=>{
+    const cell=document.createElement('div');
+    let cls='tape-cell';
+    if(idx===tapeObj.head) cls+=' head-active';
+    if(sym==='#') cls+=' sentinel';
+    if(sym==='_') cls+=' blank';
+    cell.className=cls;
+    cell.textContent = sym==='_'?'_':sym;
+    cont.appendChild(cell);
+    if(idx===tapeObj.head) activeCell=cell;
+  });
+  $(statId).textContent = headLabel+': '+tapeObj.head;
+  if(activeCell) activeCell.scrollIntoView({inline:'center', block:'nearest'});
+}
+
+function renderAll(){
+  if(!utm) return;
+  renderTape('t1','s1',utm.tapes[1],'هد');
+  renderTape('t2','s2',utm.tapes[2],'هد');
+  renderTape('t3','s3',utm.tapes[3],'هد');
+  renderTape('t4','s4',utm.tapes[4],'هد');
+  $('statClock').textContent = utm.clock;
+  $('statState').textContent = utm.state;
+  drawPhaseGraph();
+}
+
+function setStatus(msg, cls){
+  const el=$('statusMsg');
+  el.textContent = msg;
+  el.className = 'status-msg '+(cls||'');
+}
+
+function updateButtons(){
+  $('btnStep').disabled = !utm || utm.halted || isRunning;
+  $('btnRun').disabled = !utm || utm.halted;
+  $('btnFF').disabled = !utm || utm.halted || isRunning;
+  $('btnLoad').disabled = isRunning;
+}
+
+$('btnGen').addEventListener('click', ()=>{
+  const txt = $('progText').value.trim();
+  if(!txt){ setStatus('برنامه متنی خالی است.','warn'); return; }
+  $('inputBin').value = textToBinary(txt);
+  setStatus('برنامه به باینری ASCII تبدیل شد. حالا «بارگذاری» را بزنید.','info');
+});
+
+$('btnLoad').addEventListener('click', ()=>{
+  try{
+    const bin = $('inputBin').value.replace(/[^01]/g,'');
+    if(!bin){ setStatus('ورودی باینری خالی یا نامعتبر است.','warn'); return; }
+
+    const startState = extractStartState(bin);
+    const rawTape = $('inputTape').value.replace(/\s+/g, '');
+    const dataSyms = rawTape.length ? rawTape.split('') : ['_'];
+
+    if(isRunning){ clearInterval(runTimer); isRunning=false; }
+    utm = new UTM(bin, dataSyms, startState);
+
+    $('statStates').textContent = GLOBAL_UTM_CONTROL_TABLE.readSpec.size;
+    $('statDelta').textContent = GLOBAL_UTM_CONTROL_TABLE.delta.size;
+    renderAll();
+    setStatus('برنامه بارگذاری شد ('+GLOBAL_UTM_CONTROL_TABLE.readSpec.size+' استیت رسمی ثابت، '+GLOBAL_UTM_CONTROL_TABLE.delta.size+' تاپل δ ثابت). آمادهٔ اجرا.','info');
+    updateButtons();
+  }catch(e){
+    setStatus('خطا: '+e.message,'warn');
+  }
+});
+
+function doTick(){
+  if(!utm || utm.halted) return false;
+  utm.step();
+  if(utm.halted){
+    isRunning=false;
+    if(runTimer) clearInterval(runTimer);
+    updateButtons();
+    if(utm.haltReason==='ACCEPT') setStatus('🎉 پذیرش! ماشین به استیت پایانی رسید. کلاک: '+utm.clock,'info');
+    else if(utm.haltReason==='REJECT') setStatus('⛔ رد شد: هیچ قانونی برای این پیکربندی یافت نشد. کلاک: '+utm.clock,'warn');
+    else setStatus('⛔ رد شد: خطای کدگذاری (REJECT_MALFORMED). کلاک: '+utm.clock,'warn');
+  }
+  return true;
+}
+
+$('btnStep').addEventListener('click', ()=>{
+  doTick();
+  renderAll();
+  updateButtons();
+});
+
+$('btnRun').addEventListener('click', ()=>{
+  if(!utm) return;
+  if(isRunning){
+    isRunning=false; clearInterval(runTimer);
+    $('btnRun').textContent='▶ اجرا';
+    setStatus('اجرا متوقف شد.','warn');
+  } else {
+    isRunning=true;
+    $('btnRun').textContent='⏸ توقف';
+    const speed = parseInt($('simSpeed').value)||15;
+    const perFrame = Math.max(1, parseInt($('ticksPerFrame').value)||1);
+    runTimer = setInterval(()=>{
+      if(!isRunning) return;
+      let ok=true;
+      for(let i=0;i<perFrame && ok;i++){ ok = doTick(); if(!ok) break; }
+      renderAll();
+      updateButtons();
+    }, speed);
+  }
+  updateButtons();
+});
+
+$('btnFF').addEventListener('click', ()=>{
+  if(!utm) return;
+  const n = Math.max(1, parseInt($('ffAmount').value)||500);
+  let done=0;
+  for(let i=0;i<n;i++){
+    if(!doTick()) break;
+    done++;
+  }
+  renderAll();
+  updateButtons();
+  setStatus('پرش سریع: '+done+' کلاک اجرا شد.','running');
+});
+
+$('btnReset').addEventListener('click', ()=>{
+  if(runTimer) clearInterval(runTimer);
+  isRunning=false;
+  utm=null;
+  $('btnRun').textContent='▶ اجرا';
+  $('statClock').textContent='0'; $('statState').textContent='-';
+  $('statStates').textContent = GLOBAL_UTM_CONTROL_TABLE.readSpec.size;
+  $('statDelta').textContent = GLOBAL_UTM_CONTROL_TABLE.delta.size;
+  ['t1','t2','t3','t4'].forEach(id=>$(id).innerHTML='');
+  ['s1','s2','s3','s4'].forEach(id=>$(id).textContent='هد: 0');
+  drawPhaseGraph();
+  setStatus('بازنشانی شد.','');
+  updateButtons();
+});
+
+// بارگذاری خودکار نمونهٔ پیش‌فرض هنگام باز شدن صفحه
+$('btnGen').click();
+$('btnLoad').click();
+</script>
+</body>
+</html>

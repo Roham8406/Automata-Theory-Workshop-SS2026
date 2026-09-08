@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مینی‌گیم اتوماتای پله 🤖</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Vazirmatn, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .game-container {
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      max-width: 540px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #1e293b;
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .speed-val {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #2563eb;
+      font-family: monospace;
+    }
+
+    input[type="text"], select {
+      padding: 8px 10px;
+      font-size: 0.88rem;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px;
+      outline: none;
+      background-color: #ffffff;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"] {
+      letter-spacing: 2px;
+      font-family: monospace;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    input[type="text"]:focus, select:focus {
+      border-color: #2563eb;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+
+    /* Edge Builder Box */
+    .edge-builder {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .edge-builder-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .edge-inputs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    
+    .edge-inputs select {
+      flex: 1;
+      width: 100px;
+    }
+
+    .edge-text-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .btn-add-edge {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 0.2s;
+    }
+
+    .btn-add-edge:hover {
+      background-color: #1d4ed8;
+    }
+
+    /* Edge Chips Container */
+    .edge-chips {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 100px;
+      overflow-y: auto;
+      padding: 2px;
+    }
+
+    .chip {
+      background: #ffffff;
+      color: #1e293b;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .chip b {
+      color: #2563eb;
+    }
+
+    .chip-remove {
+      color: #ef4444;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.95rem;
+      padding: 0 4px;
+    }
+
+    .chip-remove:hover {
+      color: #b91c1c;
+    }
+
+    /* Command Sequence Display */
+    .sequence-display {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      min-height: 36px;
+      padding: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      align-items: center;
+    }
+
+    .char-box {
+      width: 24px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 0.95rem;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      color: #334155;
+    }
+
+    .char-box.active {
+      background-color: #bfdbfe;
+      border-color: #3b82f6;
+      color: #1d4ed8;
+      transform: scale(1.1);
+      transition: all 0.15s ease;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-hint { background-color: #e2e8f0; color: #334155; }
+    .btn-hint:hover { background-color: #cbd5e1; }
+
+    .btn-run { background-color: #16a34a; color: #ffffff; }
+    .btn-run:hover { background-color: #15803d; }
+
+    .btn-reset { background-color: #ef4444; color: #ffffff; }
+    .btn-reset:hover { background-color: #dc2626; }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Canvas Card & HTML State Nodes */
+    .canvas-card {
+      position: relative;
+      background: #ffffff;
+      border: 3px solid #000000;
+      border-radius: 12px;
+      overflow: hidden;
+      width: 480px;
+      height: 390px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      background-color: #ffffff;
+    }
+
+    #nodesOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* Pure CSS State Circle Styling */
+    .state-node {
+      position: absolute;
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2.5px solid #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.25;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+      padding: 4px;
+    }
+
+    .state-node.active {
+      border-color: #2563eb;
+      background-color: #dbeafe;
+      color: #1d4ed8;
+      transform: translate(-50%, -50%) scale(1.08);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.25), 0 8px 16px rgba(37, 99, 235, 0.15);
+    }
+
+    .state-node.is-start::before {
+      content: '➔';
+      position: absolute;
+      right: 100%;
+      margin-right: 6px;
+      font-size: 1.1rem;
+      color: #16a34a;
+      font-weight: bold;
+    }
+
+    /* Status Message */
+    .status-msg {
+      font-weight: 700;
+      font-size: 0.95rem;
+      min-height: 24px;
+      text-align: center;
+    }
+    .status-msg.warn { color: #dc2626; }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <h1>مینی‌گیم اتوماتای پله 🤖</h1>
+
+    <div class="controls">
+      <!-- Edge Builder Section -->
+      <div class="edge-builder">
+        <span class="edge-builder-title">➕ تنظیم انتقال حالت:</span>
+        <div class="edge-inputs">
+          <span class="edge-text-label">از</span>
+          <select id="selectFrom">
+            <option value="0">پاها کنار هم</option>
+            <option value="1">چپ ۱ پله جلو</option>
+            <option value="2">چپ ۲ پله جلو</option>
+            <option value="3">راست ۱ پله جلو</option>
+            <option value="4">راست ۲ پله جلو</option>
+          </select>
+          
+          <span class="edge-text-label">با شنیدن</span>
+          <select id="selectSymbol">
+            <option value="R">R</option>
+            <option value="L">L</option>
+          </select>
+
+          <span class="edge-text-label">میریم به</span>
+          <select id="selectTo">
+            <option value="0">پاها کنار هم</option>
+            <option value="1">چپ ۱ پله جلو</option>
+            <option value="2">چپ ۲ پله جلو</option>
+            <option value="3">راست ۱ پله جلو</option>
+            <option value="4">راست ۲ پله جلو</option>
+          </select>
+
+          <button class="btn-add-edge" id="btnAddEdge" style="flex: none;">افزودن</button>
+        </div>
+
+        <div class="edge-chips" id="edgeChips"></div>
+      </div>
+
+      <div class="input-group">
+        <label for="inputSeq">رشته ورودی (فقط R و L):</label>
+        <input type="text" id="inputSeq" dir="ltr" placeholder="مثلا: RLRRLRL" value="RLRRLRL">
+      </div>
+
+      <div class="input-group">
+        <div class="label-row">
+          <label for="stepSpeed">زمان هر استپ:</label>
+          <span class="speed-val" id="speedLabel">0.8 ثانیه</span>
+        </div>
+        <input type="range" id="stepSpeed" min="300" max="1000" step="100" value="800">
+      </div>
+
+      <div class="sequence-display" id="sequenceDisplay" dir="ltr"></div>
+
+      <div class="btn-group">
+        <button class="btn btn-hint" id="btnHint">راهنمایی تصادفی</button>
+        <button class="btn btn-run" id="btnRun">اجرا</button>
+        <button class="btn btn-reset" id="btnReset">از اول</button>
+      </div>
+    </div>
+
+    <div id="statusMsg" class="status-msg"></div>
+
+    <div class="canvas-card">
+      <canvas id="gameCanvas" width="480" height="390"></canvas>
+      <div id="nodesOverlay"></div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const nodesOverlay = document.getElementById('nodesOverlay');
+
+    // DOM Elements
+    const inputSeq = document.getElementById('inputSeq');
+    const stepSpeed = document.getElementById('stepSpeed');
+    const speedLabel = document.getElementById('speedLabel');
+    const sequenceDisplay = document.getElementById('sequenceDisplay');
+    const statusMsg = document.getElementById('statusMsg');
+    const btnHint = document.getElementById('btnHint');
+    const btnRun = document.getElementById('btnRun');
+    const btnReset = document.getElementById('btnReset');
+
+    const selectFrom = document.getElementById('selectFrom');
+    const selectTo = document.getElementById('selectTo');
+    const selectSymbol = document.getElementById('selectSymbol');
+    const btnAddEdge = document.getElementById('btnAddEdge');
+    const edgeChips = document.getElementById('edgeChips');
+
+    // 5 Fixed DFA States Coordinates
+    const STATES = [
+      { id: 0, title: "پاها کنار هم", short: "پاها کنار هم", x: 240, y: 75, isStart: false },
+      { id: 1, title: "چپ ۱ پله جلو", short: "چپ ۱ جلو", x: 110, y: 190, isStart: false },
+      { id: 2, title: "چپ ۲ پله جلو", short: "چپ ۲ جلو", x: 120, y: 320, isStart: false },
+      { id: 3, title: "راست ۱ پله جلو", short: "راست ۱ جلو", x: 370, y: 190, isStart: false },
+      { id: 4, title: "راست ۲ پله جلو", short: "راست ۲ جلو", x: 360, y: 320, isStart: false }
+    ];
+
+    const NODE_RADIUS = 34; // Matches 68px width/height CSS
+
+    // DFA Edge Data
+    let edges = [];
+
+    // Runtime State
+    let currentState = 0;
+    let activeEdgeId = null;
+    let isRunning = false;
+    let stepTimer = null;
+
+    // Render HTML Nodes overlay
+    function renderHTMLNodes() {
+      nodesOverlay.innerHTML = '';
+      STATES.forEach(node => {
+        const div = document.createElement('div');
+        div.className = `state-node ${node.id === currentState ? 'active' : ''} ${node.isStart ? 'is-start' : ''}`;
+        div.style.left = `${node.x}px`;
+        div.style.top = `${node.y}px`;
+        div.innerText = node.short;
+        nodesOverlay.appendChild(div);
+      });
+    }
+
+    // Add Edge with DFA Validation
+    btnAddEdge.addEventListener('click', () => {
+      if (isRunning) return;
+
+      const from = parseInt(selectFrom.value);
+      const to = parseInt(selectTo.value);
+      const symbol = selectSymbol.value;
+
+      // DFA Rule: Only 1 outgoing edge per symbol
+      const hasConflict = edges.some(e => e.from === from && e.symbol === symbol);
+      if (hasConflict) {
+        const fromState = STATES.find(s => s.id === from);
+        statusMsg.innerText = `از «${fromState.short}» قبلاً برای حرف ${symbol} یال کشیده شده است!`;
+        statusMsg.className = 'status-msg warn';
+        return;
+      }
+
+      edges.push({ id: Date.now(), from, to, symbol });
+      statusMsg.innerText = '';
+      statusMsg.className = 'status-msg';
+
+      renderEdgeChips();
+      drawGraph();
+    });
+
+    function removeEdge(id) {
+      if (isRunning) return;
+      edges = edges.filter(e => e.id !== id);
+      renderEdgeChips();
+      drawGraph();
+    }
+
+    function renderEdgeChips() {
+      edgeChips.innerHTML = '';
+      edges.forEach(e => {
+        const fromState = STATES.find(s => s.id === e.from);
+        const toState = STATES.find(s => s.id === e.to);
+
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.innerHTML = `
+          <span>از <b>${fromState.short}</b> با شنیدن <b>«${e.symbol}»</b> میریم به <b>${toState.short}</b></span>
+          <span class="chip-remove" onclick="removeEdge(${e.id})">✕</span>
+        `;
+        edgeChips.appendChild(chip);
+      });
+    }
+
+    // Sequence & Controls
+    function renderSequenceDisplay(activeIndex = -1) {
+      sequenceDisplay.innerHTML = '';
+      const val = inputSeq.value.toUpperCase().replace(/[^RL]/g, '');
+      inputSeq.value = val;
+
+      for (let i = 0; i < val.length; i++) {
+        const span = document.createElement('span');
+        span.className = `char-box ${i === activeIndex ? 'active' : ''}`;
+        span.innerText = val[i];
+        sequenceDisplay.appendChild(span);
+      }
+    }
+
+    stepSpeed.addEventListener('input', () => {
+      const ms = parseInt(stepSpeed.value);
+      speedLabel.innerText = `${(ms / 1000).toFixed(1)} ثانیه`;
+    });
+
+    inputSeq.addEventListener('input', () => renderSequenceDisplay());
+
+    btnHint.addEventListener('click', () => {
+      if (isRunning) return;
+      const len = Math.floor(Math.random() * 8) + 5;
+      let res = '';
+      for (let i = 0; i < len; i++) {
+        res += Math.random() < 0.5 ? 'R' : 'L';
+      }
+      inputSeq.value = res;
+      renderSequenceDisplay();
+      resetGame();
+    });
+
+    // Run DFA Simulation
+    btnRun.addEventListener('click', () => {
+      if (isRunning) return;
+
+      const seq = inputSeq.value.toUpperCase().replace(/[^RL]/g, '');
+      if (!seq) {
+        statusMsg.innerText = 'لطفاً یک رشته متشکل از R و L وارد کنید.';
+        statusMsg.className = 'status-msg warn';
+        return;
+      }
+
+      resetGame();
+      isRunning = true;
+      toggleControls(true);
+
+      let stepIndex = 0;
+      const duration = parseInt(stepSpeed.value) || 800;
+
+      function doNextStep() {
+        if (stepIndex >= seq.length) {
+          isRunning = false;
+          toggleControls(false);
+          activeEdgeId = null;
+
+          const finalStateObj = STATES.find(s => s.id === currentState);
+          statusMsg.innerText = `پایان اجرا! حالت نهایی: «${finalStateObj.title}»`;
+          statusMsg.className = 'status-msg info';
+
+          renderSequenceDisplay(-1);
+          drawGraph();
+          return;
+        }
+
+        renderSequenceDisplay(stepIndex);
+        const symbol = seq[stepIndex];
+
+        const matchingEdge = edges.find(e => e.from === currentState && e.symbol === symbol);
+
+        if (!matchingEdge) {
+          isRunning = false;
+          toggleControls(false);
+          activeEdgeId = null;
+
+          const stateObj = STATES.find(s => s.id === currentState);
+          statusMsg.innerText = `انتقالی برای حرف ${symbol} از حالت «${stateObj.short}» وجود ندارد.`;
+          statusMsg.className = 'status-msg warn';
+
+          renderSequenceDisplay(-1);
+          drawGraph();
+          return;
+        }
+
+        activeEdgeId = matchingEdge.id;
+        drawGraph();
+
+        stepTimer = setTimeout(() => {
+          currentState = matchingEdge.to;
+          activeEdgeId = null;
+          drawGraph();
+
+          stepIndex++;
+          stepTimer = setTimeout(doNextStep, duration * 0.3);
+        }, duration * 0.7);
+      }
+
+      doNextStep();
+    });
+
+    // Draw Complete Canvas Graph (Canvas handles Edges, HTML handles Nodes)
+    function drawGraph() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Draw Canvas Edges
+      edges.forEach(e => {
+        const fromNode = STATES.find(s => s.id === e.from);
+        const toNode = STATES.find(s => s.id === e.to);
+        const isActive = (e.id === activeEdgeId);
+
+        if (e.from === e.to) {
+          drawSelfLoop(fromNode, e.symbol, isActive);
+        } else {
+          const hasReverse = edges.some(rev => rev.from === e.to && rev.to === e.from);
+          drawEdge(fromNode, toNode, e.symbol, isActive, hasReverse);
+        }
+      });
+
+      // 2. Update Crisp HTML Nodes
+      renderHTMLNodes();
+    }
+
+    // Directed Edge Between Two Distinct Nodes
+    function drawEdge(from, to, symbol, isActive, isCurved) {
+      ctx.save();
+
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const angle = Math.atan2(dy, dx);
+
+      const offset = isCurved ? 28 : 0;
+      const midX = (from.x + to.x) / 2 + Math.cos(angle + Math.PI / 2) * offset;
+      const midY = (from.y + to.y) / 2 + Math.sin(angle + Math.PI / 2) * offset;
+
+      const startAngle = Math.atan2(midY - from.y, midX - from.x);
+      const endAngle = Math.atan2(to.y - midY, to.x - midX);
+
+      const startX = from.x + Math.cos(startAngle) * NODE_RADIUS;
+      const startY = from.y + Math.sin(startAngle) * NODE_RADIUS;
+      const endX = to.x - Math.cos(endAngle) * NODE_RADIUS;
+      const endY = to.y - Math.sin(endAngle) * NODE_RADIUS;
+
+      ctx.strokeStyle = isActive ? '#2563eb' : '#64748b';
+      ctx.lineWidth = isActive ? 3.5 : 2;
+
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      if (isCurved) {
+        ctx.quadraticCurveTo(midX, midY, endX, endY);
+      } else {
+        ctx.lineTo(endX, endY);
+      }
+      ctx.stroke();
+
+      const arrowAngle = isCurved ? Math.atan2(endY - midY, endX - midX) : angle;
+      drawArrowhead(endX, endY, arrowAngle, isActive ? '#2563eb' : '#64748b');
+
+      const labelX = isCurved ? midX : (startX + endX) / 2;
+      const labelY = isCurved ? midY : (startY + endY) / 2;
+      drawBadge(labelX, labelY, symbol, isActive);
+
+      ctx.restore();
+    }
+
+    // Self-Loop Edge (Outward direction based on node position to avoid overlaps)
+    function drawSelfLoop(node, symbol, isActive) {
+      ctx.save();
+
+      let outAngle = Math.atan2(node.y - 200, node.x - 240);
+      if (node.id === 0) outAngle = -Math.PI / 2;
+
+      const loopDist = NODE_RADIUS + 16;
+      const loopCenterX = node.x + Math.cos(outAngle) * loopDist;
+      const loopCenterY = node.y + Math.sin(outAngle) * loopDist;
+      const loopRadius = 16;
+
+      ctx.strokeStyle = isActive ? '#2563eb' : '#64748b';
+      ctx.lineWidth = isActive ? 3.5 : 2;
+
+      ctx.beginPath();
+      ctx.arc(loopCenterX, loopCenterY, loopRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const contactX = node.x + Math.cos(outAngle + 0.25) * NODE_RADIUS;
+      const contactY = node.y + Math.sin(outAngle + 0.25) * NODE_RADIUS;
+      drawArrowhead(contactX, contactY, outAngle + Math.PI - 0.4, isActive ? '#2563eb' : '#64748b');
+
+      const badgeX = loopCenterX + Math.cos(outAngle) * 16;
+      const badgeY = loopCenterY + Math.sin(outAngle) * 16;
+      drawBadge(badgeX, badgeY, symbol, isActive);
+
+      ctx.restore();
+    }
+
+    // Arrowhead Helper
+    function drawArrowhead(x, y, angle, color) {
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-10, -5);
+      ctx.lineTo(-10, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Badge Helper for Edge Symbols
+    function drawBadge(x, y, text, isActive) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, 9, 0, Math.PI * 2);
+      ctx.fillStyle = isActive ? '#2563eb' : '#e2e8f0';
+      ctx.fill();
+      ctx.strokeStyle = isActive ? '#1d4ed8' : '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = isActive ? '#ffffff' : '#0f172a';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x, y);
+      ctx.restore();
+    }
+
+    // Reset Simulation
+    function resetGame() {
+      if (stepTimer) clearTimeout(stepTimer);
+      isRunning = false;
+      currentState = 0;
+      activeEdgeId = null;
+      statusMsg.innerText = '';
+      statusMsg.className = 'status-msg';
+      toggleControls(false);
+      renderSequenceDisplay(-1);
+      drawGraph();
+    }
+
+    btnReset.addEventListener('click', resetGame);
+
+    function toggleControls(disabled) {
+      btnRun.disabled = disabled;
+      btnHint.disabled = disabled;
+      btnAddEdge.disabled = disabled;
+      inputSeq.disabled = disabled;
+      stepSpeed.disabled = disabled;
+      selectFrom.disabled = disabled;
+      selectTo.disabled = disabled;
+      selectSymbol.disabled = disabled;
+    }
+
+    // Global binding for chip removal
+    window.removeEdge = removeEdge;
+
+    // Initialization
+    renderSequenceDisplay();
+    renderEdgeChips();
+    drawGraph();
+  </script>
+</body>
+</html>

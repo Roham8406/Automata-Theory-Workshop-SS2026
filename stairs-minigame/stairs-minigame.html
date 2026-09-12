@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مینی‌گیم پله 🏃</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Vazirmatn, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f1f5f9;
+      color: #0f172a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .game-container {
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      max-width: 480px;
+      width: 100%;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    /* Controls Section */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .speed-val {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #2563eb;
+      font-family: monospace;
+    }
+
+    input[type="text"] {
+      padding: 10px 14px;
+      font-size: 1rem;
+      border: 2px solid #cbd5e1;
+      border-radius: 8px;
+      outline: none;
+      letter-spacing: 2px;
+      font-family: monospace;
+      font-weight: bold;
+      text-transform: uppercase;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #2563eb;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+
+    /* Command Sequence Display */
+    .sequence-display {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      min-height: 38px;
+      padding: 6px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      align-items: center;
+    }
+
+    .char-box {
+      width: 24px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 0.95rem;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      color: #334155;
+    }
+
+    .char-box.active {
+      background-color: #bfdbfe;
+      border-color: #3b82f6;
+      color: #1d4ed8;
+      transform: scale(1.1);
+      transition: all 0.15s ease;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-hint { background-color: #e2e8f0; color: #334155; }
+    .btn-hint:hover { background-color: #cbd5e1; }
+
+    .btn-run { background-color: #16a34a; color: #ffffff; }
+    .btn-run:hover { background-color: #15803d; }
+
+    .btn-reset { background-color: #ef4444; color: #ffffff; }
+    .btn-reset:hover { background-color: #dc2626; }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Canvas Box */
+    .canvas-card {
+      position: relative;
+      background: #eaeaea;
+      border: 4px solid #000000;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    canvas {
+      display: block;
+      background-color: #eaeaea;
+    }
+
+    /* Status Message */
+    .status-msg {
+      font-weight: 700;
+      font-size: 1rem;
+      min-height: 24px;
+      text-align: center;
+    }
+    .status-msg.info { color: #16a34a; }
+    .status-msg.warn { color: #dc2626; }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <h1>مینی‌گیم پله 🏃</h1>
+
+    <div class="controls">
+      <div class="input-group">
+        <label for="inputSeq">رشته راهنما (فقط R و L):</label>
+        <input type="text" id="inputSeq" dir="ltr" placeholder="مثلا: RLRRLRL" value="RLRRLRL">
+      </div>
+
+      <div class="input-group">
+        <div class="label-row">
+          <label for="stepSpeed">زمان هر گام:</label>
+          <span class="speed-val" id="speedLabel">0.8 ثانیه</span>
+        </div>
+        <input type="range" id="stepSpeed" min="300" max="1000" step="100" value="800">
+      </div>
+
+      <div class="sequence-display" id="sequenceDisplay" dir="ltr"></div>
+
+      <div class="btn-group">
+        <button class="btn btn-hint" id="btnHint">راهنمایی تصادفی</button>
+        <button class="btn btn-run" id="btnRun">الفرار!</button>
+        <button class="btn btn-reset" id="btnReset">از اول</button>
+      </div>
+    </div>
+
+    <div id="statusMsg" class="status-msg"></div>
+
+    <div class="canvas-card">
+      <canvas id="gameCanvas" width="400" height="380"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // DOM Elements
+    const inputSeq = document.getElementById('inputSeq');
+    const stepSpeed = document.getElementById('stepSpeed');
+    const speedLabel = document.getElementById('speedLabel');
+    const sequenceDisplay = document.getElementById('sequenceDisplay');
+    const statusMsg = document.getElementById('statusMsg');
+    const btnHint = document.getElementById('btnHint');
+    const btnRun = document.getElementById('btnRun');
+    const btnReset = document.getElementById('btnReset');
+
+    // Game Logic State
+    let posR = 0; // Right foot step position
+    let posL = 0; // Left foot step position
+
+    // Visual State
+    let visualR = 0;
+    let visualL = 0;
+    let liftR = 0;
+    let liftL = 0;
+
+    let cameraStep = 0;
+
+    let isRunning = false;
+    let stepTimer = null;
+
+    // Movement Animation Variable
+    let currentAnim = null;
+
+    // Constants for Step Geometry
+    const STEP_W = 60;
+    const STEP_H = 50;
+    const BASE_X = 60;
+    const BASE_Y = 320;
+    const FOOT_LIFT_MAX = 30;
+
+    // Helper: Convert step index to canvas coordinates
+    function stepToCanvasCoords(stepIdx, cam) {
+      const relStep = stepIdx - cam;
+      const x = BASE_X + relStep * STEP_W;
+      const y = BASE_Y - relStep * STEP_H;
+      return { x, y };
+    }
+
+    // Format & Render Command Sequence
+    function renderSequenceDisplay(activeIndex = -1) {
+      sequenceDisplay.innerHTML = '';
+      const val = inputSeq.value.toUpperCase().replace(/[^RL]/g, '');
+      inputSeq.value = val;
+
+      for (let i = 0; i < val.length; i++) {
+        const span = document.createElement('span');
+        span.className = `char-box ${i === activeIndex ? 'active' : ''}`;
+        span.innerText = val[i];
+        sequenceDisplay.appendChild(span);
+      }
+    }
+
+    // Speed Slider Update
+    stepSpeed.addEventListener('input', () => {
+      const ms = parseInt(stepSpeed.value);
+      speedLabel.innerText = `${(ms / 1000).toFixed(1)} ثانیه`;
+    });
+
+    inputSeq.addEventListener('input', () => renderSequenceDisplay());
+
+    // Generate Random R/L Hint
+    btnHint.addEventListener('click', () => {
+      if (isRunning) return;
+      const len = Math.floor(Math.random() * 13) + 8;
+      let res = '';
+      for (let i = 0; i < len; i++) {
+        res += Math.random() < 0.5 ? 'R' : 'L';
+      }
+      inputSeq.value = res;
+      renderSequenceDisplay();
+      resetGame();
+    });
+
+    // Run Logic
+    btnRun.addEventListener('click', () => {
+      if (isRunning) return;
+
+      const seq = inputSeq.value.toUpperCase().replace(/[^RL]/g, '');
+      if (!seq) {
+        statusMsg.innerText = 'لطفاً یک رشته متشکل از R و L وارد کنید.';
+        statusMsg.className = 'status-msg warn';
+        return;
+      }
+
+      resetGame();
+      isRunning = true;
+      toggleControls(true);
+
+      let stepIndex = 0;
+      const duration = parseInt(stepSpeed.value) || 800;
+
+      function doNextStep() {
+        if (stepIndex >= seq.length) {
+          isRunning = false;
+          toggleControls(false);
+          
+          // Final check: are both feet on the same step?
+          if (posR === posL) {
+            statusMsg.innerText = 'دوتا پا کنار همه!';
+            statusMsg.className = 'status-msg info';
+          } else {
+            statusMsg.innerText = 'دوتا پا کنار هم نیست.';
+            statusMsg.className = 'status-msg warn';
+          }
+
+          renderSequenceDisplay(-1);
+          return;
+        }
+
+        renderSequenceDisplay(stepIndex);
+        const cmd = seq[stepIndex];
+        executeStepCommand(cmd, duration);
+
+        stepIndex++;
+        stepTimer = setTimeout(doNextStep, duration);
+      }
+
+      doNextStep();
+    });
+
+    // Execute single step with constraint checks
+    function executeStepCommand(cmd, duration) {
+      if (cmd === 'R') {
+        const nextR = posR + 1;
+        if (Math.abs(nextR - posL) > 2) {
+          triggerLegAnimation('R', posR, posR + 1, true, duration);
+        } else {
+          triggerLegAnimation('R', posR, nextR, false, duration);
+          posR = nextR;
+        }
+      } else if (cmd === 'L') {
+        const nextL = posL + 1;
+        if (Math.abs(nextL - posR) > 2) {
+          triggerLegAnimation('L', posL, posL + 1, true, duration);
+        } else {
+          triggerLegAnimation('L', posL, nextL, false, duration);
+          posL = nextL;
+        }
+      }
+    }
+
+    function triggerLegAnimation(foot, startVal, targetVal, fail, duration) {
+      currentAnim = {
+        foot,
+        startVal,
+        targetVal,
+        fail,
+        startTime: performance.now(),
+        duration
+      };
+    }
+
+    // Main Canvas Render & Animation Loop
+    function renderLoop(now) {
+      liftR = 0;
+      liftL = 0;
+
+      if (currentAnim) {
+        const elapsed = now - currentAnim.startTime;
+        const totalDuration = currentAnim.duration;
+        const moveTime = totalDuration * 0.75;
+        const rawProgress = Math.min(1, elapsed / moveTime);
+
+        if (currentAnim.fail) {
+          let p = 0;
+          if (rawProgress < 0.5) {
+            p = (rawProgress / 0.5) * 0.5;
+          } else {
+            p = 0.5 * (1 - (rawProgress - 0.5) / 0.5);
+          }
+          
+          const curStep = currentAnim.startVal + p * (currentAnim.targetVal - currentAnim.startVal);
+          const currentLift = Math.sin(rawProgress * Math.PI) * (FOOT_LIFT_MAX * 0.7);
+
+          if (currentAnim.foot === 'R') {
+            visualR = curStep;
+            liftR = currentLift;
+          } else {
+            visualL = curStep;
+            liftL = currentLift;
+          }
+
+        } else {
+          const p = 0.5 - Math.cos(rawProgress * Math.PI) / 2;
+          const curStep = currentAnim.startVal + p * (currentAnim.targetVal - currentAnim.startVal);
+          const currentLift = Math.sin(rawProgress * Math.PI) * FOOT_LIFT_MAX;
+
+          if (currentAnim.foot === 'R') {
+            visualR = curStep;
+            liftR = currentLift;
+          } else {
+            visualL = curStep;
+            liftL = currentLift;
+          }
+        }
+
+        if (elapsed >= totalDuration) {
+          if (!currentAnim.fail) {
+            if (currentAnim.foot === 'R') visualR = currentAnim.targetVal;
+            else visualL = currentAnim.targetVal;
+          } else {
+            if (currentAnim.foot === 'R') visualR = currentAnim.startVal;
+            else visualL = currentAnim.startVal;
+          }
+          currentAnim = null;
+        }
+      } else {
+        visualR = posR;
+        visualL = posL;
+      }
+
+      // Smooth Camera Follow
+      const targetCam = Math.min(visualR, visualL);
+      cameraStep += (targetCam - cameraStep) * 0.08;
+
+      drawCanvas();
+      requestAnimationFrame(renderLoop);
+    }
+
+    function drawCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Draw Staircase
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'square';
+      ctx.beginPath();
+
+      const startStep = Math.floor(cameraStep) - 2;
+      const endStep = Math.floor(cameraStep) + 8;
+
+      for (let s = startStep; s <= endStep; s++) {
+        const p1 = stepToCanvasCoords(s, cameraStep);
+        const p2 = { x: p1.x + STEP_W, y: p1.y };
+        const p3 = { x: p2.x, y: p2.y - STEP_H };
+
+        if (s === startStep) {
+          ctx.moveTo(p1.x, p1.y);
+        }
+        ctx.lineTo(p2.x, p2.y);
+        ctx.lineTo(p3.x, p3.y);
+      }
+      ctx.stroke();
+
+      // 2. Foot Coordinates
+      const footOffX = 22;
+      const footR_Base = stepToCanvasCoords(visualR, cameraStep);
+      const footL_Base = stepToCanvasCoords(visualL, cameraStep);
+
+      const footR_x = footR_Base.x + footOffX;
+      const footR_y = footR_Base.y - liftR;
+
+      const footL_x = footL_Base.x + footOffX - 6;
+      const footL_y = footL_Base.y - liftL;
+
+      // 3. Stick Figure Body Dynamics
+      const groundY = Math.min(footR_Base.y, footL_Base.y);
+      const hipX = (footR_x + footL_x) / 2;
+      const hipY = groundY - 65;
+
+      const headRadius = 11;
+      const headX = hipX;
+      const headY = hipY - 45;
+
+      // Head
+      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = '#000000';
+      ctx.beginPath();
+      ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Torso
+      ctx.beginPath();
+      ctx.moveTo(headX, headY + headRadius);
+      ctx.lineTo(hipX, hipY);
+      ctx.stroke();
+
+      // Legs
+      const kneeR_x = (hipX + footR_x) / 2 + (liftR > 0 ? 10 : 6);
+      const kneeR_y = (hipY + footR_y) / 2 - (liftR > 0 ? 12 : 4);
+      ctx.beginPath();
+      ctx.moveTo(hipX, hipY);
+      ctx.lineTo(kneeR_x, kneeR_y);
+      ctx.lineTo(footR_x, footR_y);
+      ctx.stroke();
+
+      const kneeL_x = (hipX + footL_x) / 2 - (liftL > 0 ? 2 : 6);
+      const kneeL_y = (hipY + footL_y) / 2 - (liftL > 0 ? 12 : 4);
+      ctx.beginPath();
+      ctx.moveTo(hipX, hipY);
+      ctx.lineTo(kneeL_x, kneeL_y);
+      ctx.lineTo(footL_x, footL_y);
+      ctx.stroke();
+
+      // 4. Shackles & Chain Dynamics
+      const dist = Math.abs(visualR - visualL);
+
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#475569';
+      ctx.beginPath();
+      ctx.arc(footR_x, footR_y - 2, 4, 0, Math.PI * 2);
+      ctx.arc(footL_x, footL_y - 2, 4, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(footL_x, footL_y - 2);
+
+      if (dist < 0.2) {
+        ctx.quadraticCurveTo((footL_x + footR_x) / 2, Math.max(footL_y, footR_y) + 16, footR_x, footR_y - 2);
+      } else if (dist <= 1.8) {
+        ctx.quadraticCurveTo((footL_x + footR_x) / 2, Math.max(footL_y, footR_y) + 8, footR_x, footR_y - 2);
+      } else {
+        ctx.lineTo(footR_x, footR_y - 2);
+      }
+      ctx.stroke();
+    }
+
+    // Reset Game State
+    function resetGame() {
+      if (stepTimer) clearTimeout(stepTimer);
+      isRunning = false;
+      posR = 0;
+      posL = 0;
+      visualR = 0;
+      visualL = 0;
+      liftR = 0;
+      liftL = 0;
+      cameraStep = 0;
+      currentAnim = null;
+      statusMsg.innerText = '';
+      statusMsg.className = 'status-msg';
+      toggleControls(false);
+      renderSequenceDisplay(-1);
+    }
+
+    btnReset.addEventListener('click', resetGame);
+
+    function toggleControls(disabled) {
+      btnRun.disabled = disabled;
+      btnHint.disabled = disabled;
+      inputSeq.disabled = disabled;
+      stepSpeed.disabled = disabled;
+    }
+
+    // Initialize & Start Render Loop
+    renderSequenceDisplay();
+    requestAnimationFrame(renderLoop);
+  </script>
+</body>
+</html>

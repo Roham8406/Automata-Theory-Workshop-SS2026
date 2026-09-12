@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Original Post Correspondence Problem</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #343a40;
+            --domino-bg: #ffffff;
+            --border-color: #ced4da;
+            --primary-color: #495057;
+            --accent-color: #007bff;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+            margin: 0;
+        }
+
+        h1 {
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        p.instructions {
+            margin-bottom: 2rem;
+            text-align: center;
+            max-width: 650px;
+            color: #6c757d;
+            line-height: 1.6;
+            padding: 0 10px;
+        }
+
+        .panel-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 900px;
+            gap: 2rem;
+        }
+
+        .panel-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            color: var(--primary-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .panel-title span.hint {
+            text-transform: none;
+            font-weight: normal;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .bank {
+            display: flex;
+            min-height: 140px;
+            padding: 20px;
+            background-color: #e9ecef;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .board {
+            display: flex;
+            min-height: 180px;
+            padding: 20px;
+            background-color: #ffffff;
+            border: 4px dashed var(--border-color);
+            border-radius: 12px;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap; /* Allows dominos to wrap nicely */
+            transition: all 0.3s ease;
+        }
+
+        .board.drag-over {
+            border-color: var(--accent-color);
+            background-color: #f1f8ff;
+        }
+
+        .board.win {
+            border-color: var(--success-color);
+            border-style: solid;
+            background-color: #eafaf1;
+            box-shadow: 0 0 25px rgba(40, 167, 69, 0.3);
+        }
+
+        .domino {
+            display: flex;
+            flex-direction: column;
+            width: 55px;
+            height: 100px;
+            background-color: var(--domino-bg);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            cursor: grab;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            user-select: none;
+            /* CRITICAL FOR MOBILE: Prevents page scrolling when swiping on dominos */
+            touch-action: none; 
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .domino:active {
+            cursor: grabbing;
+        }
+
+        /* Floating ghost styling */
+        .domino.dragging {
+            opacity: 0.85;
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        /* Placeholder styling */
+        .domino.placeholder {
+            border: 2px dashed var(--accent-color);
+            background-color: transparent;
+            box-shadow: none;
+        }
+
+        #board .domino:not(.placeholder):hover {
+            border-color: var(--danger-color);
+        }
+        
+        .board.win .domino:not(.placeholder):hover {
+            border-color: var(--success-color);
+        }
+
+        .domino .top, .domino .bot {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            pointer-events: none; /* Let dragging logic bypass inner text */
+        }
+
+        .domino .top {
+            border-bottom: 2px solid var(--primary-color);
+            background-color: #fdfbfb;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .domino .bot {
+            background-color: #f1f2f6;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .board.win .domino { border-color: var(--success-color); }
+        .board.win .domino .top { border-bottom-color: var(--success-color); }
+
+        .tracker {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            word-break: break-all;
+        }
+        
+        .tracker div {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        
+        .tracker span {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+	<!--
+    <h1></h1>
+    <p class="instructions">
+    </p>
+    -->
+
+    <div class="panel-container">
+        
+        <!-- Domino Bank Panel -->
+        <div>
+            <div class="panel-title">
+                 <span></span>
+            </div>
+            <div id="bank" class="bank">
+                <div class="domino bank-item" data-top="0111" data-bot="1">
+                    <div class="top">0111</div>
+                    <div class="bot">1</div>
+                </div>
+                <div class="domino bank-item" data-top="110" data-bot="00">
+                    <div class="top">110</div>
+                    <div class="bot">00</div>
+                </div>
+                <div class="domino bank-item" data-top="00" data-bot="0011">
+                    <div class="top">00</div>
+                    <div class="bot">0011</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Arrangement Playground Panel -->
+        <div>
+            <div class="panel-title">
+                 <span></span>
+            </div>
+            <div id="board" class="board"></div>
+        </div>
+
+        <!-- String Tracker -->
+        <div class="tracker">
+            <div>Top: &nbsp;&nbsp;<span id="top-tracker">-</span></div>
+            <div>Bottom: <span id="bot-tracker">-</span></div>
+        </div>
+
+    </div>
+
+    <script>
+        const board = document.getElementById('board');
+        let dominoCounter = 0; 
+
+        // --- Custom Cross-Platform Drag & Drop System ---
+        let pendingDrag = null;
+        let dragInfo = null;
+
+        document.querySelectorAll('.bank-item').forEach(domino => {
+            domino.addEventListener('pointerdown', (e) => initPointerDown(e, 'bank', domino));
+        });
+
+        function createBoardDomino(topVal, botVal) {
+            dominoCounter++;
+            const div = document.createElement('div');
+            div.className = 'domino board-item';
+            div.id = 'bd-' + dominoCounter;
+            div.dataset.top = topVal;
+            div.dataset.bot = botVal;
+
+            div.innerHTML = `
+                <div class="top">${topVal.replace(/\s/g, '')}</div>
+                <div class="bot">${botVal.replace(/\s/g, '')}</div>
+            `;
+
+            // Setup custom drag for elements inside the board
+            div.addEventListener('pointerdown', (e) => initPointerDown(e, 'board', div));
+
+            // Setup double tap / double click to delete
+            div.addEventListener('dblclick', () => {
+                div.remove();
+                checkWinCondition();
+            });
+
+            return div;
+        }
+
+        // 1. Wait for movement before confirming drag (Allows double-tapping on mobile)
+        function initPointerDown(e, source, element) {
+            // Only respond to left mouse clicks or touch
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            
+            const rect = element.getBoundingClientRect();
+            pendingDrag = {
+                source,
+                element,
+                startX: e.clientX,
+                startY: e.clientY,
+                offsetX: e.clientX - rect.left,
+                offsetY: e.clientY - rect.top
+            };
+
+            document.addEventListener('pointermove', checkDragStart, { passive: false });
+            document.addEventListener('pointerup', cancelPendingDrag);
+            document.addEventListener('pointercancel', cancelPendingDrag);
+        }
+
+        function cancelPendingDrag() {
+            pendingDrag = null;
+            document.removeEventListener('pointermove', checkDragStart);
+            document.removeEventListener('pointerup', cancelPendingDrag);
+            document.removeEventListener('pointercancel', cancelPendingDrag);
+        }
+
+        // 2. Start drag if user moves finger/mouse more than 5px
+        function checkDragStart(e) {
+            if (!pendingDrag) return;
+            const dx = e.clientX - pendingDrag.startX;
+            const dy = e.clientY - pendingDrag.startY;
+            
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                startRealDrag(pendingDrag, e);
+                cancelPendingDrag(); 
+            }
+        }
+
+        // 3. Initiate the active drag cycle
+        function startRealDrag(info, e) {
+            e.preventDefault(); 
+            const { source, element, offsetX, offsetY } = info;
+            
+            // Create a visually floating ghost of the domino
+            const ghost = element.cloneNode(true);
+            ghost.classList.add('dragging');
+            ghost.style.position = 'fixed';
+            ghost.style.left = (e.clientX - offsetX) + 'px';
+            ghost.style.top = (e.clientY - offsetY) + 'px';
+            ghost.style.margin = '0';
+            ghost.style.zIndex = '9999';
+            ghost.style.pointerEvents = 'none'; // Critical: allows elementFromPoint to hit targets below
+            document.body.appendChild(ghost);
+
+            // Create a dashed placeholder to show insertion spot
+            const placeholder = document.createElement('div');
+            placeholder.className = 'domino placeholder';
+
+            if (source === 'board') {
+                element.style.display = 'none'; // Hide the original being moved
+                element.parentNode.insertBefore(placeholder, element);
+            }
+
+            dragInfo = { source, element, ghost, placeholder, offsetX, offsetY };
+
+            document.addEventListener('pointermove', onPointerMove, { passive: false });
+            document.addEventListener('pointerup', onPointerUp);
+            document.addEventListener('pointercancel', onPointerUp);
+            
+            onPointerMove(e); // Trigger immediately to place placeholder
+        }
+
+        // 4. Update coordinates and find drop target
+        function onPointerMove(e) {
+            if (!dragInfo) return;
+            e.preventDefault(); 
+
+            // Move the floating ghost
+            dragInfo.ghost.style.left = (e.clientX - dragInfo.offsetX) + 'px';
+            dragInfo.ghost.style.top = (e.clientY - dragInfo.offsetY) + 'px';
+
+            // Find what is directly underneath the pointer
+            const target = document.elementFromPoint(e.clientX, e.clientY);
+            if (!target) return;
+
+            if (board.contains(target) || target === board) {
+                board.classList.add('drag-over');
+                
+                const hoveredDomino = target.closest('.domino:not(.placeholder)');
+                if (hoveredDomino && board.contains(hoveredDomino)) {
+                    const box = hoveredDomino.getBoundingClientRect();
+                    const localOffsetX = e.clientX - box.left - box.width / 2;
+                    
+                    if (localOffsetX < 0) {
+                        board.insertBefore(dragInfo.placeholder, hoveredDomino); // Insert before
+                    } else {
+                        if (hoveredDomino.nextSibling) {
+                            board.insertBefore(dragInfo.placeholder, hoveredDomino.nextSibling); // Insert after
+                        } else {
+                            board.appendChild(dragInfo.placeholder);
+                        }
+                    }
+                } else if (target === board) {
+                    board.appendChild(dragInfo.placeholder);
+                }
+            } else {
+                board.classList.remove('drag-over');
+                if (dragInfo.placeholder.parentNode) {
+                    dragInfo.placeholder.parentNode.removeChild(dragInfo.placeholder);
+                }
+            }
+        }
+
+        // 5. Handle the Drop
+        function onPointerUp(e) {
+            if (!dragInfo) return;
+
+            document.removeEventListener('pointermove', onPointerMove);
+            document.removeEventListener('pointerup', onPointerUp);
+            document.removeEventListener('pointercancel', onPointerUp);
+
+            board.classList.remove('drag-over');
+            dragInfo.ghost.remove();
+
+            if (dragInfo.placeholder.parentNode === board) {
+                // Dropped successfully inside the board
+                if (dragInfo.source === 'bank') {
+                    const newDom = createBoardDomino(dragInfo.element.dataset.top, dragInfo.element.dataset.bot);
+                    board.insertBefore(newDom, dragInfo.placeholder);
+                } else {
+                    dragInfo.element.style.display = 'flex';
+                    board.insertBefore(dragInfo.element, dragInfo.placeholder);
+                }
+            } else {
+                // Dropped outside the board (acts as a delete)
+                if (dragInfo.source === 'board') {
+                    dragInfo.element.remove();
+                }
+            }
+
+            if (dragInfo.placeholder.parentNode) {
+                dragInfo.placeholder.parentNode.removeChild(dragInfo.placeholder);
+            }
+
+            if (dragInfo.source === 'board' && dragInfo.element.parentNode) {
+                dragInfo.element.style.display = 'flex'; // Failsafe restore visibility
+            }
+
+            dragInfo = null;
+            checkWinCondition();
+        }
+
+        // --- Win Logic ---
+        function checkWinCondition() {
+            const currentDominos = board.querySelectorAll('.domino.board-item');
+            const topTracker = document.getElementById('top-tracker');
+            const botTracker = document.getElementById('bot-tracker');
+            
+            if (currentDominos.length === 0) {
+                board.classList.remove('win');
+                topTracker.textContent = "-";
+                botTracker.textContent = "-";
+                return;
+            }
+
+            let topStr = "";
+            let botStr = "";
+
+            currentDominos.forEach(d => {
+                topStr += d.dataset.top.replace(/\s+/g, '');
+                botStr += d.dataset.bot.replace(/\s+/g, '');
+            });
+
+            topTracker.textContent = topStr;
+            botTracker.textContent = botStr;
+
+            if (topStr === botStr && currentDominos.length > 0) {
+                board.classList.add('win');
+            } else {
+                board.classList.remove('win');
+            }
+        }
+    </script>
+</body>
+</html>

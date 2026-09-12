@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مینی‌گیم: کدگذاری ماشین تورینگ</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f9;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --primary-color: #4a90e2;
+            --success-color: #27ae60;
+            --success-light: #e8f8f5;
+            --highlight-color: #e8f8f5;
+            --border-color: #dcdde1;
+            --drag-color: #f1c40f;
+            --shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tahoma', 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            padding: 30px;
+            position: relative;
+            min-height: 500px;
+            display: none;
+        }
+
+        .game-container.active { display: block; animation: fadeIn 0.5s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .game-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .game-desc {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        h2 { margin-bottom: 15px; color: #2c3e50; }
+        p { line-height: 1.6; margin-bottom: 15px; }
+
+        .graph-container {
+            width: 100%;
+            height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #fafafa;
+            border-radius: 15px;
+            border: 1px dashed var(--border-color);
+            overflow: hidden;
+        }
+
+        svg { width: 100%; height: 100%; max-width: 800px; }
+
+        .state-circle {
+            fill: #fff;
+            stroke: #333;
+            stroke-width: 2;
+            transition: all 0.3s ease;
+        }
+
+        .state-circle.final { stroke-width: 4; }
+        .state-circle.active { fill: var(--highlight-color); stroke: var(--success-color); stroke-width: 3; }
+
+        .state-text {
+            font-size: 18px;
+            font-weight: bold;
+            fill: #333;
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+
+        .transition-path {
+            fill: none;
+            stroke: #555;
+            stroke-width: 2;
+            transition: all 0.3s ease;
+        }
+
+        .transition-path.active { stroke: var(--success-color); stroke-width: 3; }
+
+        .transition-text {
+            font-size: 12px;
+            fill: #555;
+            text-anchor: start;
+            direction: ltr;
+            transition: all 0.3s ease;
+        }
+
+        .transition-text.active { fill: var(--success-color); font-weight: bold; font-size: 14px; }
+
+        .drop-area {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+            direction: ltr;
+        }
+
+        .drop-slot {
+            width: 100px;
+            height: 60px;
+            border: 2px dashed #bbb;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f9f9f9;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .drop-slot .label {
+            position: absolute;
+            top: -24px;
+            font-size: 11px;
+            color: #888;
+            white-space: nowrap;
+            text-align: center;
+            width: 100%;
+            direction: rtl;
+        }
+
+        .drop-slot.drag-over {
+            border-color: var(--primary-color);
+            background: #eef5fc;
+            transform: scale(1.05);
+        }
+
+        .drop-slot.correct {
+            border-color: var(--success-color);
+            background: var(--success-light);
+            border-style: solid;
+        }
+
+        .drop-slot.correct::after {
+            content: '✓';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: var(--success-color);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .drop-slot.incorrect {
+            border-color: #e74c3c;
+            background: #fdedec;
+            animation: shake 0.3s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .card-pool {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            min-height: 80px;
+            padding: 15px;
+            background: #f0f2f5;
+            border-radius: 15px;
+            border: 2px dashed #dcdde1;
+        }
+
+        .drag-card {
+            width: 80px;
+            height: 50px;
+            background: var(--drag-color);
+            color: #333;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: grab;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.1s, background 0.2s;
+            user-select: none;
+            font-size: 14px;
+            touch-action: none;
+        }
+
+        .drag-card:active { cursor: grabbing; transform: scale(0.95); }
+        .drag-card.dragging { opacity: 0.5; transform: scale(1.1); }
+        .drag-card.hidden { display: none; }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            background: var(--primary-color);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(74, 144, 226, 0.3);
+            margin-top: 15px;
+        }
+
+        .btn:hover { background: #357abd; }
+        .btn:active { transform: translateY(2px); box-shadow: 0 2px 4px rgba(74, 144, 226, 0.3); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
+        .btn-success { background: var(--success-color); box-shadow: 0 4px 6px rgba(46, 204, 113, 0.3); }
+        .btn-success:hover { background: #219a52; }
+        .btn-warning { background: #f39c12; box-shadow: 0 4px 6px rgba(243, 156, 18, 0.3); }
+        .btn-warning:hover { background: #e67e22; }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .result-guide {
+            font-size: 14px;
+            font-weight: bold;
+            color: #555;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .result-bars {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            direction: ltr;
+        }
+
+        .result-bar {
+            flex: 1;
+            min-width: 120px;
+            height: 40px;
+            border: 2px dashed #bbb;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f9f9f9;
+            font-family: monospace;
+            font-size: 12px;
+            color: #555;
+            transition: all 0.3s ease;
+            padding: 0 5px;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .result-bar.filled {
+            border-style: solid;
+            border-color: var(--success-color);
+            background: var(--success-light);
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        .pieces-line-container {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding: 15px 0;
+            margin: 20px 0;
+            direction: ltr;
+            background: #fafafa;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            min-height: 80px;
+        }
+
+        .string-piece {
+            display: inline-block;
+            background: #eef5fc;
+            padding: 8px 4px;
+            border-radius: 5px;
+            margin: 0 6px;
+            font-family: monospace;
+            font-size: 16px;
+            border: 1px solid #d6eaf8;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .string-piece.joined {
+            background: #d5f5e3;
+            border-color: #a9dfbf;
+            margin: 0;
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+            padding: 8px 0;
+        }
+
+        .string-piece.joined:first-child {
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+            border-right: 1px solid #a9dfbf;
+            padding-right: 4px;
+        }
+
+        .string-piece.joined:last-child {
+            border-top-left-radius: 5px;
+            border-bottom-left-radius: 5px;
+            border-left: 1px solid #a9dfbf;
+            padding-left: 4px;
+        }
+
+        .final-string {
+            font-family: monospace;
+            font-size: 16px;
+            background: #fdf2e9;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #fad7a1;
+            direction: ltr;
+            text-align: left;
+            margin: 20px 0;
+            word-break: break-all;
+            line-height: 1.8;
+        }
+
+        .encoded-string {
+            font-family: monospace;
+            font-size: 18px;
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            direction: ltr;
+            text-align: left;
+            word-break: break-all;
+            line-height: 1.8;
+            margin: 20px 0;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .graph-reveal { display: none; margin-top: 20px; animation: fadeIn 0.8s ease; }
+        .graph-reveal.show { display: block; }
+
+        .arrow-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 30px 0;
+        }
+
+        .arrow-diagram span {
+            padding: 10px 20px;
+            background: #eef5fc;
+            border-radius: 10px;
+            border: 2px solid var(--primary-color);
+        }
+
+        .arrow-diagram .arrow { font-size: 30px; color: #555; }
+
+        .end-game-text {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--success-color);
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--success-light);
+            border-radius: 15px;
+            animation: fadeIn 1s ease;
+        }
+
+        .feedback {
+            text-align: center;
+            font-weight: bold;
+            margin-top: 15px;
+            min-height: 24px;
+            transition: color 0.3s;
+            font-size: 16px;
+        }
+
+        .feedback.success { color: var(--success-color); }
+        .feedback.error { color: #e74c3c; }
+
+        @media (max-width: 700px) {
+            .drop-slot { width: 60px; height: 50px; font-size: 12px; }
+            .drag-card { width: 60px; height: 40px; font-size: 12px; }
+            .game-container { padding: 15px; }
+            .drop-slot .label { font-size: 9px; }
+            .result-bar { min-width: 90px; font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- STEP 1 -->
+    <div class="game-container active" id="step1">
+        <div class="game-title">ماشین تورینگ استیت قبلی رو نظر بگیرید</div>
+        <div class="game-desc">هر قانون یا دستور حرکتی توی این ماشین، پنج تا جزء داره. با توجه به یال سبز رنگ هر کدام از این پنج قسمت رو کامل کن</div>
+        
+        <div class="graph-container">
+            <svg id="svg-graph" viewBox="0 0 800 250">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#555" />
+                    </marker>
+                    <marker id="arrowhead-active" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#27ae60" />
+                    </marker>
+                </defs>
+                <circle id="state-q0" class="state-circle" cx="200" cy="125" r="40" />
+                <text class="state-text" x="200" y="125">q0</text>
+                
+                <circle id="state-q1" class="state-circle" cx="450" cy="125" r="40" />
+                <text class="state-text" x="450" y="125">q1</text>
+                
+                <circle id="state-q2" class="state-circle final" cx="700" cy="125" r="40" />
+                <circle cx="700" cy="125" r="34" fill="none" stroke="#333" stroke-width="2" />
+                <text class="state-text" x="700" y="125">q2</text>
+
+                <path d="M 120 125 L 155 125" fill="none" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
+
+                <path id="trans-q0-1" class="transition-path" d="M 180 90 C 150 40, 250 40, 220 90" marker-end="url(#arrowhead)" />
+                <text id="text-q0-1" class="transition-text" x="165" y="45">1 → 1, R</text>
+                
+                <path id="trans-q0-0" class="transition-path" d="M 220 160 C 250 210, 150 210, 180 160" marker-end="url(#arrowhead)" />
+                <text id="text-q0-0" class="transition-text" x="165" y="215">0 → 0, R</text>
+
+                <path id="trans-q0-q1" class="transition-path" d="M 240 125 L 405 125" marker-end="url(#arrowhead)" />
+                <text id="text-q0-q1" class="transition-text" x="290" y="115">□ → □, L</text>
+
+                <path id="trans-q1-1" class="transition-path" d="M 430 90 C 400 40, 500 40, 470 90" marker-end="url(#arrowhead)" />
+                <text id="text-q1-1" class="transition-text" x="415" y="45">1 → 0, L</text>
+
+                <path id="trans-q1-q2-0" class="transition-path" d="M 490 110 L 655 110" marker-end="url(#arrowhead)" />
+                <text id="text-q1-q2-0" class="transition-text" x="540" y="100">0 → 1, L</text>
+
+                <path id="trans-q1-q2-box" class="transition-path" d="M 490 140 L 655 140" marker-end="url(#arrowhead)" />
+                <text id="text-q1-q2-box" class="transition-text" x="540" y="155">□ → 1, L</text>
+            </svg>
+        </div>
+
+        <div class="drop-area" id="drop-area">
+            <div class="drop-slot" data-index="0"><span class="label">حالت اولیه</span></div>
+            <div class="drop-slot" data-index="1"><span class="label">چیزی که می‌خونه</span></div>
+            <div class="drop-slot" data-index="2"><span class="label">حالت بعدی</span></div>
+            <div class="drop-slot" data-index="3"><span class="label">چیزی که می‌نویسه</span></div>
+            <div class="drop-slot" data-index="4"><span class="label">جهت حرکت</span></div>
+        </div>
+
+        <div class="card-pool" id="card-pool"></div>
+
+        <div class="feedback" id="feedback-step1"></div>
+
+        <div class="action-buttons" id="action-buttons" style="display: none;">
+            <button class="btn btn-success" id="btn-continue">ادامه</button>
+            <button class="btn btn-warning" id="btn-auto">تکمیل خودکار</button>
+        </div>
+
+        <div class="action-buttons" id="next-step-container" style="display: none;">
+            <button class="btn btn-success" id="btn-next-step">مرحله بعد</button>
+        </div>
+
+        <div class="result-guide">قوانین رو به صورت زیر یادداشت می‌کنیم</div>
+        
+        <div class="result-bars" id="result-bars">
+            <div class="result-bar" data-index="0"></div>
+            <div class="result-bar" data-index="1"></div>
+            <div class="result-bar" data-index="2"></div>
+            <div class="result-bar" data-index="3"></div>
+            <div class="result-bar" data-index="4"></div>
+            <div class="result-bar" data-index="5"></div>
+        </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="game-container" id="step2">
+        <div class="game-desc" style="font-size: 16px; margin-bottom: 20px;">
+            حالا همه این قوانین رو می‌خوایم بذاریم کنار هم و یه رشته بسازیم. رشته‌مون چه شکلی میشه؟
+        </div>
+        
+        <div class="pieces-line-container" id="pieces-container"></div>
+
+        <div style="text-align: center;">
+            <button class="btn" id="btn-join">چسباندن قطعه‌ها</button>
+        </div>
+
+        <div id="joined-result" style="display: none; margin-top: 20px;">
+            <p style="font-size: 15px; line-height: 1.8;">
+                اگر اول این رشته حالت اولیه ماشین تورینگ رو بذاریم و آخرش هم حالت‌های نهایی رو، یه جورایی کد ماشین تورینگ ما میشه.
+            </p>
+            <div class="final-string" id="final-string-display"></div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-success" id="btn-to-step3">مرحله بعد</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="game-container" id="step3">
+        
+        <!-- متن توضیحی جدید -->
+        <p style="font-size: 15px; line-height: 1.8; margin-bottom: 15px;">
+            دیدیم که میتونیم میتونیم اطلاعات یه ماشین تورینگ رو تبدیل به رشته بلند کنیم. اگه این رشته‌ی بلند رو به یه آدم (یا ماشین) بدیم، آیا می‌تونه گراف یا جدول کامل اون ماشین تورینگ اولی رو بدون هیچ ابهامی کاملا بازسازی کنه؟
+            <br>
+            امتحانش کن. سعی کن از روی این رشته، ماشین تورینگ رو بازسازی کنی!
+        </p>
+
+        <div class="encoded-string" id="encoded-string-display">
+            q0(q0,0,q0,0,R)(q0,1,q1,1,R)(q1,0,q2,0,R)(q2,1,q2,1,R)(q2,0,q1,0,R)(q1,1,q0,1,R)(q0,-,accept,-,R)accept
+        </div>
+
+        <p style="font-size: 15px; margin-top: 15px; margin-bottom: 10px;">
+            برای چک کردن جواب روی گزینه زیر بزنید
+        </p>
+
+        <div style="text-align: center;">
+            <button class="btn" id="btn-show-graph">نمایش گراف</button>
+        </div>
+
+        <div class="graph-reveal" id="graph-reveal">
+            <!-- گراف SVG با فلش‌های صحیح -->
+            <div class="graph-container" style="height: 400px;">
+                <svg viewBox="0 0 850 400">
+                    <defs>
+                        <marker id="arrowhead3" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#555" />
+                        </marker>
+                        <marker id="arrowhead3-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#3498db" />
+                        </marker>
+                    </defs>
+
+                    <!-- حالت‌ها -->
+                    <circle class="state-circle" cx="150" cy="150" r="40" fill="#3498db" stroke="#2c3e50" />
+                    <text class="state-text" x="150" y="150" fill="#fff">q0</text>
+
+                    <circle class="state-circle" cx="400" cy="150" r="40" fill="#e67e22" stroke="#2c3e50" />
+                    <text class="state-text" x="400" y="150" fill="#fff">q1</text>
+
+                    <circle class="state-circle" cx="650" cy="150" r="40" fill="#27ae60" stroke="#2c3e50" />
+                    <text class="state-text" x="650" y="150" fill="#fff">q2</text>
+
+                    <circle class="state-circle final" cx="150" cy="330" r="40" fill="#e74c3c" stroke="#2c3e50" />
+                    <circle cx="150" cy="330" r="34" fill="none" stroke="#2c3e50" stroke-width="2" />
+                    <text class="state-text" x="150" y="330" fill="#fff">accept</text>
+
+                    <!-- فلش شروع -->
+                    <path d="M 50 150 L 100 150" fill="none" stroke="#333" stroke-width="2" marker-end="url(#arrowhead3)" />
+
+                    <!-- q0 -> q0 (self loop 0) -->
+                    <path d="M 120 115 C 70 50, 230 50, 180 115" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="120" y="60" font-size="12" fill="#555">0 → 0, R</text>
+
+                    <!-- q0 -> q1 (1) -->
+                    <path d="M 190 135 L 355 135" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="260" y="125" font-size="12" fill="#555">1 → 1, R</text>
+
+                    <!-- q1 -> q0 (1) برگشت -->
+                    <path d="M 360 165 L 195 165" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="260" y="185" font-size="12" fill="#555">1 → 1, R</text>
+
+                    <!-- q1 -> q2 (0) -->
+                    <path d="M 440 135 L 605 135" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="520" y="125" font-size="12" fill="#555">0 → 0, R</text>
+
+                    <!-- q2 -> q1 (0) برگشت -->
+                    <path d="M 610 165 L 445 165" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="520" y="185" font-size="12" fill="#555">0 → 0, R</text>
+
+                    <!-- q2 -> q2 (self loop 1) -->
+                    <path d="M 620 115 C 570 50, 730 50, 680 115" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="620" y="60" font-size="12" fill="#555">1 → 1, R</text>
+
+                    <!-- q0 -> accept (Blank) -->
+                    <path d="M 150 190 L 150 285" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="160" y="240" font-size="12" fill="#555">□ → □, R</text>
+
+                </svg>
+            </div>
+
+            <!-- پایان بازی -->
+            <div class="end-game-text">پایان بازی</div>
+        </div>
+    </div>
+
+    <script>
+        // --- Game Data ---
+        const transitions = [
+            { id: 'q0-1', from: 'q0', read: '1', to: 'q0', write: '1', dir: 'R', svgId: 'trans-q0-1', textId: 'text-q0-1' },
+            { id: 'q0-0', from: 'q0', read: '0', to: 'q0', write: '0', dir: 'R', svgId: 'trans-q0-0', textId: 'text-q0-0' },
+            { id: 'q0-q1', from: 'q0', read: '□', to: 'q1', write: '□', dir: 'L', svgId: 'trans-q0-q1', textId: 'text-q0-q1' },
+            { id: 'q1-1', from: 'q1', read: '1', to: 'q1', write: '0', dir: 'L', svgId: 'trans-q1-1', textId: 'text-q1-1' },
+            { id: 'q1-q2-0', from: 'q1', read: '0', to: 'q2', write: '1', dir: 'L', svgId: 'trans-q1-q2-0', textId: 'text-q1-q2-0' },
+            { id: 'q1-q2-box', from: 'q1', read: '□', to: 'q2', write: '1', dir: 'L', svgId: 'trans-q1-q2-box', textId: 'text-q1-q2-box' }
+        ];
+
+        let currentTransitionIndex = 0;
+
+        const step1El = document.getElementById('step1');
+        const step2El = document.getElementById('step2');
+        const step3El = document.getElementById('step3');
+        const dropSlots = document.querySelectorAll('.drop-slot');
+        const cardPool = document.getElementById('card-pool');
+        const feedbackStep1 = document.getElementById('feedback-step1');
+        const actionButtons = document.getElementById('action-buttons');
+        const nextStepContainer = document.getElementById('next-step-container');
+        const btnContinue = document.getElementById('btn-continue');
+        const btnAuto = document.getElementById('btn-auto');
+        const btnNextStep = document.getElementById('btn-next-step');
+        const resultBars = document.querySelectorAll('.result-bar');
+
+        function initStep1() {
+            currentTransitionIndex = 0;
+            resultBars.forEach(bar => {
+                bar.textContent = '';
+                bar.classList.remove('filled');
+            });
+            highlightTransition(0);
+            generateCardsForTransition(0);
+            setupDropSlots();
+            actionButtons.style.display = 'none';
+            nextStepContainer.style.display = 'none';
+            cardPool.style.pointerEvents = 'auto';
+        }
+
+        function highlightTransition(index) {
+            document.querySelectorAll('.transition-path').forEach(el => {
+                el.classList.remove('active');
+                el.setAttribute('marker-end', 'url(#arrowhead)');
+            });
+            document.querySelectorAll('.transition-text').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.state-circle').forEach(el => el.classList.remove('active'));
+
+            if (index >= transitions.length) {
+                feedbackStep1.textContent = "آفرین! همه دستورها کامل شدند.";
+                feedbackStep1.className = "feedback success";
+                nextStepContainer.style.display = 'flex';
+                actionButtons.style.display = 'none';
+                return;
+            }
+
+            const t = transitions[index];
+            const pathEl = document.getElementById(t.svgId);
+            const textEl = document.getElementById(t.textId);
+            
+            pathEl.classList.add('active');
+            pathEl.setAttribute('marker-end', 'url(#arrowhead-active)');
+            textEl.classList.add('active');
+            
+            document.getElementById(`state-${t.from}`).classList.add('active');
+            document.getElementById(`state-${t.to}`).classList.add('active');
+        }
+
+        function generateCardsForTransition(index) {
+            const t = transitions[index];
+            const values = [t.from, t.read, t.to, t.write, t.dir];
+            const shuffled = [...values].sort(() => Math.random() - 0.5);
+
+            cardPool.innerHTML = '';
+            shuffled.forEach(val => {
+                const card = document.createElement('div');
+                card.className = 'drag-card';
+                card.draggable = true;
+                card.textContent = val;
+                card.dataset.value = val;
+                
+                card.addEventListener('dragstart', handleDragStart);
+                card.addEventListener('dragend', handleDragEnd);
+                card.addEventListener('touchstart', handleTouchStart, {passive: false});
+                card.addEventListener('touchmove', handleTouchMove, {passive: false});
+                card.addEventListener('touchend', handleTouchEnd);
+
+                cardPool.appendChild(card);
+            });
+
+            dropSlots.forEach((slot) => {
+                const label = slot.querySelector('.label');
+                slot.innerHTML = '';
+                if (label) slot.appendChild(label);
+                slot.classList.remove('correct', 'incorrect', 'drag-over');
+                slot.dataset.filled = 'false';
+            });
+
+            feedbackStep1.textContent = '';
+            feedbackStep1.className = 'feedback';
+            actionButtons.style.display = 'none';
+            cardPool.style.pointerEvents = 'auto';
+        }
+
+        let draggedCard = null;
+
+        function handleDragStart(e) {
+            draggedCard = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.value);
+        }
+
+        function handleDragEnd(e) {
+            this.classList.remove('dragging');
+            draggedCard = null;
+        }
+
+        let touchClone = null;
+        let touchOffsetX, touchOffsetY;
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            draggedCard = this;
+            this.classList.add('dragging');
+            
+            const touch = e.touches[0];
+            const rect = this.getBoundingClientRect();
+            touchOffsetX = touch.clientX - rect.left;
+            touchOffsetY = touch.clientY - rect.top;
+
+            touchClone = this.cloneNode(true);
+            touchClone.style.position = 'fixed';
+            touchClone.style.left = (touch.clientX - touchOffsetX) + 'px';
+            touchClone.style.top = (touch.clientY - touchOffsetY) + 'px';
+            touchClone.style.zIndex = '1000';
+            touchClone.style.pointerEvents = 'none';
+            touchClone.style.width = rect.width + 'px';
+            touchClone.style.height = rect.height + 'px';
+            touchClone.style.opacity = '0.8';
+            document.body.appendChild(touchClone);
+        }
+
+        function handleTouchMove(e) {
+            if (!touchClone) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            touchClone.style.left = (touch.clientX - touchOffsetX) + 'px';
+            touchClone.style.top = (touch.clientY - touchOffsetY) + 'px';
+
+            const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+            dropSlots.forEach(slot => slot.classList.remove('drag-over'));
+            if (elem && elem.closest('.drop-slot')) {
+                elem.closest('.drop-slot').classList.add('drag-over');
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchClone) return;
+            document.body.removeChild(touchClone);
+            touchClone = null;
+
+            const touch = e.changedTouches[0];
+            const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            dropSlots.forEach(slot => slot.classList.remove('drag-over'));
+
+            if (elem && elem.closest('.drop-slot')) {
+                const slot = elem.closest('.drop-slot');
+                if (slot.dataset.filled === 'false') {
+                    placeCardInSlot(draggedCard, slot);
+                }
+            }
+
+            if (draggedCard) draggedCard.classList.remove('dragging');
+            draggedCard = null;
+        }
+
+        function setupDropSlots() {
+            dropSlots.forEach(slot => {
+                slot.dataset.filled = 'false';
+                
+                slot.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    if (slot.dataset.filled === 'false') {
+                        slot.classList.add('drag-over');
+                    }
+                });
+
+                slot.addEventListener('dragleave', e => {
+                    slot.classList.remove('drag-over');
+                });
+
+                slot.addEventListener('drop', e => {
+                    e.preventDefault();
+                    slot.classList.remove('drag-over');
+                    if (slot.dataset.filled === 'true') return;
+
+                    const cardValue = e.dataTransfer.getData('text/plain');
+                    const card = Array.from(cardPool.children).find(c => c.dataset.value === cardValue && !c.classList.contains('hidden'));
+                    
+                    if (card) {
+                        placeCardInSlot(card, slot);
+                    }
+                });
+            });
+        }
+
+        function saveResultToBar(index, transition) {
+            const str = `(${transition.from},${transition.read},${transition.to},${transition.write},${transition.dir})`;
+            resultBars[index].textContent = str;
+            resultBars[index].classList.add('filled');
+        }
+
+        function placeCardInSlot(card, slot) {
+            const t = transitions[currentTransitionIndex];
+            const slotIndex = parseInt(slot.dataset.index);
+            const expectedValues = [t.from, t.read, t.to, t.write, t.dir];
+            const expectedValue = expectedValues[slotIndex];
+            const actualValue = card.dataset.value;
+
+            if (actualValue === expectedValue) {
+                slot.classList.add('correct');
+                slot.dataset.filled = 'true';
+                card.classList.add('hidden');
+                
+                const allFilled = Array.from(dropSlots).every(s => s.dataset.filled === 'true');
+                if (allFilled) {
+                    saveResultToBar(currentTransitionIndex, t);
+                    actionButtons.style.display = 'flex';
+                    feedbackStep1.textContent = '';
+                    feedbackStep1.className = "feedback";
+                    cardPool.style.pointerEvents = 'none';
+                }
+            } else {
+                slot.classList.add('incorrect');
+                feedbackStep1.textContent = "به ترتیب پنج بخش دستور دقت کن.";
+                feedbackStep1.className = "feedback error";
+                
+                setTimeout(() => {
+                    slot.classList.remove('incorrect');
+                }, 500);
+            }
+        }
+
+        function finishCurrentTransition() {
+            const t = transitions[currentTransitionIndex];
+            document.getElementById(t.svgId).style.opacity = '0.3';
+            document.getElementById(t.textId).style.opacity = '0.3';
+            
+            currentTransitionIndex++;
+            actionButtons.style.display = 'none';
+            cardPool.style.pointerEvents = 'auto';
+            
+            if (currentTransitionIndex < transitions.length) {
+                highlightTransition(currentTransitionIndex);
+                generateCardsForTransition(currentTransitionIndex);
+            } else {
+                highlightTransition(currentTransitionIndex);
+            }
+        }
+
+        btnContinue.addEventListener('click', () => {
+            finishCurrentTransition();
+        });
+
+        btnAuto.addEventListener('click', () => {
+            actionButtons.style.display = 'none';
+            cardPool.style.pointerEvents = 'auto';
+            
+            const currentT = transitions[currentTransitionIndex];
+            document.getElementById(currentT.svgId).style.opacity = '0.3';
+            document.getElementById(currentT.textId).style.opacity = '0.3';
+            
+            currentTransitionIndex++;
+            
+            function autoFillNext() {
+                if (currentTransitionIndex >= transitions.length) {
+                    highlightTransition(currentTransitionIndex);
+                    return;
+                }
+                
+                const t = transitions[currentTransitionIndex];
+                saveResultToBar(currentTransitionIndex, t);
+                document.getElementById(t.svgId).style.opacity = '0.3';
+                document.getElementById(t.textId).style.opacity = '0.3';
+                
+                currentTransitionIndex++;
+                setTimeout(autoFillNext, 400);
+            }
+            
+            setTimeout(autoFillNext, 400);
+        });
+
+        btnNextStep.addEventListener('click', () => {
+            goToStep(2);
+        });
+
+        // --- Step Navigation ---
+        function goToStep(stepNum) {
+            step1El.classList.remove('active');
+            step2El.classList.remove('active');
+            step3El.classList.remove('active');
+
+            if (stepNum === 1) {
+                step1El.classList.add('active');
+            } else if (stepNum === 2) {
+                step2El.classList.add('active');
+                initStep2();
+            } else if (stepNum === 3) {
+                step3El.classList.add('active');
+            }
+        }
+
+        // --- Step 2 Logic ---
+        function initStep2() {
+            const piecesContainer = document.getElementById('pieces-container');
+            piecesContainer.innerHTML = '';
+            
+            const pieces = [
+                '(q0,1,q0,1,R)',
+                '(q0,0,q0,0,R)',
+                '(q0,□,q1,□,L)',
+                '(q1,1,q1,0,L)',
+                '(q1,0,q2,1,L)',
+                '(q1,□,q2,1,L)'
+            ];
+
+            pieces.forEach(p => {
+                const span = document.createElement('span');
+                span.className = 'string-piece';
+                span.textContent = p;
+                piecesContainer.appendChild(span);
+            });
+
+            document.getElementById('btn-join').style.display = 'inline-block';
+            document.getElementById('joined-result').style.display = 'none';
+        }
+
+        document.getElementById('btn-join').addEventListener('click', () => {
+            const pieces = document.querySelectorAll('.string-piece');
+            
+            pieces.forEach((p, index) => {
+                setTimeout(() => {
+                    p.classList.add('joined');
+                }, index * 100);
+            });
+
+            setTimeout(() => {
+                document.getElementById('btn-join').style.display = 'none';
+                document.getElementById('joined-result').style.display = 'block';
+                
+                const finalString = 'q0' + Array.from(pieces).map(p => p.textContent).join('') + 'q2';
+                document.getElementById('final-string-display').textContent = finalString;
+            }, pieces.length * 100 + 600);
+        });
+
+        document.getElementById('btn-to-step3').addEventListener('click', () => {
+            goToStep(3);
+        });
+
+        // --- Step 3 Logic ---
+        document.getElementById('btn-show-graph').addEventListener('click', () => {
+            document.getElementById('graph-reveal').classList.add('show');
+            document.getElementById('btn-show-graph').style.display = 'none';
+        });
+
+        // --- Initialize Game ---
+        window.onload = () => {
+            initStep1();
+        };
+    </script>
+</body>
+</html>

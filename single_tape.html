@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>شبیه‌سازی ماشین تورینگ تک‌نواره</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090b0f;color:#eef1f5;font-family:Tahoma,Arial,sans-serif}
+main{max-width:1150px;margin:auto;padding:30px 20px}
+header{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #282d35;padding-bottom:18px}
+h1{font-size:24px;margin:0}.muted{color:#89929e;font-size:13px;margin-top:7px}
+.status{color:#9aa3af;font-size:13px;white-space:nowrap}.status b{color:#fff}
+.machine{margin-top:38px}.label{color:#aeb6c0;font-size:14px;margin-bottom:10px}
+
+/* One physical tape. Each cell contains exactly ONE visible thing:
+   its symbol OR the word HEAD. No A/B text is placed inside a cell. */
+.tapeWrap{position:relative;overflow:auto;padding:58px 8px 26px}
+.tape{display:flex;direction:ltr;justify-content:center;gap:5px;min-width:max-content}
+.cell{position:relative;width:58px;height:58px;flex:0 0 58px;background:#15191f;border:1px solid #3b434e;border-radius:4px;display:flex;align-items:center;justify-content:center;font:700 24px Consolas,monospace}
+.cell.sep{background:#20252c;color:#a48cff}
+.cell.logicalA,.cell.logicalB{background:#15191f;color:#fff;border:2px solid #fff}
+.cell.logicalA{box-shadow:inset 0 0 0 2px #a48cff55}
+.cell.logicalB{box-shadow:inset 0 0 0 2px #63dfff55}
+.cell.physical{outline:3px solid #fff;outline-offset:3px}
+
+/* The physical head is NOT put inside a cell and never changes the cell content.
+   It is a moving marker directly above the current physical cell. */
+.physicalMarker{position:absolute;top:8px;width:58px;height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;transition:left 1.35s linear}
+.physicalMarker .arrow{font-size:22px;line-height:18px;color:#fff}
+.physicalMarker .txt{font-size:11px;font-weight:700;color:#cfd5dd;white-space:nowrap;margin-top:2px}
+
+.legend{display:flex;justify-content:center;gap:22px;color:#89929e;font-size:12px;margin-top:6px}
+.legendItem{display:flex;align-items:center;gap:7px}.dot{width:11px;height:11px;border:1px solid #fff;border-radius:2px}.dot.a{box-shadow:inset 0 0 0 3px #a48cff55}.dot.b{box-shadow:inset 0 0 0 3px #63dfff55}
+.info{margin-top:25px;background:#101319;border:1px solid #282e37;border-radius:4px;padding:16px}
+.op{font-size:16px;margin-bottom:7px}.detail{font-size:13px;color:#9aa4b0;line-height:1.9}
+.controls{text-align:center;margin-top:16px}.btn{background:#171b21;color:#eee;border:1px solid #3a424d;border-radius:4px;padding:9px 18px;cursor:pointer}.btn:hover{background:#20252d}
+.result{display:none;text-align:center;border-top:1px solid #282e37;margin-top:24px;padding-top:24px}.result.show{display:block}.result h2{font-size:30px;margin:0 0 8px}.result p{color:#9aa4b0}
+@media(max-width:650px){main{padding:22px 12px}header{display:block}.status{margin-top:10px}.cell{width:48px;height:48px;flex-basis:48px}.physicalMarker{width:48px}}
+</style>
+</head>
+<body><main>
+<header>
+<div><h1>شبیه‌سازی ماشین تورینگ تک‌نواره</h1>
+<div class="muted">یک نوار فیزیکی واحد؛ HEADها خودِ خانه‌های نوار هستند و هد فیزیکی روی نوار حرکت می‌کند.</div></div>
+<div class="status">مرحله <b id="step">۰</b> | وضعیت <b id="state">در حال اجرا</b></div>
+</header>
+
+<section class="machine">
+<div class="label">یک نوار فیزیکی: A # B</div>
+
+<div class="tapeWrap" id="tapeWrap">
+  <div id="physicalMarker" class="physicalMarker">
+    <div class="arrow">▼</div>
+    <div class="txt">هد فیزیکی</div>
+  </div>
+  <div id="tape" class="tape"></div>
+</div>
+
+<div class="legend">
+  <div class="legendItem"><span class="dot a"></span> HEAD منطقی A</div>
+  <div class="legendItem"><span class="dot b"></span> HEAD منطقی B</div>
+  <div class="legendItem"><span class="dot"></span> موقعیت هد فیزیکی</div>
+</div>
+
+<div class="info"><div class="op" id="op"></div><div class="detail" id="detail"></div></div>
+<div class="controls"><button class="btn" id="pauseBtn" onclick="toggle()">توقف</button> <button class="btn" onclick="restart()">شروع دوباره</button></div>
+<div id="result" class="result"><h2 id="resultTitle"></h2><p id="resultText"></p></div>
+</section></main>
+
+<script>
+const A="010110",B="010110";
+const symbols=[...A,"#",...B];
+
+let ha=0;                 // logical A head position
+let hb=A.length+1;        // logical B head position
+let physical=0;           // one physical head position
+let step=0,phase="goA",paused=false,timer=null;
+
+const $=id=>document.getElementById(id);
+
+function draw(){
+  const tape=$("tape");
+  tape.innerHTML="";
+
+  symbols.forEach((symbol,i)=>{
+    const c=document.createElement("div");
+
+    // A cell has exactly one visible content: HEAD.
+    // The underlying symbol remains in JS and is restored when the head moves.
+    if(i===ha){
+      c.className="cell logicalA";
+      c.textContent="HEAD";
+    }else if(i===hb){
+      c.className="cell logicalB";
+      c.textContent="HEAD";
+    }else{
+      c.className="cell"+(symbol==="#"?" sep":"");
+      c.textContent=symbol;
+    }
+
+    if(i===physical)c.classList.add("physical");
+    tape.appendChild(c);
+  });
+
+  requestAnimationFrame(positionPhysicalMarker);
+  $("step").textContent=step.toLocaleString("fa-IR");
+}
+
+function positionPhysicalMarker(){
+  const wrap=$("tapeWrap"), marker=$("physicalMarker"), cells=[...$("tape").children];
+  const target=cells[physical];
+  if(!target)return;
+  const wr=wrap.getBoundingClientRect(), tr=target.getBoundingClientRect();
+  marker.style.left=(tr.left-wr.left+wrap.scrollLeft)+"px";
+}
+
+function msg(o,d){$("op").textContent=o;$("detail").textContent=d}
+
+function moveTo(target,next){
+  if(paused)return;
+
+  if(physical===target){
+    phase=next;
+    timer=setTimeout(run,6000);
+    return;
+  }
+
+  physical += target>physical?1:-1;
+  step++;
+  draw();
+
+  msg("هد فیزیکی روی نوار حرکت می‌کند.",
+      `هد فیزیکی خانه‌به‌خانه حرکت کرد و اکنون روی خانه‌ی ${physical.toLocaleString("fa-IR")} است.`);
+
+  timer=setTimeout(()=>moveTo(target,next),1500);
+}
+
+function run(){
+  if(paused)return;
+  draw();
+
+  if(phase==="goA"){
+    msg("هد فیزیکی به HEAD منطقی A می‌رود.",
+        "HEAD منطقی A خودِ یکی از خانه‌های نوار است؛ هد فیزیکی برای خواندن آن به همان خانه می‌رود.");
+    phase="movingA";
+    timer=setTimeout(()=>moveTo(ha,"readA"),2500);
+
+  }else if(phase==="readA"){
+    msg("ماشین نماد HEAD A را می‌خواند.",
+        `نماد اصلی این خانه: ${symbols[ha]}`);
+    phase="goB";
+    timer=setTimeout(run,6000);
+
+  }else if(phase==="goB"){
+    msg("هد فیزیکی به HEAD منطقی B می‌رود.",
+        "HEAD منطقی B هم یک خانه‌ی واقعی از همان نوار است؛ هد فیزیکی حالا به آن می‌رود.");
+    phase="movingB";
+    timer=setTimeout(()=>moveTo(hb,"readB"),2500);
+
+  }else if(phase==="readB"){
+    msg("ماشین نماد HEAD B را می‌خواند.",
+        `نماد اصلی این خانه: ${symbols[hb]}`);
+    phase="compare";
+    timer=setTimeout(run,6000);
+
+  }else if(phase==="compare"){
+    if(symbols[ha]!==symbols[hb])return finish(false);
+
+    if(ha===A.length-1 && hb===symbols.length-1)return finish(true);
+
+    msg("دو نماد برابرند.",
+        `${symbols[ha]} = ${symbols[hb]} ✓`);
+    phase="advance";
+    timer=setTimeout(run,6000);
+
+  }else if(phase==="advance"){
+    ha++;
+    hb++;
+    step++;
+    draw();
+
+    msg("HEADها یک خانه جلو می‌روند.",
+        "خانه‌ی قبلی دوباره نماد اصلی خود را نشان می‌دهد و خانه‌ی بعدی به HEAD تبدیل می‌شود.");
+    phase="goA";
+    timer=setTimeout(run,6000);
+  }
+}
+
+function finish(ok){
+  clearTimeout(timer);
+  $("state").textContent=ok?"پذیرش":"رد";
+  $("result").classList.add("show");
+  $("resultTitle").textContent=ok?"ACCEPT":"REJECT";
+  $("resultText").textContent=ok?"دو رشته یکسان بودند.":"دو رشته یکسان نبودند.";
+  msg("اجرای ماشین تمام شد.",ok?"ماشین به وضعیت پذیرش رسید.":"ماشین به وضعیت رد رسید.");
+}
+
+function toggle(){
+  paused=!paused;
+  $("pauseBtn").textContent=paused?"ادامه":"توقف";
+  $("state").textContent=paused?"متوقف":"در حال اجرا";
+  if(!paused)run();
+}
+
+function restart(){
+  clearTimeout(timer);
+  ha=0;hb=A.length+1;physical=0;step=0;phase="goA";paused=false;
+  $("pauseBtn").textContent="توقف";
+  $("state").textContent="در حال اجرا";
+  $("result").classList.remove("show");
+  run();
+}
+
+window.addEventListener("resize",positionPhysicalMarker);
+$("tapeWrap").addEventListener("scroll",positionPhysicalMarker);
+restart();
+</script>
+</body>
+</html>

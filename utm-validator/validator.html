@@ -29,15 +29,28 @@
             30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
             40%, 60% { transform: translate3d(6px, 0, 0); }
         }
+
+        /* انیمیشن باز شدن قفل */
+        .unlock-anim {
+            animation: unlockPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+
+        @keyframes unlockPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body class="flex items-center justify-center p-4 text-slate-800">
 
     <div class="rounded-2xl p-8 w-full max-w-sm flex flex-col items-center transform transition-all">
         
-        <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-3xl mb-4 shadow-sm border border-blue-100">
-            <i class="fa-solid fa-lock"></i>
+        <!-- آیدی‌های lockContainer و lockIcon اضافه شد -->
+        <div id="lockContainer" class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-3xl mb-4 shadow-sm border border-blue-100 transition-colors duration-300">
+            <i id="lockIcon" class="fa-solid fa-lock"></i>
         </div>
+        
         <h1 class="text-2xl font-bold mb-2 text-slate-800">قفلِ استیت</h1>
         <p class="text-slate-500 text-sm text-center mb-8">برای رفتن به مرحله بعد، رمز صحیح را وارد کنید.</p>
         
@@ -64,6 +77,8 @@
         const verifyBtn = document.getElementById('verifyBtn');
         const statusMsg = document.getElementById('statusMsg');
         const inputContainer = document.getElementById('inputContainer');
+        const lockIcon = document.getElementById('lockIcon');
+        const lockContainer = document.getElementById('lockContainer');
 
         function checkCode() {
             const val = codeInput.value.trim();
@@ -78,6 +93,12 @@
                 codeInput.classList.replace('focus:border-blue-500', 'focus:border-green-500');
                 codeInput.classList.replace('focus:ring-blue-500/20', 'focus:ring-green-500/20');
                 
+                // تغییر آیکون، اضافه شدن انیمیشن و تغییر رنگ حباب قفل
+                lockIcon.className = "fa-solid fa-lock-open unlock-anim";
+                lockContainer.classList.replace('bg-blue-50', 'bg-green-50');
+                lockContainer.classList.replace('text-blue-600', 'text-green-600');
+                lockContainer.classList.replace('border-blue-100', 'border-green-100');
+
                 codeInput.disabled = true;
                 verifyBtn.disabled = true;
                 verifyBtn.classList.replace('bg-blue-600', 'bg-green-600');

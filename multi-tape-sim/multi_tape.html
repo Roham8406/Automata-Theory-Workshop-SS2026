@@ -1,45 +1,71 @@
-<!doctype html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>شبیه‌سازی ماشین تورینگ چندنواره</title>
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ماشین تورینگ دو نواره</title><style>
+*{box-sizing:border-box}body{margin:0;background:#090b0f;color:#eef1f5;font-family:Tahoma,Arial,sans-serif}main{max-width:1100px;margin:auto;padding:28px 20px}header{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #282d35;padding-bottom:18px}h1{font-size:24px;margin:0}.muted{color:#89929e;font-size:13px;margin-top:7px}.status{color:#9aa3af;font-size:13px;white-space:nowrap}.status b{color:#fff}.machine{margin-top:28px}.inputs{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-bottom:24px}.field label{display:block;color:#aeb6c0;font-size:13px;margin-bottom:7px}.field input{width:100%;background:#101319;color:#fff;border:1px solid #3a424d;border-radius:5px;padding:11px 12px;font:700 18px Consolas,monospace;direction:ltr}.inputBtn{height:43px}.label{color:#aeb6c0;font-size:14px;margin:14px 0 8px}.tape{display:flex;direction:ltr;justify-content:center;gap:5px;overflow:auto;padding:38px 8px 50px;min-height:130px}.cell{position:relative;width:58px;height:58px;flex:0 0 58px;background:#15191f;border:1px solid #3b434e;border-radius:4px;display:flex;align-items:center;justify-content:center;font:700 24px Consolas,monospace}.cell.head{border:3px solid #fff;box-shadow:0 0 0 2px #ffffff55}.headmark{position:absolute;bottom:-26px;left:50%;transform:translateX(-50%);font:900 14px Consolas,monospace;color:#cfd5dc;white-space:nowrap}.read{display:grid;grid-template-columns:1fr 1fr;gap:10px}.box{background:#101319;border:1px solid #282e37;border-radius:4px;padding:13px}.box span{display:block;color:#7f8895;font-size:11px;margin-bottom:6px}.box b{font:700 22px Consolas,monospace}.info{margin-top:18px;background:#101319;border:1px solid #282e37;border-radius:4px;padding:16px}.op{font-size:16px;margin-bottom:7px}.detail{font-size:13px;color:#9aa4b0;line-height:1.9}.controls{text-align:center;margin-top:16px}.btn{background:#171b21;color:#eee;border:1px solid #3a424d;border-radius:4px;padding:9px 18px;cursor:pointer}.btn:hover{background:#20252d}.result{display:none;text-align:center;border-top:1px solid #282e37;margin-top:24px;padding-top:24px}.result.show{display:block}.result h2{font-size:30px;margin:0 0 8px}.result p{color:#9aa4b0}@media(max-width:650px){main{padding:22px 12px}header{display:block}.status{margin-top:10px}.inputs{grid-template-columns:1fr}.read{grid-template-columns:1fr}.cell{width:48px;height:48px;flex-basis:48px}}
+
+.graphPanel{margin-top:22px;background:#101319;border:1px solid #282e37;border-radius:6px;padding:16px}.graphTitle{font-size:15px;margin-bottom:5px}.graphHint{font-size:12px;color:#89929e;margin-bottom:14px}.graph{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;direction:ltr}.gNode{min-width:104px;padding:10px 9px;border:1px solid #3a424d;border-radius:7px;background:#15191f;text-align:center;transition:.2s}.gNode b{display:block;font-size:12px}.gNode span{display:block;font-size:10px;color:#89929e;margin-top:4px}.gNode.active{border-color:#fff;box-shadow:0 0 0 2px #ffffff22,0 0 18px #ffffff18;transform:translateY(-2px)}.gNode.done{opacity:.55}.gArrow{font-size:18px;color:#69727e}.gBranch{width:100%;text-align:center;color:#89929e;font-size:11px}.graphLegend{margin-top:12px;text-align:center;color:#89929e;font-size:11px}
+@media(max-width:700px){.gNode{min-width:88px}.gArrow{font-size:15px}}
+.tmGraph{width:100%;overflow-x:auto;overflow-y:hidden;border:1px solid #252b33;border-radius:10px;background:#0c0f13}.tmGraph svg{width:100%;min-width:760px;height:auto;display:block}.tmGraph .edge{fill:none;stroke:#707987;stroke-width:2}.tmGraph .edge.reject{stroke:#707987}.tmGraph .edge.loop{stroke:#707987}.tmGraph marker path{fill:#707987}.tmGraph .state circle{fill:#15191f;stroke:#8b949e;stroke-width:2}.tmGraph .state text{fill:#f1f3f5;font-size:18px;font-weight:700;text-anchor:middle}.tmGraph .state.active circle{stroke:#fff;stroke-width:4;filter:drop-shadow(0 0 8px #fff)}.tmGraph .state.active text{fill:#fff}.tmGraph .terminal circle{stroke:#8b949e}.tmGraph .edgeLabel{fill:#c1c7cf;font-size:13px;font-weight:600;text-anchor:middle;paint-order:stroke;stroke:#0c0f13;stroke-width:5px;stroke-linejoin:round}.graphLegend{margin-top:10px;text-align:center;color:#89929e;font-size:11px}.speedControl{margin:14px auto 0;max-width:360px;color:#aeb6c0;font-size:12px}.speedControl label{display:block;margin-bottom:7px}.speedControl b{color:#fff}.speedControl input{width:100%;accent-color:#fff;cursor:pointer}</style>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#090b0f;color:#eef1f5;font-family:Tahoma,Arial,sans-serif}
-main{max-width:1100px;margin:auto;padding:30px 20px}header{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #282d35;padding-bottom:18px}
-h1{font-size:24px;margin:0}.muted{color:#89929e;font-size:13px;margin-top:7px}.status{color:#9aa3af;font-size:13px;white-space:nowrap}.status b{color:#fff}
-.machine{margin-top:34px}.label{color:#aeb6c0;font-size:14px;margin-bottom:8px}
-.tape{display:flex;direction:ltr;justify-content:center;gap:5px;overflow:auto;padding:40px 8px 48px}
-.cell{position:relative;width:58px;height:58px;flex:0 0 58px;background:#15191f;border:1px solid #3b434e;border-radius:4px;display:flex;align-items:center;justify-content:center;font:700 24px Consolas,monospace}
-.cell.head{border-color:#fff;box-shadow:0 0 0 2px #fff2}.headmark{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);font:900 18px Tahoma;color:#fff;line-height:1;white-space:nowrap}
-.read{display:flex;gap:10px}.box{flex:1;background:#101319;border:1px solid #282e37;border-radius:4px;padding:13px}.box span{display:block;color:#7f8895;font-size:11px;margin-bottom:6px}.box b{font:700 22px Consolas,monospace}
-.info{margin-top:18px;background:#101319;border:1px solid #282e37;border-radius:4px;padding:16px}.op{font-size:16px;margin-bottom:7px}.detail{font-size:13px;color:#9aa4b0;line-height:1.9}
-.controls{text-align:center;margin-top:16px}.btn{background:#171b21;color:#eee;border:1px solid #3a424d;border-radius:4px;padding:9px 18px;cursor:pointer}.btn:hover{background:#20252d}
-.result{display:none;text-align:center;border-top:1px solid #282e37;margin-top:24px;padding-top:24px}.result.show{display:block}.result h2{font-size:30px;margin:0 0 8px}.result p{color:#9aa4b0}
-@media(max-width:650px){main{padding:22px 12px}header{display:block}.status{margin-top:10px}.cell{width:48px;height:48px;flex-basis:48px}.read{flex-direction:column}}
+#graph,#tmGraph,#stateGraph,#diagram,.graph,.tm-graph,.state-diagram,.diagram-section,.graph-section,
+.graph-container,.diagram-container { display:none !important; }
 </style>
-</head>
-<body><main>
-<header><div><h1>شبیه‌سازی ماشین تورینگ چندنواره</h1><div class="muted">دو نوار فیزیکی مستقل؛ ماشین خودش الگوریتم مقایسه را اجرا می‌کند.</div></div><div class="status">مرحله <b id="step">۰</b> | وضعیت <b id="state">در حال اجرا</b></div></header>
-<section class="machine">
-<div class="label">نوار ۱ — رشته A</div><div id="tapeA" class="tape"></div>
-<div class="label">نوار ۲ — رشته B</div><div id="tapeB" class="tape"></div>
-<div class="read"><div class="box"><span>نماد فعلی نوار ۱</span><b id="ra">—</b></div><div class="box"><span>نماد فعلی نوار ۲</span><b id="rb">—</b></div></div>
-<div class="info"><div class="op" id="op"></div><div class="detail" id="detail"></div></div>
-<div class="controls"><button class="btn" id="pauseBtn" onclick="toggle()">توقف</button> <button class="btn" onclick="restart()">شروع دوباره</button></div>
-<div id="result" class="result"><h2 id="resultTitle"></h2><p id="resultText"></p></div>
-</section></main>
-<script>
-const A="010110",B="010110";let ha=0,hb=0,step=0,phase="read",paused=false,timer=null;
+</head><body><main><header><div><h1>شبیه‌سازی ماشین تورینگ دو نواره</h1><div class="muted">دو نماد را می‌خوانیم، تصمیم می‌گیریم، و اگر لازم باشد هدها را یکی‌یکی حرکت می‌دهیم.</div></div><div class="status">مرحله <b id="step">۰</b> | وضعیت <b id="state">آماده</b></div></header><section class="machine"><div class="inputs"><div class="field"><label for="inputA">ورودی A (فقط ۰ و ۱)</label><input id="inputA" value="010110"></div><div class="field"><label for="inputB">ورودی B (فقط ۰ و ۱)</label><input id="inputB" value="010110"></div><button class="btn inputBtn" onclick="loadInput()">اجرای ورودی</button></div></div><div class="label">نوار ۱ — A</div><div id="tapeA" class="tape"></div><div class="label">نوار ۲ — B</div><div id="tapeB" class="tape"></div><div class="read"><div class="box"><span>نماد خوانده‌شده از A</span><b id="ra">—</b></div><div class="box"><span>نماد خوانده‌شده از B</span><b id="rb">—</b></div></div><div class="info"><div class="op" id="op"></div><div class="detail" id="detail"></div></div><div class="controls"><button class="btn" id="pauseBtn" onclick="toggle()">توقف</button> <button class="btn" onclick="restart()">شروع دوباره</button><div class="speedControl"><label for="speed">سرعت شبیه‌سازی: <b id="speedValue">1×</b></label><input id="speed" type="range" min="0.5" max="3" step="0.5" value="1" oninput="setSpeed(this.value)"></div></div><div id="result" class="result"><h2 id="resultTitle"></h2><p id="resultText"></p></div></section></main><script>
+let A='010110',B='010110',ha=0,hb=0,step=0,phase='readA',paused=false,timer=null,speed=1;
 const $=id=>document.getElementById(id);
-function drawTape(id,s,h,label){const e=$(id);e.innerHTML="";[...s].forEach((x,i)=>{const c=document.createElement("div");c.className="cell"+(i===h?" head":"");c.textContent=x;if(i===h){const m=document.createElement("div");m.className="headmark";m.textContent="▲ "+label;c.appendChild(m)}e.appendChild(c)})}
-function draw(){drawTape("tapeA",A,ha,"HEAD A");drawTape("tapeB",B,hb,"HEAD B");$("step").textContent=step.toLocaleString("fa-IR")}
-function msg(o,d){$("op").textContent=o;$("detail").textContent=d}
-function run(){if(paused)return;draw();
-if(phase==="read"){if(ha===A.length&&hb===B.length)return finish(true);if(ha===A.length||hb===B.length)return finish(false);$("ra").textContent=A[ha];$("rb").textContent=B[hb];msg("ماشین دو نماد فعلی را می‌خواند.",`HEAD A = ${A[ha]} ، HEAD B = ${B[hb]}`);phase="compare";timer=setTimeout(run,6000)}
-else if(phase==="compare"){if(A[ha]!==B[hb])return finish(false);msg("نمادها برابرند.",`${A[ha]} = ${B[hb]} ✓`);phase="moveA";timer=setTimeout(run,6000)}
-else if(phase==="moveA"){ha++;step++;draw();msg("هد نوار ۱ یک خانه جلو می‌رود.","این حرکت HEAD A است.");phase="moveB";timer=setTimeout(run,6000)}
-else if(phase==="moveB"){hb++;step++;draw();msg("هد نوار ۲ یک خانه جلو می‌رود.","این حرکت HEAD B است؛ دو هد هم‌زمان حرکت نمی‌کنند.");phase="read";timer=setTimeout(run,6000)}}
-function finish(ok){clearTimeout(timer);$("state").textContent=ok?"پذیرش":"رد";$("result").classList.add("show");$("resultTitle").textContent=ok?"ACCEPT":"REJECT";$("resultText").textContent=ok?"دو رشته یکسان بودند.":"دو رشته یکسان نبودند.";msg("اجرای ماشین تمام شد.",ok?"ماشین به وضعیت پذیرش رسید.":"ماشین به وضعیت رد رسید.")}
-function toggle(){paused=!paused;$("pauseBtn").textContent=paused?"ادامه":"توقف";$("state").textContent=paused?"متوقف":"در حال اجرا";if(!paused)run()}
-function restart(){clearTimeout(timer);ha=0;hb=0;step=0;phase="read";paused=false;$("pauseBtn").textContent="توقف";$("state").textContent="در حال اجرا";$("result").classList.remove("show");$("ra").textContent="—";$("rb").textContent="—";run()}restart();
+function valid(s){return /^[01]+$/.test(s)}
+function drawTape(id,s,h){
+  const e=$(id);e.innerHTML='';
+  [...s].forEach((x,i)=>{
+    const c=document.createElement('div');c.className='cell'+(i===h?' head':'');c.textContent=x;
+    if(i===h){const m=document.createElement('div');m.className='headmark';m.textContent='H';c.appendChild(m)}
+    e.appendChild(c)
+  })
+}
+function draw(){drawTape('tapeA',A,ha);drawTape('tapeB',B,hb);$('step').textContent=step.toLocaleString('fa-IR');setGraph(phase)}
+function setGraph(p){
+  const map={readA:'q0',readB:'q0',compare:'q0',moveA:'q0',moveB:'q0'};
+  const st=map[p];
+  document.querySelectorAll('.tmGraph .state').forEach(n=>n.classList.toggle('active',n.dataset.state===st));
+}
+function msg(o,d){$('op').textContent=o;$('detail').textContent=d}
+function setSpeed(v){speed=Number(v);$('speedValue').textContent=(speed%1===0?speed.toFixed(0):speed.toFixed(1))+'×'}
+function wait(ms){return Math.max(100,Math.round(ms/speed))}
+function schedule(actionOrMs=1800,ms=1800){
+  clearTimeout(timer);
+  if(typeof actionOrMs==='function')timer=setTimeout(actionOrMs,wait(ms));
+  else timer=setTimeout(run,wait(actionOrMs))
+}
+function run(){
+  if(paused)return;draw();
+  if(phase==='readA'){
+    if(ha>=A.length)return finish(A.length===B.length&&hb>=B.length);
+    $('ra').textContent=A[ha];$('rb').textContent='—';
+    msg('۱) خواندن نماد A.',`H روی خانهٔ ${ha+1} است و نماد ${A[ha]} خوانده می‌شود. H مربوط به B ثابت است.`);
+    phase='readB';schedule();
+  }else if(phase==='readB'){
+    if(hb>=B.length)return finish(false);
+    $('ra').textContent=A[ha];$('rb').textContent=B[hb];
+    msg('۲) خواندن نماد B.',`A = ${A[ha]} و B = ${B[hb]}؛ تصمیم ماشین بر اساس هر دو نماد است.`);
+    phase='compare';schedule();
+  }else if(phase==='compare'){
+    if(A[ha]!==B[hb])return finish(false);
+    msg('۳) مقایسه.',`${A[ha]} = ${B[hb]} ✓ — در مدل چندنواره حرکت منطقی هر دو هد در یک Transition به صورت (R,R) است، اما در نمایش آموزشی آن‌ها یکی‌یکی اجرا می‌شوند.`);
+    phase='moveA';schedule();
+  }else if(phase==='moveA'){
+    if(ha+1>=A.length || hb+1>=B.length)return finish(A.length===B.length&&ha+1===A.length&&hb+1===B.length);
+    ha++;step++;draw();msg('۴) اجرای بخش اول Transition.',`H روی نوار A فقط یک خانه به راست رفت؛ H روی نوار B هنوز ثابت است.`);
+    phase='moveB';schedule();
+  }else if(phase==='moveB'){
+    hb++;step++;draw();msg('۵) اجرای بخش دوم Transition.',`حالا H روی نوار B یک خانه به راست رفت. دو حرکت هم‌زمان نمایش داده نمی‌شوند.`);
+    phase='readA';schedule();
+  }
+}
+function finish(ok){
+  clearTimeout(timer);$('state').textContent=ok?'پذیرش':'رد';$('result').classList.add('show');
+  $('resultTitle').textContent=ok?'ACCEPT':'REJECT';$('resultText').textContent=ok?'دو رشته کاملاً یکسان بودند.':'دو رشته یکسان نیستند.';
+  msg('اجرای ماشین تمام شد.',ok?'تمام موقعیت‌ها برابر بودند.':'در یک موقعیت، دو نماد متفاوت بودند.')
+}
+function toggle(){paused=!paused;$('pauseBtn').textContent=paused?'ادامه':'توقف';$('state').textContent=paused?'متوقف':'در حال اجرا';if(!paused)run()}
+function loadInput(){const a=$('inputA').value.trim(),b=$('inputB').value.trim();if(!valid(a)||!valid(b)){msg('ورودی نامعتبر','هر دو ورودی باید غیرخالی و فقط شامل ۰ و ۱ باشند.');return}A=a;B=b;restart()}
+function restart(){clearTimeout(timer);ha=0;hb=0;step=0;phase='readA';paused=false;$('pauseBtn').textContent='توقف';$('state').textContent='در حال اجرا';$('result').classList.remove('show');$('ra').textContent='—';$('rb').textContent='—';draw();schedule(500)}
+restart();
 </script></body></html>

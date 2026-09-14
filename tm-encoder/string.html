@@ -3,26 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مینی‌گیم: کدگذاری ماشین تورینگ</title>
+    <title>مینی‌گیم کدگذاری 🤖</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #f4f7f9;
+            --bg-color: #f1f5f9;
             --card-bg: #ffffff;
-            --text-color: #2c3e50;
-            --primary-color: #4a90e2;
-            --success-color: #27ae60;
-            --success-light: #e8f8f5;
-            --highlight-color: #e8f8f5;
-            --border-color: #dcdde1;
-            --drag-color: #f1c40f;
-            --shadow: 0 4px 6px rgba(0,0,0,0.05);
+            --text-color: #0f172a;
+            --text-muted: #475569;
+            --text-soft: #334155;
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #dbeafe;
+            --success-color: #16a34a;
+            --success-hover: #15803d;
+            --success-light: #dcfce7;
+            --danger-color: #ef4444;
+            --danger-hover: #dc2626;
+            --danger-light: #fee2e2;
+            --neutral-color: #e2e8f0;
+            --neutral-hover: #cbd5e1;
+            --border-color: #e2e8f0;
+            --border-strong: #cbd5e1;
+            --drag-color: #fef3c7;
+            --drag-border: #fcd34d;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 30px -5px rgba(37,99,235,0.15);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Tahoma', 'Segoe UI', sans-serif;
+            font-family: Vazirmatn, 'Tahoma', 'Segoe UI', sans-serif;
         }
 
         body {
@@ -31,18 +47,28 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             min-height: 100vh;
             padding: 20px;
             overflow-x: hidden;
+        }
+
+        h1.main-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e293b;
+            text-align: center;
+            margin-bottom: 18px;
+            padding: 0 10px;
         }
 
         .game-container {
             width: 100%;
             max-width: 900px;
             background: var(--card-bg);
-            border-radius: 20px;
-            box-shadow: var(--shadow);
-            padding: 30px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            padding: 24px;
             position: relative;
             min-height: 500px;
             display: none;
@@ -55,22 +81,17 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .game-title {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #2c3e50;
-        }
-
-        .game-desc {
-            font-size: 14px;
-            line-height: 1.6;
+        .intro-paragraph {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-soft);
+            line-height: 1.8;
             margin-bottom: 20px;
-            color: #555;
+            text-align: right;
         }
 
-        h2 { margin-bottom: 15px; color: #2c3e50; }
-        p { line-height: 1.6; margin-bottom: 15px; }
+        h2 { margin-bottom: 15px; color: #1e293b; }
+        p { line-height: 1.7; margin-bottom: 15px; color: var(--text-soft); }
 
         .graph-container {
             width: 100%;
@@ -79,9 +100,9 @@
             justify-content: center;
             align-items: center;
             margin-bottom: 20px;
-            background: #fafafa;
-            border-radius: 15px;
-            border: 1px dashed var(--border-color);
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 2px solid #000000;
             overflow: hidden;
         }
 
@@ -89,61 +110,77 @@
 
         .state-circle {
             fill: #fff;
-            stroke: #333;
-            stroke-width: 2;
+            stroke: #0f172a;
+            stroke-width: 2.5;
             transition: all 0.3s ease;
         }
 
         .state-circle.final { stroke-width: 4; }
-        .state-circle.active { fill: var(--highlight-color); stroke: var(--success-color); stroke-width: 3; }
+        .state-circle.active {
+            fill: var(--primary-light);
+            stroke: var(--primary-color);
+            stroke-width: 3;
+        }
 
         .state-text {
             font-size: 18px;
-            font-weight: bold;
-            fill: #333;
+            font-weight: 700;
+            fill: #0f172a;
             text-anchor: middle;
             dominant-baseline: central;
+            font-family: Vazirmatn, monospace;
         }
 
         .transition-path {
             fill: none;
-            stroke: #555;
+            stroke: #64748b;
             stroke-width: 2;
             transition: all 0.3s ease;
         }
 
-        .transition-path.active { stroke: var(--success-color); stroke-width: 3; }
-
-        .transition-text {
-            font-size: 12px;
-            fill: #555;
-            text-anchor: start;
-            direction: ltr;
-            transition: all 0.3s ease;
+        .transition-path.active {
+            stroke: var(--primary-color);
+            stroke-width: 3.5;
         }
 
-        .transition-text.active { fill: var(--success-color); font-weight: bold; font-size: 14px; }
+        /* ====== اصلاح اصلی: bidi-override برای نمایش دقیق ترتیب کاراکترها ====== */
+        .transition-text {
+            font-size: 12px;
+            fill: #475569;
+            text-anchor: start;
+            transition: all 0.3s ease;
+            font-family: monospace;
+            font-weight: 600;
+            direction: ltr;
+            unicode-bidi: bidi-override;
+        }
+
+        .transition-text.active {
+            fill: var(--primary-color);
+            font-weight: 800;
+            font-size: 14px;
+        }
 
         .drop-area {
             display: flex;
             justify-content: center;
             align-items: flex-end;
             gap: 10px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
             flex-wrap: wrap;
-            margin-top: 30px;
+            margin-top: 40px;
             direction: ltr;
         }
 
         .drop-slot {
             width: 100px;
             height: 60px;
-            border: 2px dashed #bbb;
+            border: 2px dashed var(--border-strong);
             border-radius: 10px;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #f9f9f9;
+            background: #f8fafc;
             transition: all 0.2s ease;
             position: relative;
         }
@@ -152,16 +189,17 @@
             position: absolute;
             top: -24px;
             font-size: 11px;
-            color: #888;
+            color: var(--text-muted);
             white-space: nowrap;
             text-align: center;
             width: 100%;
             direction: rtl;
+            font-weight: 600;
         }
 
         .drop-slot.drag-over {
             border-color: var(--primary-color);
-            background: #eef5fc;
+            background: var(--primary-light);
             transform: scale(1.05);
         }
 
@@ -185,11 +223,12 @@
             justify-content: center;
             align-items: center;
             font-size: 12px;
+            font-weight: bold;
         }
 
         .drop-slot.incorrect {
-            border-color: #e74c3c;
-            background: #fdedec;
+            border-color: var(--danger-color);
+            background: var(--danger-light);
             animation: shake 0.3s;
         }
 
@@ -206,26 +245,28 @@
             flex-wrap: wrap;
             min-height: 80px;
             padding: 15px;
-            background: #f0f2f5;
-            border-radius: 15px;
-            border: 2px dashed #dcdde1;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 2px dashed var(--border-strong);
         }
 
         .drag-card {
             width: 80px;
             height: 50px;
             background: var(--drag-color);
-            color: #333;
+            color: #78350f;
             border-radius: 8px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-weight: bold;
+            font-weight: 700;
             cursor: grab;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-sm);
+            border: 1.5px solid var(--drag-border);
             transition: transform 0.1s, background 0.2s;
             user-select: none;
             font-size: 14px;
+            font-family: monospace;
             touch-action: none;
         }
 
@@ -234,38 +275,40 @@
         .drag-card.hidden { display: none; }
 
         .btn {
-            padding: 12px 25px;
+            padding: 10px 22px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             background: var(--primary-color);
             color: white;
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 0.95rem;
+            font-weight: 700;
             cursor: pointer;
             transition: background 0.2s, transform 0.1s;
-            box-shadow: 0 4px 6px rgba(74, 144, 226, 0.3);
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
             margin-top: 15px;
+            font-family: Vazirmatn, sans-serif;
         }
 
-        .btn:hover { background: #357abd; }
-        .btn:active { transform: translateY(2px); box-shadow: 0 2px 4px rgba(74, 144, 226, 0.3); }
-        .btn:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
-        .btn-success { background: var(--success-color); box-shadow: 0 4px 6px rgba(46, 204, 113, 0.3); }
-        .btn-success:hover { background: #219a52; }
-        .btn-warning { background: #f39c12; box-shadow: 0 4px 6px rgba(243, 156, 18, 0.3); }
-        .btn-warning:hover { background: #e67e22; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn:active { transform: translateY(2px); box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3); }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; }
+        .btn-success { background: var(--success-color); box-shadow: 0 4px 10px rgba(22, 163, 74, 0.25); }
+        .btn-success:hover { background: var(--success-hover); }
+        .btn-warning { background: var(--primary-color); box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25); }
+        .btn-warning:hover { background: var(--primary-hover); }
 
         .action-buttons {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 12px;
             margin-top: 15px;
+            flex-wrap: wrap;
         }
 
         .result-guide {
-            font-size: 14px;
-            font-weight: bold;
-            color: #555;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-soft);
             margin-top: 25px;
             margin-bottom: 10px;
             text-align: center;
@@ -282,28 +325,29 @@
         .result-bar {
             flex: 1;
             min-width: 120px;
-            height: 40px;
-            border: 2px dashed #bbb;
+            height: 44px;
+            border: 2px dashed var(--border-strong);
             border-radius: 8px;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #f9f9f9;
+            background: #f8fafc;
             font-family: monospace;
-            font-size: 12px;
-            color: #555;
-            transition: all 0.3s ease;
+            font-size: 11px;
+            color: var(--text-muted);
+            transition: all 0.4s ease;
             padding: 0 5px;
             overflow: hidden;
             white-space: nowrap;
+            font-weight: 600;
         }
 
         .result-bar.filled {
             border-style: solid;
             border-color: var(--success-color);
             background: var(--success-light);
-            color: #2c3e50;
-            font-weight: bold;
+            color: #14532d;
+            font-weight: 700;
         }
 
         .pieces-line-container {
@@ -315,29 +359,32 @@
             padding: 15px 0;
             margin: 20px 0;
             direction: ltr;
-            background: #fafafa;
-            border-radius: 10px;
+            background: #f8fafc;
+            border-radius: 12px;
             border: 1px solid var(--border-color);
             min-height: 80px;
         }
 
         .string-piece {
             display: inline-block;
-            background: #eef5fc;
-            padding: 8px 4px;
-            border-radius: 5px;
+            background: var(--primary-light);
+            color: #1e40af;
+            padding: 8px 6px;
+            border-radius: 6px;
             margin: 0 6px;
             font-family: monospace;
-            font-size: 16px;
-            border: 1px solid #d6eaf8;
+            font-size: 15px;
+            font-weight: 700;
+            border: 1.5px solid #93c5fd;
             transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             white-space: nowrap;
             flex-shrink: 0;
         }
 
         .string-piece.joined {
-            background: #d5f5e3;
-            border-color: #a9dfbf;
+            background: var(--success-light);
+            color: #14532d;
+            border-color: #86efac;
             margin: 0;
             border-radius: 0;
             border-left: none;
@@ -346,119 +393,298 @@
         }
 
         .string-piece.joined:first-child {
-            border-top-right-radius: 5px;
-            border-bottom-right-radius: 5px;
-            border-right: 1px solid #a9dfbf;
-            padding-right: 4px;
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
+            border-right: 1.5px solid #86efac;
+            padding-right: 6px;
         }
 
         .string-piece.joined:last-child {
-            border-top-left-radius: 5px;
-            border-bottom-left-radius: 5px;
-            border-left: 1px solid #a9dfbf;
-            padding-left: 4px;
+            border-top-left-radius: 6px;
+            border-bottom-left-radius: 6px;
+            border-left: 1.5px solid #86efac;
+            padding-left: 6px;
         }
 
         .final-string {
             font-family: monospace;
-            font-size: 16px;
-            background: #fdf2e9;
+            font-size: 15px;
+            background: #fef3c7;
+            color: #78350f;
             padding: 15px;
             border-radius: 10px;
-            border: 1px solid #fad7a1;
+            border: 1.5px solid #fcd34d;
             direction: ltr;
             text-align: left;
             margin: 20px 0;
             word-break: break-all;
             line-height: 1.8;
+            font-weight: 700;
         }
 
         .encoded-string {
             font-family: monospace;
-            font-size: 18px;
-            background: #2c3e50;
-            color: #ecf0f1;
+            font-size: 15px;
+            background: #0f172a;
+            color: #e2e8f0;
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 12px;
             direction: ltr;
             text-align: left;
             word-break: break-all;
             line-height: 1.8;
             margin: 20px 0;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+            font-weight: 600;
         }
 
         .graph-reveal { display: none; margin-top: 20px; animation: fadeIn 0.8s ease; }
         .graph-reveal.show { display: block; }
 
-        .arrow-diagram {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            font-size: 24px;
-            font-weight: bold;
-            color: var(--primary-color);
-            margin: 30px 0;
-        }
-
-        .arrow-diagram span {
-            padding: 10px 20px;
-            background: #eef5fc;
-            border-radius: 10px;
-            border: 2px solid var(--primary-color);
-        }
-
-        .arrow-diagram .arrow { font-size: 30px; color: #555; }
-
         .end-game-text {
-            font-size: 24px;
-            font-weight: bold;
+            font-size: 1.35rem;
+            font-weight: 800;
             color: var(--success-color);
             text-align: center;
             margin-top: 30px;
             padding: 20px;
             background: var(--success-light);
-            border-radius: 15px;
+            border-radius: 12px;
             animation: fadeIn 1s ease;
         }
 
         .feedback {
             text-align: center;
-            font-weight: bold;
+            font-weight: 700;
             margin-top: 15px;
             min-height: 24px;
             transition: color 0.3s;
-            font-size: 16px;
+            font-size: 0.95rem;
         }
 
         .feedback.success { color: var(--success-color); }
-        .feedback.error { color: #e74c3c; }
+        .feedback.error { color: var(--danger-color); }
+
+        @media (max-width: 900px) {
+            .game-container { padding: 20px; }
+        }
 
         @media (max-width: 700px) {
-            .drop-slot { width: 60px; height: 50px; font-size: 12px; }
-            .drag-card { width: 60px; height: 40px; font-size: 12px; }
-            .game-container { padding: 15px; }
-            .drop-slot .label { font-size: 9px; }
-            .result-bar { min-width: 90px; font-size: 10px; }
+            body {
+                padding: 12px;
+                justify-content: flex-start;
+            }
+
+            h1.main-title {
+                font-size: 1.2rem;
+                margin-bottom: 14px;
+                margin-top: 4px;
+            }
+
+            .game-container {
+                padding: 16px;
+                border-radius: 14px;
+                min-height: auto;
+            }
+
+            .intro-paragraph {
+                font-size: 0.85rem;
+                line-height: 1.7;
+                margin-bottom: 16px;
+            }
+
+            .graph-container {
+                height: 200px;
+                margin-bottom: 16px;
+            }
+
+            .drop-area {
+                gap: 6px;
+                margin-top: 34px;
+                margin-bottom: 18px;
+            }
+
+            .drop-slot {
+                width: 58px;
+                height: 50px;
+                font-size: 12px;
+                border-radius: 8px;
+            }
+
+            .drop-slot .label {
+                font-size: 9px;
+                top: -20px;
+            }
+
+            .drag-card {
+                width: 58px;
+                height: 42px;
+                font-size: 12px;
+                border-radius: 6px;
+            }
+
+            .card-pool {
+                padding: 10px;
+                gap: 6px;
+                min-height: 60px;
+            }
+
+            .result-bar {
+                min-width: 90px;
+                height: 40px;
+                font-size: 10px;
+            }
+
+            .result-guide {
+                font-size: 0.85rem;
+                margin-top: 18px;
+            }
+
+            .btn {
+                padding: 9px 16px;
+                font-size: 0.85rem;
+                margin-top: 12px;
+            }
+
+            .action-buttons {
+                gap: 8px;
+            }
+
+            .string-piece {
+                font-size: 13px;
+                padding: 7px 5px;
+            }
+
+            .final-string,
+            .encoded-string {
+                font-size: 12px;
+                padding: 12px;
+                line-height: 1.7;
+            }
+
+            .end-game-text {
+                font-size: 1.1rem;
+                padding: 16px;
+                margin-top: 20px;
+            }
+
+            .feedback {
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 420px) {
+            body {
+                padding: 8px;
+            }
+
+            h1.main-title {
+                font-size: 1.05rem;
+                margin-bottom: 10px;
+            }
+
+            .game-container {
+                padding: 12px;
+                border-radius: 12px;
+            }
+
+            .intro-paragraph {
+                font-size: 0.8rem;
+                margin-bottom: 14px;
+            }
+
+            .graph-container {
+                height: 170px;
+                margin-bottom: 14px;
+                border-radius: 10px;
+            }
+
+            .drop-area {
+                gap: 5px;
+                margin-top: 30px;
+                margin-bottom: 14px;
+            }
+
+            .drop-slot {
+                width: 50px;
+                height: 44px;
+                font-size: 11px;
+            }
+
+            .drop-slot .label {
+                font-size: 8px;
+                top: -18px;
+            }
+
+            .drop-slot.correct::after {
+                width: 16px;
+                height: 16px;
+                font-size: 10px;
+                top: -8px;
+                right: -8px;
+            }
+
+            .drag-card {
+                width: 50px;
+                height: 38px;
+                font-size: 11px;
+            }
+
+            .card-pool {
+                padding: 8px;
+                gap: 5px;
+            }
+
+            .result-bar {
+                min-width: 70px;
+                height: 36px;
+                font-size: 9px;
+                padding: 0 3px;
+            }
+
+            .btn {
+                padding: 8px 14px;
+                font-size: 0.8rem;
+            }
+
+            .string-piece {
+                font-size: 12px;
+                padding: 6px 4px;
+                margin: 0 4px;
+            }
+
+            .final-string,
+            .encoded-string {
+                font-size: 11px;
+                padding: 10px;
+                line-height: 1.6;
+            }
+
+            .end-game-text {
+                font-size: 1rem;
+                padding: 14px;
+            }
         }
     </style>
 </head>
 <body>
 
+    <h1 class="main-title">مینی‌گیم کدگذاری 🤖</h1>
+
     <!-- STEP 1 -->
     <div class="game-container active" id="step1">
-        <div class="game-title">ماشین تورینگ استیت قبلی رو نظر بگیرید</div>
-        <div class="game-desc">هر قانون یا دستور حرکتی توی این ماشین، پنج تا جزء داره. با توجه به یال سبز رنگ هر کدام از این پنج قسمت رو کامل کن</div>
+        <p class="intro-paragraph">
+            ماشین تورینگ استیت قبلی رو نظر بگیرید. هر قانون یا دستور حرکتی توی این ماشین، پنج تا جزء داره. با توجه به یال آبی رنگ، هرکدوم از این پنج قسمت رو کامل کنید.
+        </p>
         
         <div class="graph-container">
             <svg id="svg-graph" viewBox="0 0 800 250">
                 <defs>
                     <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="#555" />
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
                     </marker>
                     <marker id="arrowhead-active" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="#27ae60" />
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb" />
                     </marker>
                 </defs>
                 <circle id="state-q0" class="state-circle" cx="200" cy="125" r="40" />
@@ -468,28 +694,28 @@
                 <text class="state-text" x="450" y="125">q1</text>
                 
                 <circle id="state-q2" class="state-circle final" cx="700" cy="125" r="40" />
-                <circle cx="700" cy="125" r="34" fill="none" stroke="#333" stroke-width="2" />
+                <circle cx="700" cy="125" r="34" fill="none" stroke="#0f172a" stroke-width="2" />
                 <text class="state-text" x="700" y="125">q2</text>
 
-                <path d="M 120 125 L 155 125" fill="none" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)" />
+                <path d="M 120 125 L 155 125" fill="none" stroke="#0f172a" stroke-width="2" marker-end="url(#arrowhead)" />
 
                 <path id="trans-q0-1" class="transition-path" d="M 180 90 C 150 40, 250 40, 220 90" marker-end="url(#arrowhead)" />
-                <text id="text-q0-1" class="transition-text" x="165" y="45">1 → 1, R</text>
+                <text id="text-q0-1" class="transition-text" x="165" y="45">1 → 1 , R</text>
                 
                 <path id="trans-q0-0" class="transition-path" d="M 220 160 C 250 210, 150 210, 180 160" marker-end="url(#arrowhead)" />
-                <text id="text-q0-0" class="transition-text" x="165" y="215">0 → 0, R</text>
+                <text id="text-q0-0" class="transition-text" x="165" y="215">0 → 0 , R</text>
 
                 <path id="trans-q0-q1" class="transition-path" d="M 240 125 L 405 125" marker-end="url(#arrowhead)" />
-                <text id="text-q0-q1" class="transition-text" x="290" y="115">□ → □, L</text>
+                <text id="text-q0-q1" class="transition-text" x="290" y="115">□ → □ , L</text>
 
                 <path id="trans-q1-1" class="transition-path" d="M 430 90 C 400 40, 500 40, 470 90" marker-end="url(#arrowhead)" />
-                <text id="text-q1-1" class="transition-text" x="415" y="45">1 → 0, L</text>
+                <text id="text-q1-1" class="transition-text" x="415" y="45">1 → 0 , L</text>
 
                 <path id="trans-q1-q2-0" class="transition-path" d="M 490 110 L 655 110" marker-end="url(#arrowhead)" />
-                <text id="text-q1-q2-0" class="transition-text" x="540" y="100">0 → 1, L</text>
+                <text id="text-q1-q2-0" class="transition-text" x="540" y="100">0 → 1 , L</text>
 
                 <path id="trans-q1-q2-box" class="transition-path" d="M 490 140 L 655 140" marker-end="url(#arrowhead)" />
-                <text id="text-q1-q2-box" class="transition-text" x="540" y="155">□ → 1, L</text>
+                <text id="text-q1-q2-box" class="transition-text" x="540" y="155">□ → 1 , L</text>
             </svg>
         </div>
 
@@ -528,7 +754,7 @@
 
     <!-- STEP 2 -->
     <div class="game-container" id="step2">
-        <div class="game-desc" style="font-size: 16px; margin-bottom: 20px;">
+        <div class="intro-paragraph" style="font-size: 1rem; margin-bottom: 20px;">
             حالا همه این قوانین رو می‌خوایم بذاریم کنار هم و یه رشته بسازیم. رشته‌مون چه شکلی میشه؟
         </div>
         
@@ -539,7 +765,7 @@
         </div>
 
         <div id="joined-result" style="display: none; margin-top: 20px;">
-            <p style="font-size: 15px; line-height: 1.8;">
+            <p style="font-size: 0.95rem; line-height: 1.8;">
                 اگر اول این رشته حالت اولیه ماشین تورینگ رو بذاریم و آخرش هم حالت‌های نهایی رو، یه جورایی کد ماشین تورینگ ما میشه.
             </p>
             <div class="final-string" id="final-string-display"></div>
@@ -552,93 +778,87 @@
     <!-- STEP 3 -->
     <div class="game-container" id="step3">
         
-        <!-- متن توضیحی جدید -->
-        <p style="font-size: 15px; line-height: 1.8; margin-bottom: 15px;">
-            دیدیم که میتونیم میتونیم اطلاعات یه ماشین تورینگ رو تبدیل به رشته بلند کنیم. اگه این رشته‌ی بلند رو به یه آدم (یا ماشین) بدیم، آیا می‌تونه گراف یا جدول کامل اون ماشین تورینگ اولی رو بدون هیچ ابهامی کاملا بازسازی کنه؟
+        <p class="intro-paragraph">
+            دیدیم که میتونیم اطلاعات یه ماشین تورینگ رو تبدیل به یه رشته‌ی بلند کنیم. حالا اگه این رشته‌ی بلند رو به یه آدم (یا ماشین) بدیم، آیا می‌تونه نمودار کامل اون ماشین تورینگ اولی رو بدون هیچ ابهامی کاملا بازسازی کنه؟
             <br>
-            امتحانش کن. سعی کن از روی این رشته، ماشین تورینگ رو بازسازی کنی!
+            امتحانش کنید. سعی کنید از روی این رشته، ماشین تورینگ رو بازسازی کنید!
         </p>
 
         <div class="encoded-string" id="encoded-string-display">
             q0(q0,0,q0,0,R)(q0,1,q1,1,R)(q1,0,q2,0,R)(q2,1,q2,1,R)(q2,0,q1,0,R)(q1,1,q0,1,R)(q0,-,accept,-,R)accept
         </div>
 
-        <p style="font-size: 15px; margin-top: 15px; margin-bottom: 10px;">
+        <p style="font-size: 0.95rem; margin-top: 15px; margin-bottom: 10px; font-weight: 600;">
             برای چک کردن جواب روی گزینه زیر بزنید
         </p>
 
         <div style="text-align: center;">
-            <button class="btn" id="btn-show-graph">نمایش گراف</button>
+            <button class="btn" id="btn-show-graph">نمایش نمودار</button>
         </div>
 
         <div class="graph-reveal" id="graph-reveal">
-            <!-- گراف SVG با فلش‌های صحیح -->
             <div class="graph-container" style="height: 400px;">
                 <svg viewBox="0 0 850 400">
                     <defs>
                         <marker id="arrowhead3" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                            <polygon points="0 0, 10 3.5, 0 7" fill="#555" />
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
                         </marker>
                         <marker id="arrowhead3-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                            <polygon points="0 0, 10 3.5, 0 7" fill="#3498db" />
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#2563eb" />
                         </marker>
                     </defs>
 
-                    <!-- حالت‌ها -->
-                    <circle class="state-circle" cx="150" cy="150" r="40" fill="#3498db" stroke="#2c3e50" />
+                    <circle class="state-circle" cx="150" cy="150" r="40" fill="#2563eb" stroke="#1e3a8a" />
                     <text class="state-text" x="150" y="150" fill="#fff">q0</text>
 
-                    <circle class="state-circle" cx="400" cy="150" r="40" fill="#e67e22" stroke="#2c3e50" />
+                    <circle class="state-circle" cx="400" cy="150" r="40" fill="#f59e0b" stroke="#92400e" />
                     <text class="state-text" x="400" y="150" fill="#fff">q1</text>
 
-                    <circle class="state-circle" cx="650" cy="150" r="40" fill="#27ae60" stroke="#2c3e50" />
+                    <circle class="state-circle" cx="650" cy="150" r="40" fill="#16a34a" stroke="#14532d" />
                     <text class="state-text" x="650" y="150" fill="#fff">q2</text>
 
-                    <circle class="state-circle final" cx="150" cy="330" r="40" fill="#e74c3c" stroke="#2c3e50" />
-                    <circle cx="150" cy="330" r="34" fill="none" stroke="#2c3e50" stroke-width="2" />
+                    <circle class="state-circle final" cx="150" cy="330" r="40" fill="#ef4444" stroke="#7f1d1d" />
+                    <circle cx="150" cy="330" r="34" fill="none" stroke="#7f1d1d" stroke-width="2" />
                     <text class="state-text" x="150" y="330" fill="#fff">accept</text>
 
-                    <!-- فلش شروع -->
-                    <path d="M 50 150 L 100 150" fill="none" stroke="#333" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <path d="M 50 150 L 100 150" fill="none" stroke="#0f172a" stroke-width="2" marker-end="url(#arrowhead3)" />
 
-                    <!-- q0 -> q0 (self loop 0) -->
-                    <path d="M 120 115 C 70 50, 230 50, 180 115" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
-                    <text x="120" y="60" font-size="12" fill="#555">0 → 0, R</text>
+                    <!-- q0 -> q0 (0) -->
+                    <path d="M 120 115 C 70 50, 230 50, 180 115" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="120" y="60" font-size="12" fill="#475569" font-family="monospace" font-weight="600" style="direction:ltr; unicode-bidi:bidi-override;">0 → 0 , R</text>
 
                     <!-- q0 -> q1 (1) -->
-                    <path d="M 190 135 L 355 135" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
-                    <text x="260" y="125" font-size="12" fill="#555">1 → 1, R</text>
+                    <path d="M 190 135 L 355 135" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="260" y="125" font-size="12" fill="#475569" font-family="monospace" font-weight="600" style="direction:ltr; unicode-bidi:bidi-override;">1 → 1 , R</text>
 
-                    <!-- q1 -> q0 (1) برگشت -->
-                    <path d="M 360 165 L 195 165" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
-                    <text x="260" y="185" font-size="12" fill="#555">1 → 1, R</text>
+                    <!-- q1 -> q0 (1) -->
+                    <path d="M 360 165 L 195 165" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="260" y="185" font-size="12" fill="#475569" font-family="monospace" font-weight="600" style="direction:ltr; unicode-bidi:bidi-override;">1 → 1 , R</text>
 
                     <!-- q1 -> q2 (0) -->
-                    <path d="M 440 135 L 605 135" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
-                    <text x="520" y="125" font-size="12" fill="#555">0 → 0, R</text>
+                    <path d="M 440 135 L 605 135" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="520" y="125" font-size="12" fill="#475569" font-family="monospace" font-weight="600" style="direction:ltr; unicode-bidi:bidi-override;">0 → 0 , R</text>
 
-                    <!-- q2 -> q1 (0) برگشت -->
-                    <path d="M 610 165 L 445 165" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
-                    <text x="520" y="185" font-size="12" fill="#555">0 → 0, R</text>
+                    <!-- q2 -> q1 (0) -->
+                    <path d="M 610 165 L 445 165" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="520" y="185" font-size="12" fill="#475569" font-family="monospace" font-weight="600" style="direction:ltr; unicode-bidi:bidi-override;">0 → 0 , R</text>
 
-                    <!-- q2 -> q2 (self loop 1) -->
-                    <path d="M 620 115 C 570 50, 730 50, 680 115" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
-                    <text x="620" y="60" font-size="12" fill="#555">1 → 1, R</text>
+                    <!-- q2 -> q2 (1) -->
+                    <path d="M 620 115 C 570 50, 730 50, 680 115" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="620" y="60" font-size="12" fill="#475569" font-family="monospace" font-weight="600" style="direction:ltr; unicode-bidi:bidi-override;">1 → 1 , R</text>
 
                     <!-- q0 -> accept (Blank) -->
-                    <path d="M 150 190 L 150 285" fill="none" stroke="#555" stroke-width="2" marker-end="url(#arrowhead3)" />
-                    <text x="160" y="240" font-size="12" fill="#555">□ → □, R</text>
+                    <path d="M 150 190 L 150 285" fill="none" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead3)" />
+                    <text x="160" y="240" font-size="12" fill="#475569" font-family="monospace" font-weight="600" style="direction:ltr; unicode-bidi:bidi-override;">□ → □ , R</text>
 
                 </svg>
             </div>
 
-            <!-- پایان بازی -->
             <div class="end-game-text">پایان بازی</div>
         </div>
     </div>
 
     <script>
-        // --- Game Data ---
         const transitions = [
             { id: 'q0-1', from: 'q0', read: '1', to: 'q0', write: '1', dir: 'R', svgId: 'trans-q0-1', textId: 'text-q0-1' },
             { id: 'q0-0', from: 'q0', read: '0', to: 'q0', write: '0', dir: 'R', svgId: 'trans-q0-0', textId: 'text-q0-0' },
@@ -906,36 +1126,43 @@
         btnAuto.addEventListener('click', () => {
             actionButtons.style.display = 'none';
             cardPool.style.pointerEvents = 'auto';
-            
-            const currentT = transitions[currentTransitionIndex];
-            document.getElementById(currentT.svgId).style.opacity = '0.3';
-            document.getElementById(currentT.textId).style.opacity = '0.3';
-            
-            currentTransitionIndex++;
-            
-            function autoFillNext() {
-                if (currentTransitionIndex >= transitions.length) {
-                    highlightTransition(currentTransitionIndex);
+
+            let autoIndex = currentTransitionIndex;
+
+            const currentT = transitions[autoIndex];
+            if (currentT) {
+                document.getElementById(currentT.svgId).style.opacity = '0.3';
+                document.getElementById(currentT.textId).style.opacity = '0.3';
+            }
+
+            function autoStep() {
+                if (autoIndex >= transitions.length) {
+                    highlightTransition(autoIndex);
                     return;
                 }
-                
-                const t = transitions[currentTransitionIndex];
-                saveResultToBar(currentTransitionIndex, t);
-                document.getElementById(t.svgId).style.opacity = '0.3';
-                document.getElementById(t.textId).style.opacity = '0.3';
-                
-                currentTransitionIndex++;
-                setTimeout(autoFillNext, 400);
+
+                const t = transitions[autoIndex];
+
+                highlightTransition(autoIndex);
+
+                setTimeout(() => {
+                    saveResultToBar(autoIndex, t);
+                    document.getElementById(t.svgId).style.opacity = '0.3';
+                    document.getElementById(t.textId).style.opacity = '0.3';
+
+                    autoIndex++;
+
+                    setTimeout(autoStep, 500);
+                }, 500);
             }
-            
-            setTimeout(autoFillNext, 400);
+
+            autoStep();
         });
 
         btnNextStep.addEventListener('click', () => {
             goToStep(2);
         });
 
-        // --- Step Navigation ---
         function goToStep(stepNum) {
             step1El.classList.remove('active');
             step2El.classList.remove('active');
@@ -951,7 +1178,6 @@
             }
         }
 
-        // --- Step 2 Logic ---
         function initStep2() {
             const piecesContainer = document.getElementById('pieces-container');
             piecesContainer.innerHTML = '';
@@ -998,13 +1224,11 @@
             goToStep(3);
         });
 
-        // --- Step 3 Logic ---
         document.getElementById('btn-show-graph').addEventListener('click', () => {
             document.getElementById('graph-reveal').classList.add('show');
             document.getElementById('btn-show-graph').style.display = 'none';
         });
 
-        // --- Initialize Game ---
         window.onload = () => {
             initStep1();
         };

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شبیه‌ساز تورینگ: دو-نواره واقعی (Two-Tape)</title>
+    <title>شبیه‌ساز تورینگ: دو-نواره (هدهای غیرهمگام)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -44,11 +44,12 @@
 
     <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6 border border-gray-200">
         
-        <!-- Algorithm Input (Hidden by default, containing the new 2-Tape Compare Algorithm) -->
+        <!-- Algorithm Input (Hidden by default, containing the Async 2-Tape Compare Algorithm) -->
         <!-- Format: (currentState, read1, read2, nextState, write1, move1, write2, move2) -->
+        <!-- Here, we compare, move Head 1, then transition to a state where we solely move Head 2 -->
         <div class="mb-4 bg-slate-50 p-4 rounded-lg border border-slate-200 display-none">
-            <label class="block font-bold mb-2 text-sm text-slate-700">کد ماشین تورینگ (دو نواره):</label>
-            <textarea id="tmCode" rows="4" class="w-full border p-2 rounded text-left font-mono text-sm bg-white" dir="ltr">tm=compare (compare,0,0,compare,0,R,0,R)(compare,1,1,compare,1,R,1,R)(compare,_,_,accept,_,S,_,S)(compare,0,1,reject,0,S,1,S)(compare,1,0,reject,1,S,0,S)(compare,0,_,reject,0,S,_,S)(compare,1,_,reject,1,S,_,S)(compare,_,0,reject,_,S,0,S)(compare,_,1,reject,_,S,1,S)</textarea>
+            <label class="block font-bold mb-2 text-sm text-slate-700">کد ماشین تورینگ (دو نواره - غیرهمگام):</label>
+            <textarea id="tmCode" rows="4" class="w-full border p-2 rounded text-left font-mono text-sm bg-white" dir="ltr">tm=compare (compare,0,0,move_H2_0,0,R,0,S)(compare,1,1,move_H2_1,1,R,1,S)(compare,_,_,accept,_,S,_,S)(compare,0,1,reject,0,S,1,S)(compare,1,0,reject,1,S,0,S)(compare,0,_,reject,0,S,_,S)(compare,1,_,reject,1,S,_,S)(compare,_,0,reject,_,S,0,S)(compare,_,1,reject,_,S,1,S)(move_H2_0,0,0,compare,0,S,0,R)(move_H2_0,1,0,compare,1,S,0,R)(move_H2_0,_,0,compare,_,S,0,R)(move_H2_1,0,1,compare,0,S,1,R)(move_H2_1,1,1,compare,1,S,1,R)(move_H2_1,_,1,compare,_,S,1,R)</textarea>
         </div>
 
         <!-- Controls -->
@@ -75,7 +76,7 @@
         </div>
 
         <div class="mb-4 text-center">
-            <p id="statusText" class="text-lg font-bold text-gray-600">آماده برای شروع شبیه‌سازی دو-نواره</p>
+            <p id="statusText" class="text-lg font-bold text-gray-600">آماده برای شروع شبیه‌سازی دو-نواره (حرکت غیرهمگام هِدها)</p>
         </div>
 
         <!-- 2D Infinite Tapes -->
@@ -140,7 +141,7 @@
             let match;
             while ((match = regex.exec(cleanText)) !== null) {
                 let parts = match[1].split(',');
-                if(parts.length === 8) { // 8 parameters for 2 tapes
+                if(parts.length === 8) { 
                     let fromState = parts[0].trim();
                     let r1 = parts[1].trim();
                     let r2 = parts[2].trim();
@@ -318,7 +319,7 @@
                 document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
                 document.getElementById('playBtn').classList.replace('bg-red-600', 'bg-purple-600');
             } else {
-                playInterval = setInterval(stepSimulation, 350);
+                playInterval = setInterval(stepSimulation, 750);
                 document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-pause"></i>';
                 document.getElementById('playBtn').classList.replace('bg-purple-600', 'bg-red-600');
             }

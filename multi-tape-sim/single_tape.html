@@ -26,6 +26,8 @@
             background-color: #eff6ff !important;
         }
         .virtual-head { color: #ef4444; font-weight: bold; }
+
+        .display-none {display: none;}
         
         /* Hide scrollbar for tape */
         #tapeScrollWrapper::-webkit-scrollbar { display: none; }
@@ -35,11 +37,9 @@
 <body class="p-4 text-gray-800">
 
     <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-        <h1 class="text-2xl font-bold text-center mb-2 text-blue-700">مینی‌گیم رستا: ماشین تورینگ Hw#Hw'</h1>
-        <p class="text-center text-gray-500 mb-6 text-sm">کد الگوریتم را تغییر دهید تا گراف به صورت پویا رسم شود.</p>
         
         <!-- Algorithm Input -->
-        <div class="mb-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+        <div class="mb-4 bg-slate-50 p-4 rounded-lg border border-slate-200 display-none">
             <label class="block font-bold mb-2 text-sm text-slate-700">کد ماشین تورینگ (ورودی الگوریتم):</label>
             <textarea id="tmCode" rows="4" class="w-full border p-2 rounded text-left font-mono text-sm bg-white" dir="ltr">tm=findH1 (findH1,0,findH1,0,R)(findH1,1,findH1,1,R)(findH1,#,findH1,#,R)(findH1,H,readH1,H,R)(readH1,0,findH2_0,0,R)(readH1,1,findH2_1,1,R)(readH1,#,findH2_end,#,R)(findH2_0,0,findH2_0,0,R)(findH2_0,1,findH2_0,1,R)(findH2_0,#,findH2_0,#,R)(findH2_0,H,compare_0,H,R)(findH2_1,0,findH2_1,0,R)(findH2_1,1,findH2_1,1,R)(findH2_1,#,findH2_1,#,R)(findH2_1,H,compare_1,H,R)(compare_0,0,write_0_H2,H,L)(compare_0,1,reject,1,R)(compare_0,_,reject,_,R)(compare_1,1,write_1_H2,H,L)(compare_1,0,reject,0,R)(compare_1,_,reject,_,R)(write_0_H2,H,returnH1,0,L)(write_1_H2,H,returnH1,1,L)(returnH1,0,returnH1,0,L)(returnH1,1,returnH1,1,L)(returnH1,#,returnH1,#,L)(returnH1,H,advanceH1,H,R)(advanceH1,0,write_0_H1,H,L)(advanceH1,1,write_1_H1,H,L)(write_0_H1,H,findH1,0,R)(write_1_H1,H,findH1,1,R)(findH2_end,0,findH2_end,0,R)(findH2_end,1,findH2_end,1,R)(findH2_end,#,findH2_end,#,R)(findH2_end,H,checkH2_end,H,R)(checkH2_end,_,accept,_,R)(checkH2_end,0,reject,0,R)(checkH2_end,1,reject,1,R)</textarea>
         </div>
@@ -47,11 +47,11 @@
         <!-- Controls -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border">
             <div>
-                <label class="block font-bold mb-1 text-sm">رشته اول (w):</label>
+                <label class="block font-bold mb-1 text-sm">دنبالهٔ نخست:</label>
                 <input type="text" id="input1" value="101" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
             </div>
             <div>
-                <label class="block font-bold mb-1 text-sm">رشته دوم (w'):</label>
+                <label class="block font-bold mb-1 text-sm">دنبالهٔ دوم:</label>
                 <input type="text" id="input2" value="101" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
             </div>
             <div class="md:col-span-2 flex justify-center gap-3 mt-2">
@@ -67,7 +67,7 @@
 
         <!-- The 1D Infinite Tape -->
         <div class="mb-6 relative">
-            <h2 class="font-bold text-lg mb-2 text-slate-700">نوار حافظه فیزیکی (Physical Tape)</h2>
+            <h2 class="font-bold text-lg mb-2 text-slate-700">نوار حافظه فیزیکی</h2>
             <div id="tapeScrollWrapper" class="overflow-x-hidden pb-6 pt-6 border rounded-lg bg-slate-100 shadow-inner relative" dir="ltr">
                 <div id="tapeContainer" class="flex justify-center items-center space-x-1 w-max px-[50vw]">
                     <!-- Cells generated via JS -->
@@ -78,7 +78,7 @@
 
         <!-- Vis Network Diagram -->
         <div class="w-full">
-            <h2 class="font-bold text-lg mb-2 text-slate-700">دیاگرام حالت‌های ماشین (State Diagram)</h2>
+            <h2 class="font-bold text-lg mb-2 text-slate-700">نمودار حالت‌های ماشین</h2>
             <div id="network"></div>
         </div>
 

@@ -1,45 +1,392 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>شبیه‌سازی ماشین تورینگ چندنواره</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#090b0f;color:#eef1f5;font-family:Tahoma,Arial,sans-serif}
-main{max-width:1100px;margin:auto;padding:30px 20px}header{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #282d35;padding-bottom:18px}
-h1{font-size:24px;margin:0}.muted{color:#89929e;font-size:13px;margin-top:7px}.status{color:#9aa3af;font-size:13px;white-space:nowrap}.status b{color:#fff}
-.machine{margin-top:34px}.label{color:#aeb6c0;font-size:14px;margin-bottom:8px}
-.tape{display:flex;direction:ltr;justify-content:center;gap:5px;overflow:auto;padding:40px 8px 48px}
-.cell{position:relative;width:58px;height:58px;flex:0 0 58px;background:#15191f;border:1px solid #3b434e;border-radius:4px;display:flex;align-items:center;justify-content:center;font:700 24px Consolas,monospace}
-.cell.head{border-color:#fff;box-shadow:0 0 0 2px #fff2}.headmark{position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);font:900 18px Tahoma;color:#fff;line-height:1;white-space:nowrap}
-.read{display:flex;gap:10px}.box{flex:1;background:#101319;border:1px solid #282e37;border-radius:4px;padding:13px}.box span{display:block;color:#7f8895;font-size:11px;margin-bottom:6px}.box b{font:700 22px Consolas,monospace}
-.info{margin-top:18px;background:#101319;border:1px solid #282e37;border-radius:4px;padding:16px}.op{font-size:16px;margin-bottom:7px}.detail{font-size:13px;color:#9aa4b0;line-height:1.9}
-.controls{text-align:center;margin-top:16px}.btn{background:#171b21;color:#eee;border:1px solid #3a424d;border-radius:4px;padding:9px 18px;cursor:pointer}.btn:hover{background:#20252d}
-.result{display:none;text-align:center;border-top:1px solid #282e37;margin-top:24px;padding-top:24px}.result.show{display:block}.result h2{font-size:30px;margin:0 0 8px}.result p{color:#9aa4b0}
-@media(max-width:650px){main{padding:22px 12px}header{display:block}.status{margin-top:10px}.cell{width:48px;height:48px;flex-basis:48px}.read{flex-direction:column}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شبیه‌ساز تورینگ: دو-نواره (هدهای غیرهمگام)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        body { font-family: 'Vazirmatn', sans-serif; background-color: #f3f4f6; }
+        
+        #network {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #e2e8f0;
+            background-color: #ffffff;
+            border-radius: 0.5rem;
+        }
+
+        .tape-cell { transition: all 0.15s ease-in-out; }
+        .head-active-1 { 
+            box-shadow: 0 0 0 4px #3b82f6; 
+            z-index: 10; 
+            transform: scale(1.15); 
+            background-color: #eff6ff !important;
+        }
+        .head-active-2 { 
+            box-shadow: 0 0 0 4px #10b981; 
+            z-index: 10; 
+            transform: scale(1.15); 
+            background-color: #ecfdf5 !important;
+        }
+
+        .display-none {display: none;}
+        
+        /* Hide scrollbars for tapes */
+        .tapeScrollWrapper::-webkit-scrollbar { display: none; }
+        .tapeScrollWrapper { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
-<body><main>
-<header><div><h1>شبیه‌سازی ماشین تورینگ چندنواره</h1><div class="muted">دو نوار فیزیکی مستقل؛ ماشین خودش الگوریتم مقایسه را اجرا می‌کند.</div></div><div class="status">مرحله <b id="step">۰</b> | وضعیت <b id="state">در حال اجرا</b></div></header>
-<section class="machine">
-<div class="label">نوار ۱ — رشته A</div><div id="tapeA" class="tape"></div>
-<div class="label">نوار ۲ — رشته B</div><div id="tapeB" class="tape"></div>
-<div class="read"><div class="box"><span>نماد فعلی نوار ۱</span><b id="ra">—</b></div><div class="box"><span>نماد فعلی نوار ۲</span><b id="rb">—</b></div></div>
-<div class="info"><div class="op" id="op"></div><div class="detail" id="detail"></div></div>
-<div class="controls"><button class="btn" id="pauseBtn" onclick="toggle()">توقف</button> <button class="btn" onclick="restart()">شروع دوباره</button></div>
-<div id="result" class="result"><h2 id="resultTitle"></h2><p id="resultText"></p></div>
-</section></main>
-<script>
-const A="010110",B="010110";let ha=0,hb=0,step=0,phase="read",paused=false,timer=null;
-const $=id=>document.getElementById(id);
-function drawTape(id,s,h,label){const e=$(id);e.innerHTML="";[...s].forEach((x,i)=>{const c=document.createElement("div");c.className="cell"+(i===h?" head":"");c.textContent=x;if(i===h){const m=document.createElement("div");m.className="headmark";m.textContent="▲ "+label;c.appendChild(m)}e.appendChild(c)})}
-function draw(){drawTape("tapeA",A,ha,"HEAD A");drawTape("tapeB",B,hb,"HEAD B");$("step").textContent=step.toLocaleString("fa-IR")}
-function msg(o,d){$("op").textContent=o;$("detail").textContent=d}
-function run(){if(paused)return;draw();
-if(phase==="read"){if(ha===A.length&&hb===B.length)return finish(true);if(ha===A.length||hb===B.length)return finish(false);$("ra").textContent=A[ha];$("rb").textContent=B[hb];msg("ماشین دو نماد فعلی را می‌خواند.",`HEAD A = ${A[ha]} ، HEAD B = ${B[hb]}`);phase="compare";timer=setTimeout(run,6000)}
-else if(phase==="compare"){if(A[ha]!==B[hb])return finish(false);msg("نمادها برابرند.",`${A[ha]} = ${B[hb]} ✓`);phase="moveA";timer=setTimeout(run,6000)}
-else if(phase==="moveA"){ha++;step++;draw();msg("هد نوار ۱ یک خانه جلو می‌رود.","این حرکت HEAD A است.");phase="moveB";timer=setTimeout(run,6000)}
-else if(phase==="moveB"){hb++;step++;draw();msg("هد نوار ۲ یک خانه جلو می‌رود.","این حرکت HEAD B است؛ دو هد هم‌زمان حرکت نمی‌کنند.");phase="read";timer=setTimeout(run,6000)}}
-function finish(ok){clearTimeout(timer);$("state").textContent=ok?"پذیرش":"رد";$("result").classList.add("show");$("resultTitle").textContent=ok?"ACCEPT":"REJECT";$("resultText").textContent=ok?"دو رشته یکسان بودند.":"دو رشته یکسان نبودند.";msg("اجرای ماشین تمام شد.",ok?"ماشین به وضعیت پذیرش رسید.":"ماشین به وضعیت رد رسید.")}
-function toggle(){paused=!paused;$("pauseBtn").textContent=paused?"ادامه":"توقف";$("state").textContent=paused?"متوقف":"در حال اجرا";if(!paused)run()}
-function restart(){clearTimeout(timer);ha=0;hb=0;step=0;phase="read";paused=false;$("pauseBtn").textContent="توقف";$("state").textContent="در حال اجرا";$("result").classList.remove("show");$("ra").textContent="—";$("rb").textContent="—";run()}restart();
-</script></body></html>
+<body class="p-4 text-gray-800">
+
+    <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        
+        <!-- Algorithm Input (Hidden by default, containing the Async 2-Tape Compare Algorithm) -->
+        <!-- Format: (currentState, read1, read2, nextState, write1, move1, write2, move2) -->
+        <!-- Here, we compare, move Head 1, then transition to a state where we solely move Head 2 -->
+        <div class="mb-4 bg-slate-50 p-4 rounded-lg border border-slate-200 display-none">
+            <label class="block font-bold mb-2 text-sm text-slate-700">کد ماشین تورینگ (دو نواره - غیرهمگام):</label>
+            <textarea id="tmCode" rows="4" class="w-full border p-2 rounded text-left font-mono text-sm bg-white" dir="ltr">tm=compare (compare,0,0,move_H2_0,0,R,0,S)(compare,1,1,move_H2_1,1,R,1,S)(compare,_,_,accept,_,S,_,S)(compare,0,1,reject,0,S,1,S)(compare,1,0,reject,1,S,0,S)(compare,0,_,reject,0,S,_,S)(compare,1,_,reject,1,S,_,S)(compare,_,0,reject,_,S,0,S)(compare,_,1,reject,_,S,1,S)(move_H2_0,0,0,compare,0,S,0,R)(move_H2_0,1,0,compare,1,S,0,R)(move_H2_0,_,0,compare,_,S,0,R)(move_H2_1,0,1,compare,0,S,1,R)(move_H2_1,1,1,compare,1,S,1,R)(move_H2_1,_,1,compare,_,S,1,R)</textarea>
+        </div>
+
+        <!-- Controls -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border">
+            <div>
+                <label class="block font-bold mb-1 text-sm">ورودی نوار ۱:</label>
+                <input type="text" id="input1" value="101" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
+            </div>
+            <div>
+                <label class="block font-bold mb-1 text-sm">ورودی نوار ۲:</label>
+                <input type="text" id="input2" value="101" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
+            </div>
+            <div class="md:col-span-2 flex justify-center gap-4 mt-2">
+                <button onclick="initSimulation()" class="w-12 h-12 flex justify-center items-center text-xl bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 transition" title="ریست نوارها">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button onclick="stepSimulation()" id="stepBtn" class="w-12 h-12 flex justify-center items-center text-xl bg-green-600 text-white rounded-full shadow-md hover:bg-green-700 transition opacity-50 cursor-not-allowed" disabled title="یک گام">
+                    <i class="fa-solid fa-forward-step"></i>
+                </button>
+                <button onclick="togglePlay()" id="playBtn" class="w-12 h-12 flex justify-center items-center text-xl bg-purple-600 text-white rounded-full shadow-md hover:bg-purple-700 transition opacity-50 cursor-not-allowed" disabled title="پخش / توقف خودکار">
+                    <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="mb-4 text-center">
+            <p id="statusText" class="text-lg font-bold text-gray-600">آماده برای شروع شبیه‌سازی دو-نواره (حرکت غیرهمگام هِدها)</p>
+        </div>
+
+        <!-- 2D Infinite Tapes -->
+        <div class="mb-6 relative grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Tape 1 -->
+            <div>
+                <h2 class="font-bold text-lg mb-2 text-slate-700">نوار ۱ (Tape 1)</h2>
+                <div id="tapeScrollWrapper1" class="tapeScrollWrapper overflow-x-hidden pb-6 pt-6 border rounded-lg bg-slate-100 shadow-inner relative" dir="ltr">
+                    <div id="tapeContainer1" class="flex justify-center items-center space-x-1 w-max px-[25vw]">
+                        <!-- Cells generated via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tape 2 -->
+            <div>
+                <h2 class="font-bold text-lg mb-2 text-slate-700">نوار ۲ (Tape 2)</h2>
+                <div id="tapeScrollWrapper2" class="tapeScrollWrapper overflow-x-hidden pb-6 pt-6 border rounded-lg bg-slate-100 shadow-inner relative" dir="ltr">
+                    <div id="tapeContainer2" class="flex justify-center items-center space-x-1 w-max px-[25vw]">
+                        <!-- Cells generated via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vis Network Diagram -->
+        <div class="w-full">
+            <h2 class="font-bold text-lg mb-2 text-slate-700">نمودار حالت‌های ماشین</h2>
+            <div id="network"></div>
+        </div>
+
+    </div>
+
+    <script>
+        let tmMap = {};
+        let initialTMState = '';
+        
+        let tape1 = [];
+        let tape2 = [];
+        let physHead1 = 0;
+        let physHead2 = 0;
+        
+        let currentState = ''; 
+        let playInterval = null;
+        const BLANK = '_';
+
+        // Vis.js Variables
+        let nodes, edges, network;
+        const DEFAULT_COLOR = { background: '#ffffff', border: '#94a3b8' };
+        const ACTIVE_COLOR = { background: '#fef08a', border: '#ca8a04' };
+
+        // Parse 2-Tape Algorithm
+        function parseAlgorithm() {
+            tmMap = {};
+            let rawText = document.getElementById('tmCode').value.trim();
+            let cleanText = rawText.replace(/^tm=/, '').trim();
+            
+            initialTMState = cleanText.split(/\s*\(/)[0].trim();
+            if(!initialTMState) initialTMState = 'compare';
+
+            let regex = /\(([^)]+)\)/g;
+            let match;
+            while ((match = regex.exec(cleanText)) !== null) {
+                let parts = match[1].split(',');
+                if(parts.length === 8) { 
+                    let fromState = parts[0].trim();
+                    let r1 = parts[1].trim();
+                    let r2 = parts[2].trim();
+                    
+                    let toState = parts[3].trim();
+                    let w1 = parts[4].trim();
+                    let dir1 = parts[5].trim();
+                    let w2 = parts[6].trim();
+                    let dir2 = parts[7].trim();
+                    
+                    tmMap[`${fromState},${r1},${r2}`] = [toState, w1, dir1, w2, dir2];
+                }
+            }
+        }
+
+        function generateNetworkData() {
+            let uniqueStates = new Set();
+            let transitionsMap = {}; 
+
+            Object.keys(tmMap).forEach(key => {
+                let [fromState, r1, r2] = key.split(',');
+                let [toState, w1, dir1, w2, dir2] = tmMap[key];
+                
+                uniqueStates.add(fromState);
+                uniqueStates.add(toState);
+
+                let edgeKey = `${fromState}|${toState}`;
+                // Label format: r1,r2 ➔ w1,d1 | w2,d2
+                let label = `${r1},${r2} \u2794 ${w1},${dir1} | ${w2},${dir2}`;
+                
+                if (!transitionsMap[edgeKey]) transitionsMap[edgeKey] = [];
+                transitionsMap[edgeKey].push(label);
+            });
+
+            let nodesData = Array.from(uniqueStates).map(state => ({
+                id: state,
+                label: state,
+                shape: 'circle',
+                color: (state === 'accept' ? {background:'#bbf7d0', border:'#22c55e'} : 
+                       (state === 'reject' ? {background:'#fecaca', border:'#ef4444'} : DEFAULT_COLOR)),
+                font: { size: 14, face: 'Vazirmatn', bold: true }
+            }));
+
+            let edgesData = Object.keys(transitionsMap).map(key => {
+                let [from, to] = key.split('|');
+                return {
+                    from: from,
+                    to: to,
+                    label: transitionsMap[key].join('\n'),
+                    arrows: 'to',
+                    font: { align: 'horizontal', size: 12, color: '#334155', background: 'rgba(255,255,255,0.9)' },
+                    color: { color: '#94a3b8' },
+                    smooth: { type: 'curvedCW', roundness: 0.15 } 
+                };
+            });
+
+            return { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) };
+        }
+
+        function initNetwork() {
+            const data = generateNetworkData();
+            nodes = data.nodes;
+            edges = data.edges;
+
+            const container = document.getElementById('network');
+            const options = {
+                physics: {
+                    barnesHut: {
+                        gravitationalConstant: -2000,
+                        centralGravity: 0.1,
+                        springLength: 200, 
+                        springConstant: 0.05
+                    }
+                },
+                layout: { randomSeed: 5 },
+                interaction: { hover: true }
+            };
+            network = new vis.Network(container, data, options);
+        }
+
+        function initSimulation() {
+            if(playInterval) togglePlay();
+            
+            parseAlgorithm();
+            initNetwork();
+
+            let s1 = document.getElementById('input1').value || '';
+            let s2 = document.getElementById('input2').value || '';
+            
+            // Tape Initialization
+            tape1 = [...s1.split('')];
+            if(tape1.length === 0) tape1.push(BLANK);
+            
+            tape2 = [...s2.split('')];
+            if(tape2.length === 0) tape2.push(BLANK);
+            
+            // Padding
+            for(let i=0; i<15; i++) {
+                tape1.push(BLANK); tape1.unshift(BLANK);
+                tape2.push(BLANK); tape2.unshift(BLANK);
+            }
+            
+            physHead1 = 15; 
+            physHead2 = 15; 
+            currentState = initialTMState;
+            
+            document.getElementById('stepBtn').disabled = false;
+            document.getElementById('stepBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('playBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
+            document.getElementById('playBtn').classList.replace('bg-red-600', 'bg-purple-600');
+            
+            updateUI();
+            centerTapeOnHead(true);
+            
+            if(nodes.get(currentState)) nodes.update({id: currentState, color: ACTIVE_COLOR});
+        }
+
+        function getDirectionValue(dirStr) {
+            if (dirStr === 'R') return 1;
+            if (dirStr === 'L') return -1;
+            return 0; // 'S' or Stay
+        }
+
+        function stepSimulation() {
+            if (currentState === 'accept' || currentState === 'reject') {
+                if(playInterval) togglePlay();
+                return;
+            }
+
+            // Expand tapes if heads approach edges
+            if (physHead1 >= tape1.length - 2) { tape1.push(BLANK); tape1.push(BLANK); }
+            if (physHead1 <= 2) { tape1.unshift(BLANK); tape1.unshift(BLANK); physHead1 += 2; }
+            
+            if (physHead2 >= tape2.length - 2) { tape2.push(BLANK); tape2.push(BLANK); }
+            if (physHead2 <= 2) { tape2.unshift(BLANK); tape2.unshift(BLANK); physHead2 += 2; }
+
+            let r1 = tape1[physHead1];
+            let r2 = tape2[physHead2];
+            let transitionKey = `${currentState},${r1},${r2}`;
+            
+            if (tmMap[transitionKey]) {
+                let [nextState, w1, dir1, w2, dir2] = tmMap[transitionKey];
+                
+                tape1[physHead1] = w1;
+                tape2[physHead2] = w2;
+                
+                if (currentState !== nextState && currentState !== 'accept' && currentState !== 'reject') {
+                    nodes.update({id: currentState, color: DEFAULT_COLOR});
+                }
+                if (nextState !== 'accept' && nextState !== 'reject') {
+                    nodes.update({id: nextState, color: ACTIVE_COLOR});
+                }
+                network.focus(nextState, { scale: 0.8, animation: { duration: 250 } });
+
+                currentState = nextState;
+                physHead1 += getDirectionValue(dir1);
+                physHead2 += getDirectionValue(dir2);
+            } else {
+                document.getElementById('statusText').innerText = `خطا: هیچ انتقالی برای (${currentState}, ${r1}, ${r2}) پیدا نشد!`;
+                if(playInterval) togglePlay();
+                return;
+            }
+
+            updateUI();
+            centerTapeOnHead();
+        }
+
+        function togglePlay() {
+            if (playInterval) {
+                clearInterval(playInterval);
+                playInterval = null;
+                document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
+                document.getElementById('playBtn').classList.replace('bg-red-600', 'bg-purple-600');
+            } else {
+                playInterval = setInterval(stepSimulation, 750);
+                document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-pause"></i>';
+                document.getElementById('playBtn').classList.replace('bg-purple-600', 'bg-red-600');
+            }
+        }
+
+        function updateUI() {
+            // Render Tape 1
+            const container1 = document.getElementById('tapeContainer1');
+            container1.innerHTML = '';
+            tape1.forEach((cell, index) => {
+                const isPhysHead = index === physHead1;
+                container1.innerHTML += `
+                    <div id="cell1-${index}" class="tape-cell border-2 ${isPhysHead ? 'border-blue-500 head-active-1 bg-blue-50' : 'border-slate-300 bg-white'} rounded w-12 h-14 flex justify-center items-center shrink-0 relative shadow-sm">
+                        ${isPhysHead ? '<div class="absolute -top-6 text-[10px] font-bold text-blue-600 bg-blue-100 px-1 py-0.5 rounded shadow">هد ۱</div>' : ''}
+                        <span class="font-mono text-xl text-slate-700">${cell}</span>
+                    </div>
+                `;
+            });
+
+            // Render Tape 2
+            const container2 = document.getElementById('tapeContainer2');
+            container2.innerHTML = '';
+            tape2.forEach((cell, index) => {
+                const isPhysHead = index === physHead2;
+                container2.innerHTML += `
+                    <div id="cell2-${index}" class="tape-cell border-2 ${isPhysHead ? 'border-green-500 head-active-2 bg-green-50' : 'border-slate-300 bg-white'} rounded w-12 h-14 flex justify-center items-center shrink-0 relative shadow-sm">
+                        ${isPhysHead ? '<div class="absolute -top-6 text-[10px] font-bold text-green-700 bg-green-100 px-1 py-0.5 rounded shadow">هد ۲</div>' : ''}
+                        <span class="font-mono text-xl text-slate-700">${cell}</span>
+                    </div>
+                `;
+            });
+
+            let statText = "";
+            if(currentState === 'accept') statText = "نتیجه: Accept (پذیرش) ✔️";
+            else if(currentState === 'reject') statText = "نتیجه: Reject (رد) ❌";
+            else statText = `حالت فعلی: ${currentState} | خواندن: (${tape1[physHead1]}, ${tape2[physHead2]})`;
+            
+            document.getElementById('statusText').innerText = statText;
+        }
+
+        function centerTapeOnHead(instant = false) {
+            setTimeout(() => {
+                // Center Tape 1
+                const head1Element = document.getElementById(`cell1-${physHead1}`);
+                const wrapper1 = document.getElementById('tapeScrollWrapper1');
+                if (head1Element && wrapper1) {
+                    wrapper1.scrollTo({
+                        left: head1Element.offsetLeft - (wrapper1.offsetWidth / 2) + (head1Element.offsetWidth / 2),
+                        behavior: instant ? 'auto' : 'smooth'
+                    });
+                }
+                
+                // Center Tape 2
+                const head2Element = document.getElementById(`cell2-${physHead2}`);
+                const wrapper2 = document.getElementById('tapeScrollWrapper2');
+                if (head2Element && wrapper2) {
+                    wrapper2.scrollTo({
+                        left: head2Element.offsetLeft - (wrapper2.offsetWidth / 2) + (head2Element.offsetWidth / 2),
+                        behavior: instant ? 'auto' : 'smooth'
+                    });
+                }
+            }, 10);
+        }
+
+        window.onload = () => {
+            initSimulation();
+        };
+    </script>
+</body>
+</html>

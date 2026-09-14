@@ -1,219 +1,334 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>شبیه‌سازی ماشین تورینگ تک‌نواره</title>
-<style>
-*{box-sizing:border-box}
-body{margin:0;background:#090b0f;color:#eef1f5;font-family:Tahoma,Arial,sans-serif}
-main{max-width:1150px;margin:auto;padding:30px 20px}
-header{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #282d35;padding-bottom:18px}
-h1{font-size:24px;margin:0}.muted{color:#89929e;font-size:13px;margin-top:7px}
-.status{color:#9aa3af;font-size:13px;white-space:nowrap}.status b{color:#fff}
-.machine{margin-top:38px}.label{color:#aeb6c0;font-size:14px;margin-bottom:10px}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شبیه‌ساز تورینگ: دیاگرام واقعی و نوار بی‌نهایت</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <!-- اضافه کردن کتابخانه FontAwesome برای آیکون‌ها -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        body { font-family: 'Vazirmatn', sans-serif; background-color: #f3f4f6; }
+        
+        #network {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #e2e8f0;
+            background-color: #ffffff;
+            border-radius: 0.5rem;
+        }
 
-/* One physical tape. Each cell contains exactly ONE visible thing:
-   its symbol OR the word HEAD. No A/B text is placed inside a cell. */
-.tapeWrap{position:relative;overflow:auto;padding:58px 8px 26px}
-.tape{display:flex;direction:ltr;justify-content:center;gap:5px;min-width:max-content}
-.cell{position:relative;width:58px;height:58px;flex:0 0 58px;background:#15191f;border:1px solid #3b434e;border-radius:4px;display:flex;align-items:center;justify-content:center;font:700 24px Consolas,monospace}
-.cell.sep{background:#20252c;color:#a48cff}
-.cell.logicalA,.cell.logicalB{background:#15191f;color:#fff;border:2px solid #fff}
-.cell.logicalA{box-shadow:inset 0 0 0 2px #a48cff55}
-.cell.logicalB{box-shadow:inset 0 0 0 2px #63dfff55}
-.cell.physical{outline:3px solid #fff;outline-offset:3px}
+        .tape-cell { transition: all 0.15s ease-in-out; }
+        .head-active { 
+            box-shadow: 0 0 0 4px #3b82f6; 
+            z-index: 10; 
+            transform: scale(1.15); 
+            background-color: #eff6ff !important;
+        }
 
-/* The physical head is NOT put inside a cell and never changes the cell content.
-   It is a moving marker directly above the current physical cell. */
-.physicalMarker{position:absolute;top:8px;width:58px;height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;transition:left 1.35s linear}
-.physicalMarker .arrow{font-size:22px;line-height:18px;color:#fff}
-.physicalMarker .txt{font-size:11px;font-weight:700;color:#cfd5dd;white-space:nowrap;margin-top:2px}
-
-.legend{display:flex;justify-content:center;gap:22px;color:#89929e;font-size:12px;margin-top:6px}
-.legendItem{display:flex;align-items:center;gap:7px}.dot{width:11px;height:11px;border:1px solid #fff;border-radius:2px}.dot.a{box-shadow:inset 0 0 0 3px #a48cff55}.dot.b{box-shadow:inset 0 0 0 3px #63dfff55}
-.info{margin-top:25px;background:#101319;border:1px solid #282e37;border-radius:4px;padding:16px}
-.op{font-size:16px;margin-bottom:7px}.detail{font-size:13px;color:#9aa4b0;line-height:1.9}
-.controls{text-align:center;margin-top:16px}.btn{background:#171b21;color:#eee;border:1px solid #3a424d;border-radius:4px;padding:9px 18px;cursor:pointer}.btn:hover{background:#20252d}
-.result{display:none;text-align:center;border-top:1px solid #282e37;margin-top:24px;padding-top:24px}.result.show{display:block}.result h2{font-size:30px;margin:0 0 8px}.result p{color:#9aa4b0}
-@media(max-width:650px){main{padding:22px 12px}header{display:block}.status{margin-top:10px}.cell{width:48px;height:48px;flex-basis:48px}.physicalMarker{width:48px}}
-</style>
+        .display-none {display: none;}
+        
+        /* Hide scrollbar for tape */
+        #tapeScrollWrapper::-webkit-scrollbar { display: none; }
+        #tapeScrollWrapper { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
-<body><main>
-<header>
-<div><h1>شبیه‌سازی ماشین تورینگ تک‌نواره</h1>
-<div class="muted">یک نوار فیزیکی واحد؛ HEADها خودِ خانه‌های نوار هستند و هد فیزیکی روی نوار حرکت می‌کند.</div></div>
-<div class="status">مرحله <b id="step">۰</b> | وضعیت <b id="state">در حال اجرا</b></div>
-</header>
+<body class="p-4 text-gray-800">
 
-<section class="machine">
-<div class="label">یک نوار فیزیکی: A # B</div>
+    <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        
+        <!-- Algorithm Input -->
+        <div class="mb-4 bg-slate-50 p-4 rounded-lg border border-slate-200 display-none">
+            <label class="block font-bold mb-2 text-sm text-slate-700">کد ماشین تورینگ (ورودی الگوریتم):</label>
+            <textarea id="tmCode" rows="4" class="w-full border p-2 rounded text-left font-mono text-sm bg-white" dir="ltr">tm=findH1 (findH1,0,findH1,0,R)(findH1,1,findH1,1,R)(findH1,#,findH1,#,R)(findH1,H,readH1,H,R)(readH1,0,findH2_0,0,R)(readH1,1,findH2_1,1,R)(readH1,#,findH2_end,#,R)(findH2_0,0,findH2_0,0,R)(findH2_0,1,findH2_0,1,R)(findH2_0,#,findH2_0,#,R)(findH2_0,H,compare_0,H,R)(findH2_1,0,findH2_1,0,R)(findH2_1,1,findH2_1,1,R)(findH2_1,#,findH2_1,#,R)(findH2_1,H,compare_1,H,R)(compare_0,0,write_0_H2,H,L)(compare_0,1,reject,1,R)(compare_0,_,reject,_,R)(compare_1,1,write_1_H2,H,L)(compare_1,0,reject,0,R)(compare_1,_,reject,_,R)(write_0_H2,H,returnH1,0,L)(write_1_H2,H,returnH1,1,L)(returnH1,0,returnH1,0,L)(returnH1,1,returnH1,1,L)(returnH1,#,returnH1,#,L)(returnH1,H,advanceH1,H,R)(advanceH1,0,write_0_H1,H,L)(advanceH1,1,write_1_H1,H,L)(write_0_H1,H,findH1,0,R)(write_1_H1,H,findH1,1,R)(findH2_end,0,findH2_end,0,R)(findH2_end,1,findH2_end,1,R)(findH2_end,#,findH2_end,#,R)(findH2_end,H,checkH2_end,H,R)(checkH2_end,_,accept,_,R)(checkH2_end,0,reject,0,R)(checkH2_end,1,reject,1,R)</textarea>
+        </div>
 
-<div class="tapeWrap" id="tapeWrap">
-  <div id="physicalMarker" class="physicalMarker">
-    <div class="arrow">▼</div>
-    <div class="txt">هد فیزیکی</div>
-  </div>
-  <div id="tape" class="tape"></div>
-</div>
+        <!-- Controls -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border">
+            <div>
+                <label class="block font-bold mb-1 text-sm">دنبالهٔ نخست:</label>
+                <input type="text" id="input1" value="101" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
+            </div>
+            <div>
+                <label class="block font-bold mb-1 text-sm">دنبالهٔ دوم:</label>
+                <input type="text" id="input2" value="101" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
+            </div>
+            <div class="md:col-span-2 flex justify-center gap-4 mt-2">
+                <button onclick="initSimulation()" class="w-12 h-12 flex justify-center items-center text-xl bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 transition" title="ریست نوار">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button onclick="stepSimulation()" id="stepBtn" class="w-12 h-12 flex justify-center items-center text-xl bg-green-600 text-white rounded-full shadow-md hover:bg-green-700 transition opacity-50 cursor-not-allowed" disabled title="یک گام">
+                    <i class="fa-solid fa-forward-step"></i>
+                </button>
+                <button onclick="togglePlay()" id="playBtn" class="w-12 h-12 flex justify-center items-center text-xl bg-purple-600 text-white rounded-full shadow-md hover:bg-purple-700 transition opacity-50 cursor-not-allowed" disabled title="پخش / توقف خودکار">
+                    <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+        </div>
 
-<div class="legend">
-  <div class="legendItem"><span class="dot a"></span> HEAD منطقی A</div>
-  <div class="legendItem"><span class="dot b"></span> HEAD منطقی B</div>
-  <div class="legendItem"><span class="dot"></span> موقعیت هد فیزیکی</div>
-</div>
+        <div class="mb-4 text-center">
+            <p id="statusText" class="text-lg font-bold text-gray-600">آماده برای شروع شبیه‌سازی</p>
+        </div>
 
-<div class="info"><div class="op" id="op"></div><div class="detail" id="detail"></div></div>
-<div class="controls"><button class="btn" id="pauseBtn" onclick="toggle()">توقف</button> <button class="btn" onclick="restart()">شروع دوباره</button></div>
-<div id="result" class="result"><h2 id="resultTitle"></h2><p id="resultText"></p></div>
-</section></main>
+        <!-- The 1D Infinite Tape -->
+        <div class="mb-6 relative">
+            <h2 class="font-bold text-lg mb-2 text-slate-700">نوار حافظه فیزیکی</h2>
+            <div id="tapeScrollWrapper" class="overflow-x-hidden pb-6 pt-6 border rounded-lg bg-slate-100 shadow-inner relative" dir="ltr">
+                <div id="tapeContainer" class="flex justify-center items-center space-x-1 w-max px-[50vw]">
+                    <!-- Cells generated via JS -->
+                </div>
+            </div>
+            <div class="absolute top-1/2 left-1/2 w-1 h-24 bg-blue-300/30 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0"></div>
+        </div>
 
-<script>
-const A="010110",B="010110";
-const symbols=[...A,"#",...B];
+        <!-- Vis Network Diagram -->
+        <div class="w-full">
+            <h2 class="font-bold text-lg mb-2 text-slate-700">نمودار حالت‌های ماشین</h2>
+            <div id="network"></div>
+        </div>
 
-let ha=0;                 // logical A head position
-let hb=A.length+1;        // logical B head position
-let physical=0;           // one physical head position
-let step=0,phase="goA",paused=false,timer=null;
+    </div>
 
-const $=id=>document.getElementById(id);
+    <script>
+        let tmMap = {};
+        let initialTMState = '';
+        let tape = [];
+        let physHead = 0;
+        let currentState = ''; 
+        let playInterval = null;
+        const BLANK = '_';
 
-function draw(){
-  const tape=$("tape");
-  tape.innerHTML="";
+        // Vis.js Variables
+        let nodes, edges, network;
+        const DEFAULT_COLOR = { background: '#ffffff', border: '#94a3b8' };
+        const ACTIVE_COLOR = { background: '#fef08a', border: '#ca8a04' };
 
-  symbols.forEach((symbol,i)=>{
-    const c=document.createElement("div");
+        // Parse Algorithm safely
+        function parseAlgorithm() {
+            tmMap = {};
+            let rawText = document.getElementById('tmCode').value.trim();
+            let cleanText = rawText.replace(/^tm=/, '').trim();
+            
+            initialTMState = cleanText.split(/\s*\(/)[0].trim();
+            if(!initialTMState) initialTMState = 'findH1';
 
-    // A cell has exactly one visible content: HEAD.
-    // The underlying symbol remains in JS and is restored when the head moves.
-    if(i===ha){
-      c.className="cell logicalA";
-      c.textContent="HEAD";
-    }else if(i===hb){
-      c.className="cell logicalB";
-      c.textContent="HEAD";
-    }else{
-      c.className="cell"+(symbol==="#"?" sep":"");
-      c.textContent=symbol;
-    }
+            let regex = /\(([^)]+)\)/g;
+            let match;
+            while ((match = regex.exec(cleanText)) !== null) {
+                let parts = match[1].split(',');
+                if(parts.length === 5) {
+                    let fromState = parts[0].trim();
+                    let readChar = parts[1].trim();
+                    let toState = parts[2].trim();
+                    let writeChar = parts[3].trim();
+                    let moveDir = parts[4].trim() === 'R' ? 1 : -1;
+                    
+                    tmMap[`${fromState},${readChar}`] = [toState, writeChar, moveDir];
+                }
+            }
+        }
 
-    if(i===physical)c.classList.add("physical");
-    tape.appendChild(c);
-  });
+        function generateNetworkData() {
+            let uniqueStates = new Set();
+            let transitionsMap = {}; 
 
-  requestAnimationFrame(positionPhysicalMarker);
-  $("step").textContent=step.toLocaleString("fa-IR");
-}
+            Object.keys(tmMap).forEach(key => {
+                let [fromState, readChar] = key.split(',');
+                let [toState, writeChar, dir] = tmMap[key];
+                let dirStr = dir === 1 ? 'R' : 'L';
+                
+                uniqueStates.add(fromState);
+                uniqueStates.add(toState);
 
-function positionPhysicalMarker(){
-  const wrap=$("tapeWrap"), marker=$("physicalMarker"), cells=[...$("tape").children];
-  const target=cells[physical];
-  if(!target)return;
-  const wr=wrap.getBoundingClientRect(), tr=target.getBoundingClientRect();
-  marker.style.left=(tr.left-wr.left+wrap.scrollLeft)+"px";
-}
+                let edgeKey = `${fromState}|${toState}`;
+                let label = `${readChar} -> ${writeChar}, ${dirStr}`;
+                
+                if (!transitionsMap[edgeKey]) transitionsMap[edgeKey] = [];
+                transitionsMap[edgeKey].push(label);
+            });
 
-function msg(o,d){$("op").textContent=o;$("detail").textContent=d}
+            let nodesData = Array.from(uniqueStates).map(state => ({
+                id: state,
+                label: state,
+                shape: 'circle',
+                color: (state === 'accept' ? {background:'#bbf7d0', border:'#22c55e'} : 
+                       (state === 'reject' ? {background:'#fecaca', border:'#ef4444'} : DEFAULT_COLOR)),
+                font: { size: 14, face: 'Vazirmatn', bold: true }
+            }));
 
-function moveTo(target,next){
-  if(paused)return;
+            let edgesData = Object.keys(transitionsMap).map(key => {
+                let [from, to] = key.split('|');
+                return {
+                    from: from,
+                    to: to,
+                    label: transitionsMap[key].join('\n'),
+                    arrows: 'to',
+                    font: { align: 'horizontal', size: 12, color: '#334155', background: 'rgba(255,255,255,0.8)' },
+                    color: { color: '#94a3b8' },
+                    smooth: { type: 'curvedCW', roundness: 0.15 } 
+                };
+            });
 
-  if(physical===target){
-    phase=next;
-    timer=setTimeout(run,6000);
-    return;
-  }
+            return { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) };
+        }
 
-  physical += target>physical?1:-1;
-  step++;
-  draw();
+        function initNetwork() {
+            const data = generateNetworkData();
+            nodes = data.nodes;
+            edges = data.edges;
 
-  msg("هد فیزیکی روی نوار حرکت می‌کند.",
-      `هد فیزیکی خانه‌به‌خانه حرکت کرد و اکنون روی خانه‌ی ${physical.toLocaleString("fa-IR")} است.`);
+            const container = document.getElementById('network');
+            const options = {
+                physics: {
+                    barnesHut: {
+                        gravitationalConstant: -3000,
+                        centralGravity: 0.1,
+                        springLength: 200, 
+                        springConstant: 0.04
+                    }
+                },
+                layout: { randomSeed: 5 },
+                interaction: { hover: true }
+            };
+            network = new vis.Network(container, data, options);
+        }
 
-  timer=setTimeout(()=>moveTo(target,next),1500);
-}
+        function initSimulation() {
+            if(playInterval) togglePlay();
+            
+            parseAlgorithm();
+            initNetwork();
 
-function run(){
-  if(paused)return;
-  draw();
+            let s1 = document.getElementById('input1').value || '';
+            let s2 = document.getElementById('input2').value || '';
+            
+            tape = ['H', ...s1.split(''), '#', 'H', ...s2.split('')];
+            
+            for(let i=0; i<15; i++) {
+                tape.push(BLANK);
+                tape.unshift(BLANK);
+            }
+            
+            physHead = 15; 
+            currentState = initialTMState;
+            
+            document.getElementById('stepBtn').disabled = false;
+            document.getElementById('stepBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('playBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
+            document.getElementById('playBtn').classList.replace('bg-red-600', 'bg-purple-600');
+            
+            updateUI();
+            
+            centerTapeOnHead(true);
+            
+            if(nodes.get(currentState)) nodes.update({id: currentState, color: ACTIVE_COLOR});
+        }
 
-  if(phase==="goA"){
-    msg("هد فیزیکی به HEAD منطقی A می‌رود.",
-        "HEAD منطقی A خودِ یکی از خانه‌های نوار است؛ هد فیزیکی برای خواندن آن به همان خانه می‌رود.");
-    phase="movingA";
-    timer=setTimeout(()=>moveTo(ha,"readA"),2500);
+        function stepSimulation() {
+            if (currentState === 'accept' || currentState === 'reject') {
+                if(playInterval) togglePlay();
+                return;
+            }
 
-  }else if(phase==="readA"){
-    msg("ماشین نماد HEAD A را می‌خواند.",
-        `نماد اصلی این خانه: ${symbols[ha]}`);
-    phase="goB";
-    timer=setTimeout(run,6000);
+            if (physHead >= tape.length - 2) {
+                tape.push(BLANK); tape.push(BLANK);
+            }
+            if (physHead <= 2) {
+                tape.unshift(BLANK); tape.unshift(BLANK);
+                physHead += 2; 
+            }
 
-  }else if(phase==="goB"){
-    msg("هد فیزیکی به HEAD منطقی B می‌رود.",
-        "HEAD منطقی B هم یک خانه‌ی واقعی از همان نوار است؛ هد فیزیکی حالا به آن می‌رود.");
-    phase="movingB";
-    timer=setTimeout(()=>moveTo(hb,"readB"),2500);
+            let readChar = tape[physHead];
+            let transitionKey = currentState + ',' + readChar;
+            
+            if (tmMap[transitionKey]) {
+                let [nextState, writeChar, moveDirection] = tmMap[transitionKey];
+                
+                tape[physHead] = writeChar;
+                
+                if (currentState !== nextState && currentState !== 'accept' && currentState !== 'reject') {
+                    nodes.update({id: currentState, color: DEFAULT_COLOR});
+                }
+                if (nextState !== 'accept' && nextState !== 'reject') {
+                    nodes.update({id: nextState, color: ACTIVE_COLOR});
+                }
+                // کاهش میزان زوم روی گراف از 1.1 به 0.8 برای جلوگیری از بزرگنمایی بیش از حد
+                network.focus(nextState, { scale: 0.8, animation: { duration: 250 } });
 
-  }else if(phase==="readB"){
-    msg("ماشین نماد HEAD B را می‌خواند.",
-        `نماد اصلی این خانه: ${symbols[hb]}`);
-    phase="compare";
-    timer=setTimeout(run,6000);
+                currentState = nextState;
+                physHead += moveDirection;
+            } else {
+                document.getElementById('statusText').innerText = `خطا: هیچ انتقالی برای (${currentState}, ${readChar}) پیدا نشد!`;
+                if(playInterval) togglePlay();
+                return;
+            }
 
-  }else if(phase==="compare"){
-    if(symbols[ha]!==symbols[hb])return finish(false);
+            updateUI();
+            centerTapeOnHead();
+        }
 
-    if(ha===A.length-1 && hb===symbols.length-1)return finish(true);
+        function togglePlay() {
+            if (playInterval) {
+                clearInterval(playInterval);
+                playInterval = null;
+                document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
+                document.getElementById('playBtn').classList.replace('bg-red-600', 'bg-purple-600');
+            } else {
+                playInterval = setInterval(stepSimulation, 350);
+                document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-pause"></i>';
+                document.getElementById('playBtn').classList.replace('bg-purple-600', 'bg-red-600');
+            }
+        }
 
-    msg("دو نماد برابرند.",
-        `${symbols[ha]} = ${symbols[hb]} ✓`);
-    phase="advance";
-    timer=setTimeout(run,6000);
+        function updateUI() {
+            const container = document.getElementById('tapeContainer');
+            container.innerHTML = '';
+            
+            tape.forEach((cell, index) => {
+                const isPhysHead = index === physHead;
+                
+                const cellHTML = `
+                    <div id="cell-${index}" class="tape-cell border-2 ${isPhysHead ? 'border-blue-500 head-active bg-blue-50' : 'border-slate-300 bg-white'} rounded w-14 h-16 flex justify-center items-center shrink-0 relative shadow-sm">
+                        ${isPhysHead ? '<div class="absolute -top-7 text-xs font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded shadow">هد</div>' : ''}
+                        <span class="font-mono text-2xl text-slate-700">${cell}</span>
+                    </div>
+                `;
+                container.innerHTML += cellHTML;
+            });
 
-  }else if(phase==="advance"){
-    ha++;
-    hb++;
-    step++;
-    draw();
+            let statText = "";
+            if(currentState === 'accept') statText = "نتیجه: Accept (پذیرش) ✔️";
+            else if(currentState === 'reject') statText = "نتیجه: Reject (رد) ❌";
+            else statText = `حالت فعلی: ${currentState} | خواندن: ${tape[physHead]}`;
+            
+            document.getElementById('statusText').innerText = statText;
+        }
 
-    msg("HEADها یک خانه جلو می‌روند.",
-        "خانه‌ی قبلی دوباره نماد اصلی خود را نشان می‌دهد و خانه‌ی بعدی به HEAD تبدیل می‌شود.");
-    phase="goA";
-    timer=setTimeout(run,6000);
-  }
-}
+        function centerTapeOnHead(instant = false) {
+            setTimeout(() => {
+                const headElement = document.getElementById(`cell-${physHead}`);
+                const wrapper = document.getElementById('tapeScrollWrapper');
+                if (headElement && wrapper) {
+                    const headLeft = headElement.offsetLeft;
+                    const headWidth = headElement.offsetWidth;
+                    const wrapperWidth = wrapper.offsetWidth;
+                    
+                    wrapper.scrollTo({
+                        left: headLeft - (wrapperWidth / 2) + (headWidth / 2),
+                        behavior: instant ? 'auto' : 'smooth'
+                    });
+                }
+            }, 10);
+        }
 
-function finish(ok){
-  clearTimeout(timer);
-  $("state").textContent=ok?"پذیرش":"رد";
-  $("result").classList.add("show");
-  $("resultTitle").textContent=ok?"ACCEPT":"REJECT";
-  $("resultText").textContent=ok?"دو رشته یکسان بودند.":"دو رشته یکسان نبودند.";
-  msg("اجرای ماشین تمام شد.",ok?"ماشین به وضعیت پذیرش رسید.":"ماشین به وضعیت رد رسید.");
-}
-
-function toggle(){
-  paused=!paused;
-  $("pauseBtn").textContent=paused?"ادامه":"توقف";
-  $("state").textContent=paused?"متوقف":"در حال اجرا";
-  if(!paused)run();
-}
-
-function restart(){
-  clearTimeout(timer);
-  ha=0;hb=A.length+1;physical=0;step=0;phase="goA";paused=false;
-  $("pauseBtn").textContent="توقف";
-  $("state").textContent="در حال اجرا";
-  $("result").classList.remove("show");
-  run();
-}
-
-window.addEventListener("resize",positionPhysicalMarker);
-$("tapeWrap").addEventListener("scroll",positionPhysicalMarker);
-restart();
-</script>
+        window.onload = () => {
+            initSimulation();
+        };
+    </script>
 </body>
 </html>

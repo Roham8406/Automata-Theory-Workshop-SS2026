@@ -2,44 +2,113 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
   <title>مینی‌گیم اتوماتای پله 🤖</title>
   <style>
-    * {
+    :root {
+      --bg: #ffffff;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --primary: #2563eb;
+      --canvas-w: 480px;
+      --canvas-h: 390px;
+    }
+
+    *,
+    *::before,
+    *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: Vazirmatn, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+      -moz-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
 
     body {
-      background-color: #f1f5f9;
-      color: #0f172a;
+      font-family: Vazirmatn, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      padding: 20px;
+      min-height: 100dvh;
+      min-height: -webkit-fill-available;
+      padding: 16px;
+      padding-top: max(16px, env(safe-area-inset-top));
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      overflow-x: hidden;
+      overscroll-behavior-y: contain;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     .game-container {
-      background: #ffffff;
+      background: var(--card);
       padding: 24px;
       border-radius: 16px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 18px;
       max-width: 540px;
       width: 100%;
+      margin: auto;
     }
 
-    h1 {
-      font-size: 1.35rem;
-      font-weight: 700;
-      color: #1e293b;
+    /* Keep the graph visually close to its title. */
+    .intro-text {
+      margin-bottom: -8px;
+    }
+
+    .canvas-card-wrapper {
+      margin-top: -2px;
+    }
+
+    .graph-instructions {
+      width: 100%;
+      text-align: center;
+      margin-bottom: -8px;
+      line-height: 1.55;
+    }
+
+    .graph-title {
+      font-size: clamp(0.9rem, 2.8vw, 1rem);
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .graph-hint {
+      margin-top: 2px;
+      font-size: clamp(0.68rem, 2.1vw, 0.76rem);
+      font-weight: 500;
+      color: #94a3b8;
+    }
+
+    .intro-text {
+      font-size: clamp(0.82rem, 2.6vw, 0.95rem);
+      font-weight: 600;
+      color: #334155;
+      text-align: center;
+    }
+
+    .section-text {
+      font-size: clamp(0.78rem, 2.4vw, 0.9rem);
+      font-weight: 600;
+      color: #334155;
       text-align: center;
     }
 
@@ -56,198 +125,145 @@
       gap: 6px;
     }
 
-    .label-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
     label {
-      font-size: 0.85rem;
+      font-size: clamp(0.75rem, 2.4vw, 0.85rem);
       font-weight: 600;
       color: #475569;
     }
 
-    .speed-val {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #2563eb;
-      font-family: monospace;
-    }
-
-    input[type="text"], select {
+    /* Base input styling */
+    input[type="text"],
+    select {
       padding: 8px 10px;
-      font-size: 0.88rem;
+      font-size: clamp(0.8rem, 2.4vw, 0.88rem);
       border: 2px solid #cbd5e1;
       border-radius: 8px;
       outline: none;
       background-color: #ffffff;
       transition: border-color 0.2s;
+      min-width: 0;
+      font-family: inherit;
+      color: var(--text);
+      -webkit-appearance: none;
+      appearance: none;
     }
 
-    input[type="text"] {
+    /* Sequence input — bigger, monospace, animated chars */
+    .sequence-input {
       letter-spacing: 2px;
-      font-family: monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-weight: bold;
       text-transform: uppercase;
-    }
-
-    input[type="text"]:focus, select:focus {
-      border-color: #2563eb;
-    }
-
-    input[type="range"] {
       width: 100%;
-      accent-color: #2563eb;
-      cursor: pointer;
+      direction: ltr;
     }
 
-    /* Edge Builder Box */
-    .edge-builder {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    /* Overlay that mirrors the input for per-character coloring */
+    .input-overlay-wrapper {
+      position: relative;
+      width: 100%;
     }
 
-    .edge-builder-title {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #334155;
+    .input-overlay-wrapper .sequence-input {
+      position: relative;
+      z-index: 2;
+      background: transparent;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      caret-color: #0f172a;
     }
 
-    .edge-inputs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-    }
-    
-    .edge-inputs select {
-      flex: 1;
-      width: 100px;
-    }
-
-    .edge-text-label {
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: #475569;
-    }
-
-    .btn-add-edge {
-      background-color: #2563eb;
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 0.85rem;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background-color 0.2s;
-    }
-
-    .btn-add-edge:hover {
-      background-color: #1d4ed8;
-    }
-
-    /* Edge Chips Container */
-    .edge-chips {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      max-height: 100px;
-      overflow-y: auto;
-      padding: 2px;
-    }
-
-    .chip {
-      background: #ffffff;
-      color: #1e293b;
-      font-size: 0.8rem;
-      font-weight: 600;
-      padding: 6px 10px;
-      border-radius: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border: 1px solid #cbd5e1;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-
-    .chip b {
-      color: #2563eb;
-    }
-
-    .chip-remove {
-      color: #ef4444;
-      cursor: pointer;
+    .input-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 8px 10px;
+      font-size: clamp(0.8rem, 2.4vw, 0.88rem);
+      letter-spacing: 2px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-weight: bold;
-      font-size: 0.95rem;
-      padding: 0 4px;
-    }
-
-    .chip-remove:hover {
-      color: #b91c1c;
-    }
-
-    /* Command Sequence Display */
-    .sequence-display {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      min-height: 36px;
-      padding: 6px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
+      text-transform: uppercase;
+      pointer-events: none;
+      white-space: pre;
+      overflow: hidden;
+      direction: ltr;
+      text-align: left;
+      border: 2px solid transparent;
       border-radius: 8px;
-      align-items: center;
-    }
-
-    .char-box {
-      width: 24px;
-      height: 26px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-family: monospace;
-      font-weight: bold;
-      font-size: 0.95rem;
-      border-radius: 4px;
-      border: 1px solid transparent;
-      color: #334155;
+      z-index: 1;
     }
 
-    .char-box.active {
-      background-color: #bfdbfe;
-      border-color: #3b82f6;
-      color: #1d4ed8;
-      transform: scale(1.1);
-      transition: all 0.15s ease;
+    .input-overlay .char {
+      display: inline-block;
+      color: #0f172a;
+      transition: color 0.15s ease, transform 0.15s ease;
+      transform-origin: center;
+      will-change: transform, color;
     }
 
+    /* Active character during playback — R red, L blue */
+    .input-overlay .char.active {
+      transform: scale(1.4);
+      font-weight: 900;
+    }
+    .input-overlay .char.active.R { color: #dc2626; }
+    .input-overlay .char.active.L { color: var(--primary); }
+
+    input[type="text"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    /* Edge picker */
+    .edge-picker {
+      position: absolute; z-index: 20; display: flex; gap: 4px; padding: 4px;
+      background: #fff; border: 1px solid #cbd5e1; border-radius: 7px;
+      box-shadow: 0 3px 10px rgba(15,23,42,.12); direction: ltr;
+      transform: translate(-50%, -50%);
+    }
+    .edge-picker button {
+      width: 30px; height: 28px; padding: 0; border: 1px solid #cbd5e1; border-radius: 5px;
+      background: #f8fafc; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .85rem; font-weight: 800; cursor: pointer; touch-action: manipulation;
+    }
+    .edge-picker button:active { transform: scale(.94); }
+    .edge-picker .picker-r { color: #dc2626; }
+    .edge-picker .picker-l { color: #2563eb; }
+    .edge-picker .picker-cancel { color: #64748b; font-size: 1rem; }
+
+    /* Buttons */
     .btn-group {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
+      width: 100%;
     }
 
     .btn {
-      flex: 1;
-      padding: 10px 12px;
-      font-size: 0.88rem;
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 11px 10px;
+      font-size: clamp(0.75rem, 2.6vw, 0.88rem);
       font-weight: 700;
       border-radius: 8px;
       border: none;
       cursor: pointer;
       transition: background-color 0.2s, transform 0.1s;
+      white-space: nowrap;
+      font-family: inherit;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-appearance: none;
+      appearance: none;
+      line-height: 1.3;
     }
 
-    .btn:active {
-      transform: scale(0.98);
-    }
+    .btn:active { transform: scale(0.98); }
 
     .btn-hint { background-color: #e2e8f0; color: #334155; }
     .btn-hint:hover { background-color: #cbd5e1; }
@@ -255,45 +271,56 @@
     .btn-run { background-color: #16a34a; color: #ffffff; }
     .btn-run:hover { background-color: #15803d; }
 
-    .btn-reset { background-color: #ef4444; color: #ffffff; }
-    .btn-reset:hover { background-color: #dc2626; }
+    .btn-reset { background-color: #93c5fd; color: #1e3a8a; }
+    .btn-reset:hover { background-color: #60a5fa; }
 
     .btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
 
-    /* Canvas Card & HTML State Nodes */
+    /* Canvas Card */
+    .canvas-card-wrapper {
+      width: 100%;
+      max-width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: visible;
+    }
+
     .canvas-card {
       position: relative;
       background: #ffffff;
       border: 3px solid #000000;
       border-radius: 12px;
-      overflow: hidden;
-      width: 480px;
-      height: 390px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      overflow: visible;
+
+      /* 480×390 logical drawing area, responsive on screen. */
+      width: min(480px, 100%);
+      aspect-ratio: 480 / 390;
+      height: auto;
+
+      flex: 0 1 480px;
+      max-width: 100%;
     }
 
     canvas {
       position: absolute;
-      top: 0;
-      left: 0;
+      inset: 0;
       z-index: 1;
-      background-color: #ffffff;
-    }
 
-    #nodesOverlay {
-      position: absolute;
-      top: 0;
-      left: 0;
       width: 100%;
       height: 100%;
-      z-index: 2;
-      pointer-events: none;
+
+      display: block;
+      background-color: #ffffff;
+
+      /* Prevent browser gestures from interfering with graph tapping. */
+      touch-action: manipulation;
     }
 
-    /* Pure CSS State Circle Styling */
+
     .state-node {
       position: absolute;
       width: 68px;
@@ -317,7 +344,7 @@
     }
 
     .state-node.active {
-      border-color: #2563eb;
+      border-color: var(--primary);
       background-color: #dbeafe;
       color: #1d4ed8;
       transform: translate(-50%, -50%) scale(1.08);
@@ -334,70 +361,148 @@
       font-weight: bold;
     }
 
-    /* Status Message */
     .status-msg {
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: clamp(0.85rem, 2.8vw, 0.95rem);
       min-height: 24px;
       text-align: center;
+      width: 100%;
     }
+    .status-msg.info { color: #16a34a; }
     .status-msg.warn { color: #dc2626; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .game-container {
+        padding: 18px;
+        gap: 14px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      body {
+        padding: 10px;
+        padding-top: max(10px, env(safe-area-inset-top));
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+      }
+
+      .game-container {
+        padding: 14px;
+        gap: 12px;
+        border-radius: 12px;
+      }
+
+      .graph-instructions {
+        margin-bottom: -6px;
+      }
+
+      .btn {
+        padding: 10px 8px;
+      }
+
+      .input-overlay-wrapper .sequence-input,
+      .input-overlay {
+        font-size: 0.85rem;
+        padding: 7px 9px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .game-container { padding: 12px; gap: 10px; }
+
+      .btn {
+        font-size: 0.72rem;
+        padding: 9px 6px;
+      }
+    }
+
+    @media (max-width: 320px) {
+      .btn {
+        font-size: 0.68rem;
+        padding: 8px 4px;
+        border-radius: 6px;
+      }
+    }
+
+    @media (max-height: 500px) and (orientation: landscape) {
+      body { padding: 8px; }
+
+      .game-container {
+        padding: 12px;
+        gap: 8px;
+        max-width: 100%;
+      }
+
+      .canvas-card {
+        width: min(100%, 480px);
+        flex-basis: min(100%, 480px);
+      }
+    }
+
+    @media (max-width: 300px) {
+      .game-container {
+        padding: 10px;
+      }
+
+      .graph-title {
+        font-size: 0.82rem;
+      }
+
+      .graph-hint {
+        font-size: 0.64rem;
+      }
+
+      .btn {
+        font-size: 0.64rem;
+        padding: 8px 4px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #ffffff;
+        --card: #ffffff;
+        --text: #0f172a;
+      }
+    }
   </style>
 </head>
 <body>
 
   <div class="game-container">
-    <h1>مینی‌گیم اتوماتای پله 🤖</h1>
+
+    <div class="graph-instructions">
+      <div class="graph-title">یال‌های نمودار زیر را رسم کنید.</div>
+      <div class="graph-hint">برای رسم یال اول روی حالت مبدأ و بعد روی حالت مقصد کلیک کنید.</div>
+    </div>
+
+    <div class="canvas-card-wrapper">
+      <div class="canvas-card" id="canvasCard">
+        <canvas id="gameCanvas" width="480" height="390"></canvas>
+      </div>
+    </div>
+
+    <div id="statusMsg" class="status-msg"></div>
 
     <div class="controls">
-      <!-- Edge Builder Section -->
-      <div class="edge-builder">
-        <span class="edge-builder-title">➕ تنظیم انتقال حالت:</span>
-        <div class="edge-inputs">
-          <span class="edge-text-label">از</span>
-          <select id="selectFrom">
-            <option value="0">پاها کنار هم</option>
-            <option value="1">چپ ۱ پله جلو</option>
-            <option value="2">چپ ۲ پله جلو</option>
-            <option value="3">راست ۱ پله جلو</option>
-            <option value="4">راست ۲ پله جلو</option>
-          </select>
-          
-          <span class="edge-text-label">با شنیدن</span>
-          <select id="selectSymbol">
-            <option value="R">R</option>
-            <option value="L">L</option>
-          </select>
-
-          <span class="edge-text-label">میریم به</span>
-          <select id="selectTo">
-            <option value="0">پاها کنار هم</option>
-            <option value="1">چپ ۱ پله جلو</option>
-            <option value="2">چپ ۲ پله جلو</option>
-            <option value="3">راست ۱ پله جلو</option>
-            <option value="4">راست ۲ پله جلو</option>
-          </select>
-
-          <button class="btn-add-edge" id="btnAddEdge" style="flex: none;">افزودن</button>
-        </div>
-
-        <div class="edge-chips" id="edgeChips"></div>
-      </div>
+      <p class="section-text">بیا عملکرد ماشین رو با ورودی‌های مختلف بررسی کنیم!</p>
 
       <div class="input-group">
         <label for="inputSeq">رشته ورودی (فقط R و L):</label>
-        <input type="text" id="inputSeq" dir="ltr" placeholder="مثلا: RLRRLRL" value="RLRRLRL">
-      </div>
-
-      <div class="input-group">
-        <div class="label-row">
-          <label for="stepSpeed">زمان هر استپ:</label>
-          <span class="speed-val" id="speedLabel">0.8 ثانیه</span>
+        <div class="input-overlay-wrapper">
+          <input type="text" id="inputSeq" class="sequence-input" dir="ltr" placeholder="مثلا: RLRRLRL" value="RLRRLRL" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" inputmode="text">
+          <div class="input-overlay" id="inputOverlay" aria-hidden="true"></div>
         </div>
-        <input type="range" id="stepSpeed" min="300" max="1000" step="100" value="800">
       </div>
-
-      <div class="sequence-display" id="sequenceDisplay" dir="ltr"></div>
 
       <div class="btn-group">
         <button class="btn btn-hint" id="btnHint">راهنمایی تصادفی</button>
@@ -405,379 +510,498 @@
         <button class="btn btn-reset" id="btnReset">از اول</button>
       </div>
     </div>
-
-    <div id="statusMsg" class="status-msg"></div>
-
-    <div class="canvas-card">
-      <canvas id="gameCanvas" width="480" height="390"></canvas>
-      <div id="nodesOverlay"></div>
-    </div>
   </div>
 
   <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const nodesOverlay = document.getElementById('nodesOverlay');
+    (function () {
+      'use strict';
 
-    // DOM Elements
-    const inputSeq = document.getElementById('inputSeq');
-    const stepSpeed = document.getElementById('stepSpeed');
-    const speedLabel = document.getElementById('speedLabel');
-    const sequenceDisplay = document.getElementById('sequenceDisplay');
-    const statusMsg = document.getElementById('statusMsg');
-    const btnHint = document.getElementById('btnHint');
-    const btnRun = document.getElementById('btnRun');
-    const btnReset = document.getElementById('btnReset');
+      const STEP_DURATION = 1000;
 
-    const selectFrom = document.getElementById('selectFrom');
-    const selectTo = document.getElementById('selectTo');
-    const selectSymbol = document.getElementById('selectSymbol');
-    const btnAddEdge = document.getElementById('btnAddEdge');
-    const edgeChips = document.getElementById('edgeChips');
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
+      const canvasCard = document.getElementById('canvasCard');
 
-    // 5 Fixed DFA States Coordinates
-    const STATES = [
-      { id: 0, title: "پاها کنار هم", short: "پاها کنار هم", x: 240, y: 75, isStart: false },
-      { id: 1, title: "چپ ۱ پله جلو", short: "چپ ۱ جلو", x: 110, y: 190, isStart: false },
-      { id: 2, title: "چپ ۲ پله جلو", short: "چپ ۲ جلو", x: 120, y: 320, isStart: false },
-      { id: 3, title: "راست ۱ پله جلو", short: "راست ۱ جلو", x: 370, y: 190, isStart: false },
-      { id: 4, title: "راست ۲ پله جلو", short: "راست ۲ جلو", x: 360, y: 320, isStart: false }
-    ];
+      const inputSeq = document.getElementById('inputSeq');
+      const inputOverlay = document.getElementById('inputOverlay');
+      const statusMsg = document.getElementById('statusMsg');
+      const btnHint = document.getElementById('btnHint');
+      const btnRun = document.getElementById('btnRun');
+      const btnReset = document.getElementById('btnReset');
 
-    const NODE_RADIUS = 34; // Matches 68px width/height CSS
 
-    // DFA Edge Data
-    let edges = [];
-
-    // Runtime State
-    let currentState = 0;
-    let activeEdgeId = null;
-    let isRunning = false;
-    let stepTimer = null;
-
-    // Render HTML Nodes overlay
-    function renderHTMLNodes() {
-      nodesOverlay.innerHTML = '';
-      STATES.forEach(node => {
-        const div = document.createElement('div');
-        div.className = `state-node ${node.id === currentState ? 'active' : ''} ${node.isStart ? 'is-start' : ''}`;
-        div.style.left = `${node.x}px`;
-        div.style.top = `${node.y}px`;
-        div.innerText = node.short;
-        nodesOverlay.appendChild(div);
-      });
-    }
-
-    // Add Edge with DFA Validation
-    btnAddEdge.addEventListener('click', () => {
-      if (isRunning) return;
-
-      const from = parseInt(selectFrom.value);
-      const to = parseInt(selectTo.value);
-      const symbol = selectSymbol.value;
-
-      // DFA Rule: Only 1 outgoing edge per symbol
-      const hasConflict = edges.some(e => e.from === from && e.symbol === symbol);
-      if (hasConflict) {
-        const fromState = STATES.find(s => s.id === from);
-        statusMsg.innerText = `از «${fromState.short}» قبلاً برای حرف ${symbol} یال کشیده شده است!`;
-        statusMsg.className = 'status-msg warn';
-        return;
-      }
-
-      edges.push({ id: Date.now(), from, to, symbol });
-      statusMsg.innerText = '';
-      statusMsg.className = 'status-msg';
-
-      renderEdgeChips();
-      drawGraph();
-    });
-
-    function removeEdge(id) {
-      if (isRunning) return;
-      edges = edges.filter(e => e.id !== id);
-      renderEdgeChips();
-      drawGraph();
-    }
-
-    function renderEdgeChips() {
-      edgeChips.innerHTML = '';
-      edges.forEach(e => {
-        const fromState = STATES.find(s => s.id === e.from);
-        const toState = STATES.find(s => s.id === e.to);
-
-        const chip = document.createElement('div');
-        chip.className = 'chip';
-        chip.innerHTML = `
-          <span>از <b>${fromState.short}</b> با شنیدن <b>«${e.symbol}»</b> میریم به <b>${toState.short}</b></span>
-          <span class="chip-remove" onclick="removeEdge(${e.id})">✕</span>
-        `;
-        edgeChips.appendChild(chip);
-      });
-    }
-
-    // Sequence & Controls
-    function renderSequenceDisplay(activeIndex = -1) {
-      sequenceDisplay.innerHTML = '';
-      const val = inputSeq.value.toUpperCase().replace(/[^RL]/g, '');
-      inputSeq.value = val;
-
-      for (let i = 0; i < val.length; i++) {
-        const span = document.createElement('span');
-        span.className = `char-box ${i === activeIndex ? 'active' : ''}`;
-        span.innerText = val[i];
-        sequenceDisplay.appendChild(span);
-      }
-    }
-
-    stepSpeed.addEventListener('input', () => {
-      const ms = parseInt(stepSpeed.value);
-      speedLabel.innerText = `${(ms / 1000).toFixed(1)} ثانیه`;
-    });
-
-    inputSeq.addEventListener('input', () => renderSequenceDisplay());
-
-    btnHint.addEventListener('click', () => {
-      if (isRunning) return;
-      const len = Math.floor(Math.random() * 8) + 5;
-      let res = '';
-      for (let i = 0; i < len; i++) {
-        res += Math.random() < 0.5 ? 'R' : 'L';
-      }
-      inputSeq.value = res;
-      renderSequenceDisplay();
-      resetGame();
-    });
-
-    // Run DFA Simulation
-    btnRun.addEventListener('click', () => {
-      if (isRunning) return;
-
-      const seq = inputSeq.value.toUpperCase().replace(/[^RL]/g, '');
-      if (!seq) {
-        statusMsg.innerText = 'لطفاً یک رشته متشکل از R و L وارد کنید.';
-        statusMsg.className = 'status-msg warn';
-        return;
-      }
-
-      resetGame();
-      isRunning = true;
-      toggleControls(true);
-
-      let stepIndex = 0;
-      const duration = parseInt(stepSpeed.value) || 800;
-
-      function doNextStep() {
-        if (stepIndex >= seq.length) {
-          isRunning = false;
-          toggleControls(false);
-          activeEdgeId = null;
-
-          const finalStateObj = STATES.find(s => s.id === currentState);
-          statusMsg.innerText = `پایان اجرا! حالت نهایی: «${finalStateObj.title}»`;
-          statusMsg.className = 'status-msg info';
-
-          renderSequenceDisplay(-1);
-          drawGraph();
-          return;
-        }
-
-        renderSequenceDisplay(stepIndex);
-        const symbol = seq[stepIndex];
-
-        const matchingEdge = edges.find(e => e.from === currentState && e.symbol === symbol);
-
-        if (!matchingEdge) {
-          isRunning = false;
-          toggleControls(false);
-          activeEdgeId = null;
-
-          const stateObj = STATES.find(s => s.id === currentState);
-          statusMsg.innerText = `انتقالی برای حرف ${symbol} از حالت «${stateObj.short}» وجود ندارد.`;
+      if (!ctx) {
+        if (statusMsg) {
+          statusMsg.innerText = 'مرورگر شما از Canvas پشتیبانی نمی‌کند.';
           statusMsg.className = 'status-msg warn';
+        }
+        return;
+      }
 
-          renderSequenceDisplay(-1);
+      const STATES = [
+        { id: 0, title: "پاها کنار هم", short: "پاها کنار هم", x: 240, y: 75, isStart: false },
+        { id: 1, title: "چپ ۱ پله جلو", short: "چپ ۱ جلو", x: 110, y: 190, isStart: false },
+        { id: 2, title: "چپ ۲ پله جلو", short: "چپ ۲ جلو", x: 120, y: 320, isStart: false },
+        { id: 3, title: "راست ۱ پله جلو", short: "راست ۱ جلو", x: 370, y: 190, isStart: false },
+        { id: 4, title: "راست ۲ پله جلو", short: "راست ۲ جلو", x: 360, y: 320, isStart: false }
+      ];
+
+      const NODE_RADIUS = 34;
+
+      let edges = [
+        { id: 1, from: 0, to: 1, symbol: 'L', isDefault: true },
+        { id: 2, from: 1, to: 0, symbol: 'R', isDefault: true },
+        { id: 3, from: 2, to: 1, symbol: 'R', isDefault: true },
+        { id: 4, from: 2, to: 2, symbol: 'L', isDefault: true },
+        { id: 5, from: 3, to: 0, symbol: 'L', isDefault: true },
+        { id: 6, from: 3, to: 4, symbol: 'R', isDefault: true }
+      ];
+
+      let currentState = 0;
+      let activeEdgeId = null;
+      let isRunning = false;
+      let stepTimer = null;
+
+      const CANVAS_W = 480;
+      const CANVAS_H = 390;
+
+      const prefersReducedMotion = window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      let selectedSourceId = null;
+      let pendingEdge = null;
+      let pickerElement = null;
+
+      function clientToCanvas(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: ((clientX - rect.left) / rect.width) * CANVAS_W,
+          y: ((clientY - rect.top) / rect.height) * CANVAS_H
+        };
+      }
+
+      function nodeAt(x, y) {
+        for (const node of STATES) {
+          const dx = x - node.x;
+          const dy = y - node.y;
+          if (dx * dx + dy * dy <= (NODE_RADIUS + 4) ** 2) return node;
+        }
+        return null;
+      }
+
+      function removePicker() {
+        if (pickerElement) pickerElement.remove();
+        pickerElement = null;
+        pendingEdge = null;
+      }
+
+      function cancelEdgeCreation() {
+        selectedSourceId = null;
+        removePicker();
+        drawGraph();
+      }
+
+      function showPicker(fromId, toId) {
+        removePicker();
+        pendingEdge = { from: fromId, to: toId };
+        const from = STATES.find(s => s.id === fromId);
+        const to = STATES.find(s => s.id === toId);
+        let x = (from.x + to.x) / 2;
+        let y = (from.y + to.y) / 2;
+        const dx = to.x - from.x, dy = to.y - from.y;
+        const len = Math.hypot(dx, dy);
+        if (len > 0) { x += (-dy / len) * 18; y += (dx / len) * 18; }
+        x = Math.max(45, Math.min(CANVAS_W - 45, x));
+        y = Math.max(28, Math.min(CANVAS_H - 28, y));
+
+        pickerElement = document.createElement('div');
+        pickerElement.className = 'edge-picker';
+        pickerElement.style.left = `${(x / CANVAS_W) * 100}%`;
+        pickerElement.style.top = `${(y / CANVAS_H) * 100}%`;
+
+        const r = document.createElement('button');
+        r.className = 'picker-r'; r.textContent = 'R';
+        const l = document.createElement('button');
+        l.className = 'picker-l'; l.textContent = 'L';
+        const cancel = document.createElement('button');
+        cancel.className = 'picker-cancel'; cancel.textContent = '×';
+        pickerElement.append(r, l, cancel);
+        canvasCard.appendChild(pickerElement);
+
+        r.addEventListener('click', e => { e.stopPropagation(); finishAddingEdge('R'); });
+        l.addEventListener('click', e => { e.stopPropagation(); finishAddingEdge('L'); });
+        cancel.addEventListener('click', e => { e.stopPropagation(); cancelEdgeCreation(); });
+      }
+
+      function finishAddingEdge(symbol) {
+        if (!pendingEdge) return;
+        const { from, to } = pendingEdge;
+        const conflict = edges.some(e => e.from === from && e.symbol === symbol);
+        if (conflict) {
+          const state = STATES.find(s => s.id === from);
+          cancelEdgeCreation();
+          return;
+        }
+        edges.push({ id: Date.now() + Math.random(), from, to, symbol, isDefault: false });
+        cancelEdgeCreation();
+        drawGraph();
+      }
+
+      canvas.addEventListener('click', function (e) {
+        if (isRunning || pendingEdge) return;
+        const p = clientToCanvas(e.clientX, e.clientY);
+        const node = nodeAt(p.x, p.y);
+        if (!node) {
+          cancelEdgeCreation();
+          return;
+        }
+        if (selectedSourceId === null) {
+          selectedSourceId = node.id;
           drawGraph();
           return;
         }
+        showPicker(selectedSourceId, node.id);
+      });
 
-        activeEdgeId = matchingEdge.id;
-        drawGraph();
-
-        stepTimer = setTimeout(() => {
-          currentState = matchingEdge.to;
-          activeEdgeId = null;
-          drawGraph();
-
-          stepIndex++;
-          stepTimer = setTimeout(doNextStep, duration * 0.3);
-        }, duration * 0.7);
+      // ── Sequence input: sanitize + overlay ──
+      function sanitizeInput() {
+        const val = (inputSeq.value || '').toUpperCase().replace(/[^RL]/g, '');
+        if (inputSeq.value !== val) inputSeq.value = val;
+        return val;
       }
 
-      doNextStep();
-    });
+      // Render the invisible overlay chars (input text is transparent, overlay is colored)
+      function renderOverlay(activeIndex) {
+        if (activeIndex === undefined) activeIndex = -1;
+        const val = sanitizeInput();
+        inputOverlay.innerHTML = '';
 
-    // Draw Complete Canvas Graph (Canvas handles Edges, HTML handles Nodes)
-    function drawGraph() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < val.length; i++) {
+          const span = document.createElement('span');
+          span.className = 'char ' + val[i] + (i === activeIndex ? ' active' : '');
+          span.textContent = val[i];
+          frag.appendChild(span);
+        }
+        inputOverlay.appendChild(frag);
+      }
 
-      // 1. Draw Canvas Edges
-      edges.forEach(e => {
-        const fromNode = STATES.find(s => s.id === e.from);
-        const toNode = STATES.find(s => s.id === e.to);
-        const isActive = (e.id === activeEdgeId);
+      // Sync overlay scroll with input scroll
+      inputSeq.addEventListener('scroll', function () {
+        inputOverlay.scrollLeft = inputSeq.scrollLeft;
+      });
 
-        if (e.from === e.to) {
-          drawSelfLoop(fromNode, e.symbol, isActive);
-        } else {
-          const hasReverse = edges.some(rev => rev.from === e.to && rev.to === e.from);
-          drawEdge(fromNode, toNode, e.symbol, isActive, hasReverse);
+      inputSeq.addEventListener('input', function () {
+        if (isRunning) return;
+        renderOverlay(-1);
+      });
+
+      // Global keyboard capture (works even if input not focused — desktop)
+      document.addEventListener('keydown', function (e) {
+        if (isRunning) return;
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+        // Skip if user is typing inside another editable element
+        const tag = (e.target && e.target.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+        const k = e.key;
+        if (k === 'r' || k === 'R') {
+          e.preventDefault();
+          inputSeq.value += 'R';
+          sanitizeInput();
+          renderOverlay(-1);
+        } else if (k === 'l' || k === 'L') {
+          e.preventDefault();
+          inputSeq.value += 'L';
+          sanitizeInput();
+          renderOverlay(-1);
+        } else if (k === 'Backspace') {
+          e.preventDefault();
+          inputSeq.value = inputSeq.value.slice(0, -1);
+          sanitizeInput();
+          renderOverlay(-1);
+        } else if (k === 'Delete') {
+          e.preventDefault();
+          inputSeq.value = '';
+          renderOverlay(-1);
         }
       });
 
-      // 2. Update Crisp HTML Nodes
-      renderHTMLNodes();
-    }
+      // ── Hint ──
+      btnHint.addEventListener('click', function () {
+        if (isRunning) return;
+        const len = Math.floor(Math.random() * 8) + 5;
+        let res = '';
+        for (let i = 0; i < len; i++) {
+          res += Math.random() < 0.5 ? 'R' : 'L';
+        }
+        inputSeq.value = res;
+        renderOverlay(-1);
+        resetGame();
+        renderOverlay(-1);
+      });
 
-    // Directed Edge Between Two Distinct Nodes
-    function drawEdge(from, to, symbol, isActive, isCurved) {
-      ctx.save();
+      // ── Run DFA simulation ──
+      btnRun.addEventListener('click', function () {
+        if (isRunning) return;
 
-      const dx = to.x - from.x;
-      const dy = to.y - from.y;
-      const angle = Math.atan2(dy, dx);
+        const seq = sanitizeInput();
+        if (!seq) {
+          statusMsg.innerText = 'لطفاً یک رشته متشکل از R و L وارد کنید.';
+          statusMsg.className = 'status-msg warn';
+          return;
+        }
 
-      const offset = isCurved ? 28 : 0;
-      const midX = (from.x + to.x) / 2 + Math.cos(angle + Math.PI / 2) * offset;
-      const midY = (from.y + to.y) / 2 + Math.sin(angle + Math.PI / 2) * offset;
+        resetGame();
+        isRunning = true;
+        toggleControls(true);
 
-      const startAngle = Math.atan2(midY - from.y, midX - from.x);
-      const endAngle = Math.atan2(to.y - midY, to.x - midX);
+        // Blur the input so the native caret doesn't conflict
+        try { inputSeq.blur(); } catch (err) {}
 
-      const startX = from.x + Math.cos(startAngle) * NODE_RADIUS;
-      const startY = from.y + Math.sin(startAngle) * NODE_RADIUS;
-      const endX = to.x - Math.cos(endAngle) * NODE_RADIUS;
-      const endY = to.y - Math.sin(endAngle) * NODE_RADIUS;
+        let stepIndex = 0;
+        const duration = STEP_DURATION;
 
-      ctx.strokeStyle = isActive ? '#2563eb' : '#64748b';
-      ctx.lineWidth = isActive ? 3.5 : 2;
+        function doNextStep() {
+          if (stepIndex >= seq.length) {
+            isRunning = false;
+            toggleControls(false);
+            activeEdgeId = null;
 
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      if (isCurved) {
-        ctx.quadraticCurveTo(midX, midY, endX, endY);
-      } else {
-        ctx.lineTo(endX, endY);
+            const finalStateObj = STATES.find(s => s.id === currentState);
+            statusMsg.innerText = `پایان اجرا! حالت نهایی: «${finalStateObj.title}»`;
+            statusMsg.className = 'status-msg info';
+
+            renderOverlay(-1);
+            drawGraph();
+            return;
+          }
+
+          renderOverlay(stepIndex);
+          const symbol = seq[stepIndex];
+
+          const matchingEdge = edges.find(e => e.from === currentState && e.symbol === symbol);
+
+          if (!matchingEdge) {
+            isRunning = false;
+            toggleControls(false);
+            activeEdgeId = null;
+
+            const stateObj = STATES.find(s => s.id === currentState);
+            statusMsg.innerText = `انتقالی برای حرف ${symbol} از حالت «${stateObj.short}» وجود ندارد.`;
+            statusMsg.className = 'status-msg warn';
+
+            renderOverlay(-1);
+            drawGraph();
+            return;
+          }
+
+          activeEdgeId = matchingEdge.id;
+          drawGraph();
+
+          const animDuration = prefersReducedMotion ? Math.min(duration, 200) : duration;
+
+          stepTimer = setTimeout(function () {
+            currentState = matchingEdge.to;
+            activeEdgeId = null;
+            drawGraph();
+
+            stepIndex++;
+            stepTimer = setTimeout(doNextStep, animDuration * 0.3);
+          }, animDuration * 0.7);
+        }
+
+        doNextStep();
+      });
+
+      // ── Canvas Graph drawing ──
+      function drawGraph() {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+        edges.forEach(e => {
+          const fromNode = STATES.find(s => s.id === e.from);
+          const toNode = STATES.find(s => s.id === e.to);
+          const isActive = (e.id === activeEdgeId);
+
+          if (e.from === e.to) {
+            drawSelfLoop(fromNode, e.symbol, isActive);
+          } else {
+            const hasReverse = edges.some(rev => rev.from === e.to && rev.to === e.from);
+            drawEdge(fromNode, toNode, e.symbol, isActive, hasReverse);
+          }
+        });
+
+        drawNodes();
       }
-      ctx.stroke();
 
-      const arrowAngle = isCurved ? Math.atan2(endY - midY, endX - midX) : angle;
-      drawArrowhead(endX, endY, arrowAngle, isActive ? '#2563eb' : '#64748b');
+      function drawNodes() {
+        STATES.forEach(node => {
+          const isCurrent = node.id === currentState;
+          const isSelected = node.id === selectedSourceId;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
+          ctx.fillStyle = (isCurrent || isSelected) ? '#dbeafe' : '#ffffff';
+          ctx.fill();
+          ctx.lineWidth = (isCurrent || isSelected) ? 3 : 2.5;
+          ctx.strokeStyle = (isCurrent || isSelected) ? '#2563eb' : '#0f172a';
+          ctx.stroke();
+          ctx.fillStyle = (isCurrent || isSelected) ? '#1d4ed8' : '#0f172a';
+          ctx.font = '700 11px Vazirmatn, Tahoma, Arial, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const parts = node.short.split(' ');
+          if (parts.length > 2 && node.id === 0) {
+            ctx.fillText('پاها کنار', node.x, node.y - 7);
+            ctx.fillText('هم', node.x, node.y + 8);
+          } else {
+            ctx.fillText(node.short, node.x, node.y);
+          }
+          ctx.restore();
+        });
+      }
 
-      const labelX = isCurved ? midX : (startX + endX) / 2;
-      const labelY = isCurved ? midY : (startY + endY) / 2;
-      drawBadge(labelX, labelY, symbol, isActive);
+      function drawEdge(from, to, symbol, isActive, isCurved) {
+        ctx.save();
 
-      ctx.restore();
-    }
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const angle = Math.atan2(dy, dx);
 
-    // Self-Loop Edge (Outward direction based on node position to avoid overlaps)
-    function drawSelfLoop(node, symbol, isActive) {
-      ctx.save();
+        const offset = isCurved ? 28 : 0;
+        const midX = (from.x + to.x) / 2 + Math.cos(angle + Math.PI / 2) * offset;
+        const midY = (from.y + to.y) / 2 + Math.sin(angle + Math.PI / 2) * offset;
 
-      let outAngle = Math.atan2(node.y - 200, node.x - 240);
-      if (node.id === 0) outAngle = -Math.PI / 2;
+        const startAngle = Math.atan2(midY - from.y, midX - from.x);
+        const endAngle = Math.atan2(to.y - midY, to.x - midX);
 
-      const loopDist = NODE_RADIUS + 16;
-      const loopCenterX = node.x + Math.cos(outAngle) * loopDist;
-      const loopCenterY = node.y + Math.sin(outAngle) * loopDist;
-      const loopRadius = 16;
+        const startX = from.x + Math.cos(startAngle) * NODE_RADIUS;
+        const startY = from.y + Math.sin(startAngle) * NODE_RADIUS;
+        const endX = to.x - Math.cos(endAngle) * NODE_RADIUS;
+        const endY = to.y - Math.sin(endAngle) * NODE_RADIUS;
 
-      ctx.strokeStyle = isActive ? '#2563eb' : '#64748b';
-      ctx.lineWidth = isActive ? 3.5 : 2;
+        ctx.strokeStyle = isActive ? '#2563eb' : '#64748b';
+        ctx.lineWidth = isActive ? 3.5 : 2;
 
-      ctx.beginPath();
-      ctx.arc(loopCenterX, loopCenterY, loopRadius, 0, Math.PI * 2);
-      ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        if (isCurved) {
+          ctx.quadraticCurveTo(midX, midY, endX, endY);
+        } else {
+          ctx.lineTo(endX, endY);
+        }
+        ctx.stroke();
 
-      const contactX = node.x + Math.cos(outAngle + 0.25) * NODE_RADIUS;
-      const contactY = node.y + Math.sin(outAngle + 0.25) * NODE_RADIUS;
-      drawArrowhead(contactX, contactY, outAngle + Math.PI - 0.4, isActive ? '#2563eb' : '#64748b');
+        const arrowAngle = isCurved ? Math.atan2(endY - midY, endX - midX) : angle;
+        drawArrowhead(endX, endY, arrowAngle, isActive ? '#2563eb' : '#64748b');
 
-      const badgeX = loopCenterX + Math.cos(outAngle) * 16;
-      const badgeY = loopCenterY + Math.sin(outAngle) * 16;
-      drawBadge(badgeX, badgeY, symbol, isActive);
+        const labelX = isCurved ? midX : (startX + endX) / 2;
+        const labelY = isCurved ? midY : (startY + endY) / 2;
+        drawBadge(labelX, labelY, symbol, isActive);
 
-      ctx.restore();
-    }
+        ctx.restore();
+      }
 
-    // Arrowhead Helper
-    function drawArrowhead(x, y, angle, color) {
-      ctx.save();
-      ctx.fillStyle = color;
-      ctx.translate(x, y);
-      ctx.rotate(angle);
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(-10, -5);
-      ctx.lineTo(-10, 5);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
-    }
+      function drawSelfLoop(node, symbol, isActive) {
+        ctx.save();
 
-    // Badge Helper for Edge Symbols
-    function drawBadge(x, y, text, isActive) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(x, y, 9, 0, Math.PI * 2);
-      ctx.fillStyle = isActive ? '#2563eb' : '#e2e8f0';
-      ctx.fill();
-      ctx.strokeStyle = isActive ? '#1d4ed8' : '#cbd5e1';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+        let outAngle = Math.atan2(node.y - 200, node.x - 240);
+        if (node.id === 0) outAngle = -Math.PI / 2;
 
-      ctx.fillStyle = isActive ? '#ffffff' : '#0f172a';
-      ctx.font = 'bold 10px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(text, x, y);
-      ctx.restore();
-    }
+        const loopDist = NODE_RADIUS + 16;
+        const loopCenterX = node.x + Math.cos(outAngle) * loopDist;
+        const loopCenterY = node.y + Math.sin(outAngle) * loopDist;
+        const loopRadius = 16;
 
-    // Reset Simulation
-    function resetGame() {
-      if (stepTimer) clearTimeout(stepTimer);
-      isRunning = false;
-      currentState = 0;
-      activeEdgeId = null;
-      statusMsg.innerText = '';
-      statusMsg.className = 'status-msg';
-      toggleControls(false);
-      renderSequenceDisplay(-1);
+        ctx.strokeStyle = isActive ? '#2563eb' : '#64748b';
+        ctx.lineWidth = isActive ? 3.5 : 2;
+
+        ctx.beginPath();
+        ctx.arc(loopCenterX, loopCenterY, loopRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const contactX = node.x + Math.cos(outAngle + 0.25) * NODE_RADIUS;
+        const contactY = node.y + Math.sin(outAngle + 0.25) * NODE_RADIUS;
+        drawArrowhead(contactX, contactY, outAngle + Math.PI - 0.4, isActive ? '#2563eb' : '#64748b');
+
+        const badgeX = loopCenterX + Math.cos(outAngle) * 16;
+        const badgeY = loopCenterY + Math.sin(outAngle) * 16;
+        drawBadge(badgeX, badgeY, symbol, isActive);
+
+        ctx.restore();
+      }
+
+      function drawArrowhead(x, y, angle, color) {
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-10, -5);
+        ctx.lineTo(-10, 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawBadge(x, y, text, isActive) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y, 9, 0, Math.PI * 2);
+        ctx.fillStyle = isActive ? '#2563eb' : '#e2e8f0';
+        ctx.fill();
+        ctx.strokeStyle = isActive ? '#1d4ed8' : '#cbd5e1';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = isActive ? '#ffffff' : '#0f172a';
+        ctx.font = 'bold 10px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, x, y);
+        ctx.restore();
+      }
+
+      function resetGame() {
+        if (stepTimer) {
+          clearTimeout(stepTimer);
+          stepTimer = null;
+        }
+        isRunning = false;
+        currentState = 0;
+        activeEdgeId = null;
+        cancelEdgeCreation();
+        statusMsg.innerText = '';
+        statusMsg.className = 'status-msg';
+        toggleControls(false);
+        renderOverlay(-1);
+        drawGraph();
+      }
+
+      btnReset.addEventListener('click', resetGame);
+
+      function toggleControls(disabled) {
+        btnRun.disabled = disabled;
+        btnHint.disabled = disabled;
+        inputSeq.disabled = disabled;
+      }
+
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden && isRunning) {
+          if (stepTimer) {
+            clearTimeout(stepTimer);
+            stepTimer = null;
+          }
+        }
+      });
+
+      // Init
+      sanitizeInput();
+      renderOverlay(-1);
       drawGraph();
-    }
-
-    btnReset.addEventListener('click', resetGame);
-
-    function toggleControls(disabled) {
-      btnRun.disabled = disabled;
-      btnHint.disabled = disabled;
-      btnAddEdge.disabled = disabled;
-      inputSeq.disabled = disabled;
-      stepSpeed.disabled = disabled;
-      selectFrom.disabled = disabled;
-      selectTo.disabled = disabled;
-      selectSymbol.disabled = disabled;
-    }
-
-    // Global binding for chip removal
-    window.removeEdge = removeEdge;
-
-    // Initialization
-    renderSequenceDisplay();
-    renderEdgeChips();
-    drawGraph();
+    })();
   </script>
 </body>
 </html>

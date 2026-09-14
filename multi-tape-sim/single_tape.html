@@ -310,7 +310,7 @@
                 if (nextState !== 'accept' && nextState !== 'reject') {
                     nodes.update({id: nextState, color: ACTIVE_COLOR});
                 }
-                network.focus(nextState, { scale: 0.5, animation: { duration: 250 } });
+                network.focus(nextState, { scale: 0.8, animation: { duration: 250 } });
 
                 currentState = nextState;
                 physHead += moveDirection;
@@ -337,23 +337,6 @@
             }
         }
 
-        // تابع کمکی برای تولید راهنمای فارسی متناسب با هر حالت
-        function getStateHint(state) {
-            if (state === 'prep_start' || state === 'prep_skip_H1') return "آماده‌سازی: عبور از رشته اول";
-            if (state.startsWith('prep_')) return "آماده‌سازی: انتقال مکانیکی هد دوم به انتها";
-            if (state.startsWith('rewind_left')) return "آماده‌سازی: بازگشت به ابتدای نوار";
-            if (state === 'findH1') return "به دنبال هد اول (H)";
-            if (state === 'readH1') return "خواندن کاراکترِ رشته اول";
-            if (state.startsWith('write_') && state.includes('H1')) return "علامت‌گذاری و حرکت به سمت رشته دوم";
-            if (state.startsWith('find_hash')) return "عبور از رشته اول تا رسیدن به (#)";
-            if (state.startsWith('findH2')) return "به دنبال هد دوم (H) در رشته دوم";
-            if (state.startsWith('readH2')) return "مقایسه کاراکتر با رشته اول";
-            if (state.startsWith('write_') && state.includes('H2')) return "علامت‌گذاری و حرکت هد دوم به سمت چپ";
-            if (state.startsWith('rewind_')) return "بازگشت سریع به عقب برای کاراکتر بعدی";
-            if (state.startsWith('check_') || state.startsWith('verify_')) return "بررسی نهایی و اطمینان از پایان کار";
-            return "در حال پردازش...";
-        }
-
         function updateUI() {
             const container = document.getElementById('tapeContainer');
             container.innerHTML = '';
@@ -366,23 +349,16 @@
                 const cellHTML = `
                     <div id="cell-${index}" class="tape-cell border-2 ${isPhysHead ? 'border-blue-500 head-active bg-blue-50' : 'border-slate-300 bg-white'} rounded w-10 h-12 md:w-14 md:h-16 flex justify-center items-center shrink-0 relative shadow-sm">
                         ${isPhysHead ? '<div class="head-label absolute -top-5 md:-top-7 text-[9px] md:text-xs font-bold text-blue-600 bg-blue-100 px-1 py-0.5 rounded shadow">هد</div>' : ''}
-                        <span class="font-mono text-lg md:text-2xl ${isVirtualHead ? 'text-red-500 font-bold' : 'text-slate-700'}">${cell}</span>
+                        <span class="font-mono text-lg md:text-2xl text-slate-700">${cell}</span>
                     </div>
                 `;
                 container.innerHTML += cellHTML;
             });
 
             let statText = "";
-            if(currentState === 'accept') {
-                statText = "نتیجه: Accept (پذیرش) ✔️";
-            }
-            else if(currentState === 'reject') {
-                statText = "نتیجه: Reject (رد) ❌";
-            }
-            else {
-                let hint = getStateHint(currentState);
-                statText = `حالت فعلی: ${currentState} (${hint}) | خواندن: ${tape[physHead]}`;
-            }
+            if(currentState === 'accept') statText = "نتیجه: Accept (پذیرش) ✔️";
+            else if(currentState === 'reject') statText = "نتیجه: Reject (رد) ❌";
+            else statText = `حالت فعلی: ${currentState} | خواندن: ${tape[physHead]}`;
             
             document.getElementById('statusText').innerText = statText;
         }

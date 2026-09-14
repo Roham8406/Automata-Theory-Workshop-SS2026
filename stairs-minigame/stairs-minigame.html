@@ -2,36 +2,39 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="format-detection" content="telephone=no">
   <title>مینی‌گیم پله 🏃</title>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
   <style>
     :root {
       --canvas-max-w: 400px;
-      --bg: #ffffff;
+      --bg: #f8fafc;
       --card: #ffffff;
       --text: #0f172a;
       --muted: #475569;
       --primary: #2563eb;
     }
 
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       -webkit-tap-highlight-color: transparent;
     }
 
-    html {
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
       -webkit-text-size-adjust: 100%;
       -moz-text-size-adjust: 100%;
       text-size-adjust: 100%;
-      height: 100%;
     }
 
     body {
@@ -42,34 +45,27 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      min-height: 100dvh;
-      min-height: -webkit-fill-available;
-      padding: 16px;
-      padding-top: max(16px, env(safe-area-inset-top));
-      padding-bottom: max(16px, env(safe-area-inset-bottom));
-      padding-left: max(16px, env(safe-area-inset-left));
-      padding-right: max(16px, env(safe-area-inset-right));
-      overflow-x: hidden;
-      overscroll-behavior-y: contain;
+      padding: 10px;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
 
     .game-container {
       background: var(--card);
-      padding: 20px;
+      padding: 16px;
       border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
       max-width: 480px;
       width: 100%;
+      max-height: 100%;
       margin: auto;
     }
 
-    /* ── Sequence line: tappable area with soft dashed border ── */
+    /* ── Sequence line ── */
     .sequence-line {
       display: flex;
       flex-wrap: wrap;
@@ -94,24 +90,17 @@
       background-color: #f8fafc;
       text-align: left;
       transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+      flex-shrink: 0;
     }
 
-    .sequence-line:hover {
-      border-color: #94a3b8;
-      background-color: #f1f5f9;
-    }
-
-    /* Focused state: blue accent */
+    .sequence-line:hover { border-color: #94a3b8; background-color: #f1f5f9; }
     .sequence-line.focused {
       border-color: #2563eb;
       border-style: solid;
       background-color: #ffffff;
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
     }
-
-    .sequence-line.filled {
-      justify-content: flex-start;
-    }
+    .sequence-line.filled { justify-content: flex-start; }
 
     .sequence-line .char {
       display: inline-block;
@@ -121,21 +110,13 @@
       will-change: transform, color;
     }
 
-    .sequence-line .char.active {
-      transform: scale(1.4);
-    }
-
-    .sequence-line .char.active.R {
-      color: #dc2626;
-    }
-
-    .sequence-line .char.active.L {
-      color: #2563eb;
-    }
+    .sequence-line .char.active { transform: scale(1.4); }
+    .sequence-line .char.active.R { color: #dc2626; }
+    .sequence-line .char.active.L { color: #2563eb; }
 
     .sequence-line .placeholder {
       color: #94a3b8;
-      font-size: clamp(0.8rem, 2.8vw, 0.95rem);
+      font-size: clamp(0.75rem, 2.5vw, 0.9rem);
       font-weight: 500;
       font-family: Vazirmatn, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       direction: rtl;
@@ -144,7 +125,6 @@
       width: 100%;
     }
 
-    /* Blinking caret — shown ONLY while user is typing (input focused, not running) */
     .sequence-line .caret {
       display: inline-block;
       width: 2px;
@@ -163,7 +143,6 @@
       50% { opacity: 0; }
     }
 
-    /* Hidden input for mobile keyboard capture */
     .hidden-input {
       position: absolute;
       left: -9999px;
@@ -174,35 +153,63 @@
       pointer-events: none;
     }
 
+    /* ── Input Buttons (L & R) ── */
+    .lr-buttons {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      max-width: var(--canvas-max-w);
+      justify-content: center;
+      margin: 0 auto;
+      flex-shrink: 0;
+    }
+
+    .btn-lr {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 8px;
+      font-size: clamp(0.85rem, 3vw, 1.1rem);
+      font-weight: 700;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s, background-color 0.2s;
+      font-family: inherit;
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    .btn-lr:active { transform: scale(0.95); }
+    .btn-lr:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .btn-l { background-color: #dbeafe; color: #2563eb; border-color: #bfdbfe; }
+    .btn-l:hover { background-color: #bfdbfe; }
+    
+    .btn-r { background-color: #fee2e2; color: #dc2626; border-color: #fecaca; }
+    .btn-r:hover { background-color: #fecaca; }
+
+    .btn-del { flex: 0 0 auto; width: 48px; background-color: #f1f5f9; color: #64748b; border-color: #e2e8f0; font-size: 1.1rem;}
+    .btn-del:hover { background-color: #e2e8f0; }
+
+    /* ── Canvas Card ── */
     .canvas-card {
       position: relative;
       background: #eaeaea;
       border: 4px solid #000000;
       border-radius: 8px;
       overflow: hidden;
-      width: 100%;
+      width: 100%; 
       max-width: var(--canvas-max-w);
+      max-height: calc(100dvh - 290px); /* Reduced height to fit new L/R buttons */
       aspect-ratio: 400 / 380;
-      height: auto;
+      margin: 0 auto; 
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
-    }
-
-    @supports not (aspect-ratio: 1 / 1) {
-      .canvas-card::before {
-        content: "";
-        display: block;
-        padding-top: calc(380 / 400 * 100%);
-      }
-      .canvas-card canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-      }
     }
 
     canvas {
@@ -210,6 +217,7 @@
       background-color: #eaeaea;
       width: 100%;
       height: 100%;
+      object-fit: contain;
       touch-action: none;
       -webkit-user-select: none;
       user-select: none;
@@ -222,23 +230,32 @@
       text-align: center;
       line-height: 1.5;
       width: 100%;
+      flex-shrink: 0;
     }
     .status-msg.info { color: #16a34a; }
     .status-msg.warn { color: #dc2626; }
 
+    /* ── Center-aligned Actions ── */
     .btn-group {
       display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
+      gap: 10px;
+      flex-wrap: nowrap;
       width: 100%;
       max-width: var(--canvas-max-w);
+      justify-content: center;
+      align-items: center;
+      margin: 0 auto;
+      flex-shrink: 0;
     }
 
     .btn {
-      flex: 1 1 0;
-      min-width: 0;
-      padding: 12px 8px;
-      font-size: clamp(0.72rem, 2.6vw, 0.9rem);
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 8px;
+      font-size: clamp(0.75rem, 2.8vw, 0.95rem);
       font-weight: 700;
       border-radius: 8px;
       border: none;
@@ -249,12 +266,10 @@
       touch-action: manipulation;
       user-select: none;
       -webkit-user-select: none;
-      -webkit-appearance: none;
-      appearance: none;
-      line-height: 1.3;
     }
 
-    .btn:active { transform: scale(0.97); }
+    .btn:active { transform: scale(0.96); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .btn-hint { background-color: #e2e8f0; color: #334155; }
     .btn-hint:hover { background-color: #cbd5e1; }
@@ -262,135 +277,23 @@
     .btn-run { background-color: #16a34a; color: #ffffff; }
     .btn-run:hover { background-color: #15803d; }
 
-    .btn-reset { background-color: #93c5fd; color: #1e3a8a; }
-    .btn-reset:hover { background-color: #60a5fa; }
+    .btn-reset { background-color: #3b82f6; color: #ffffff; }
+    .btn-reset:hover { background-color: #2563eb; }
 
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* ── Tablet ── */
-    @media (max-width: 640px) {
-      :root { --canvas-max-w: 380px; }
-
-      .game-container {
-        padding: 18px;
-        gap: 14px;
-      }
-
-      .sequence-line {
-        font-size: clamp(1.1rem, 4.8vw, 1.5rem);
-      }
-    }
-
-    /* ── Mobile ── */
+    /* ── Responsive Mobile ── */
     @media (max-width: 420px) {
-      :root { --canvas-max-w: 340px; }
-
-      body {
-        padding: 10px;
-        padding-top: max(10px, env(safe-area-inset-top));
-        padding-bottom: max(10px, env(safe-area-inset-bottom));
-      }
-
-      .game-container {
-        padding: 14px;
-        gap: 12px;
-        border-radius: 12px;
-      }
-
-      .sequence-line {
-        gap: 6px 8px;
-        min-height: 46px;
-        letter-spacing: 1.5px;
-        padding: 7px 10px;
-      }
-
-      .btn {
-        padding: 11px 6px;
-      }
-
-      .btn-group {
-        gap: 6px;
-      }
-    }
-
-    /* ── Small Mobile ── */
-    @media (max-width: 360px) {
-      :root { --canvas-max-w: 280px; }
-
       .game-container { padding: 12px; gap: 10px; }
-
-      .btn {
-        font-size: 0.7rem;
-        padding: 10px 4px;
-      }
-
-      .sequence-line {
-        font-size: 1rem;
-        gap: 5px 6px;
-        padding: 6px 8px;
-      }
+      .sequence-line { min-height: 46px; font-size: 1.3rem; padding: 6px 10px; }
+      .btn { padding: 10px 6px; font-size: 0.75rem; }
+      .btn-lr { padding: 8px; font-size: 0.95rem; }
+      .btn-del { width: 40px; }
+      .canvas-card { max-height: calc(100dvh - 250px); }
     }
 
-    @media (max-width: 320px) {
-      :root { --canvas-max-w: 240px; }
-
-      .btn {
-        font-size: 0.65rem;
-        padding: 9px 3px;
-        border-radius: 6px;
-      }
-
-      .sequence-line {
-        font-size: 0.9rem;
-      }
-    }
-
-    /* ── Landscape phones ── */
-    @media (max-height: 500px) and (orientation: landscape) {
-      body {
-        padding: 8px;
-      }
-
-      .game-container {
-        padding: 12px;
-        gap: 8px;
-        max-width: 100%;
-      }
-
-      .sequence-line {
-        min-height: 36px;
-        font-size: 1.1rem;
-      }
-
-      .canvas-card {
-        max-width: 300px;
-      }
-    }
-
-    /* ── Reduced motion ── */
-    @media (prefers-reduced-motion: reduce) {
-      * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-      }
-      .sequence-line .caret {
-        animation: none;
-        opacity: 1;
-      }
-    }
-
-    /* Keep white background even in dark mode */
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #ffffff;
-        --card: #ffffff;
-        --text: #0f172a;
-      }
+    @media (max-width: 340px) {
+      .btn { flex-direction: column; gap: 4px; padding: 6px; font-size: 0.65rem; }
+      .sequence-line { font-size: 1.1rem; }
+      .btn-lr { font-size: 0.85rem; }
     }
   </style>
 </head>
@@ -411,6 +314,13 @@
 
     <div class="sequence-line" id="sequenceLine" dir="ltr" role="textbox" aria-label="رشته راهنما" tabindex="0"></div>
 
+    <!-- دکمه‌های چپ و راست اضافه شده -->
+    <div class="lr-buttons" dir="ltr">
+      <button type="button" class="btn-lr btn-l" id="btnL">L چپ</button>
+      <button type="button" class="btn-lr btn-r" id="btnR">R راست</button>
+      <button type="button" class="btn-lr btn-del" id="btnDel" title="پاک کردن"><i class="fa-solid fa-delete-left"></i></button>
+    </div>
+
     <div id="statusMsg" class="status-msg" role="status" aria-live="polite"></div>
 
     <div class="canvas-card" id="canvasCard">
@@ -418,9 +328,9 @@
     </div>
 
     <div class="btn-group">
-      <button type="button" class="btn btn-hint" id="btnHint">راهنمایی تصادفی</button>
-      <button type="button" class="btn btn-run" id="btnRun">الفرار!</button>
-      <button type="button" class="btn btn-reset" id="btnReset">از اول</button>
+      <button type="button" class="btn btn-hint" id="btnHint"><i class="fa-solid fa-dice"></i> تصادفی</button>
+      <button type="button" class="btn btn-run" id="btnRun"><i class="fa-solid fa-person-running"></i> الفرار!</button>
+      <button type="button" class="btn btn-reset" id="btnReset"><i class="fa-solid fa-rotate-right"></i> از اول</button>
     </div>
   </div>
 
@@ -437,13 +347,18 @@
       const inputSeq = document.getElementById('inputSeq');
       const sequenceLine = document.getElementById('sequenceLine');
       const statusMsg = document.getElementById('statusMsg');
+      
+      const btnL = document.getElementById('btnL');
+      const btnR = document.getElementById('btnR');
+      const btnDel = document.getElementById('btnDel');
+      
       const btnHint = document.getElementById('btnHint');
       const btnRun = document.getElementById('btnRun');
       const btnReset = document.getElementById('btnReset');
 
       if (!ctx) {
         if (statusMsg) {
-          statusMsg.innerText = 'مرورگر شما از Canvas پشتیبانی نمی‌کند.';
+          statusMsg.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> مرورگر شما از Canvas پشتیبانی نمی‌کند.';
           statusMsg.className = 'status-msg warn';
         }
         return;
@@ -470,8 +385,7 @@
       const BASE_Y = 320;
       const FOOT_LIFT_MAX = 30;
 
-      const prefersReducedMotion = window.matchMedia &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       function resizeCanvas() {
         if (!canvasCard || !canvas) return;
@@ -514,9 +428,6 @@
         return document.activeElement === inputSeq;
       }
 
-      // Render the sequence line.
-      // - Caret appears ONLY when user is typing (input focused) and game is NOT running.
-      // - During playback, no caret — only active char changes color/scale.
       function renderSequence(activeIndex) {
         if (activeIndex === undefined) activeIndex = -1;
         const val = sanitizeInput();
@@ -533,7 +444,7 @@
         if (!val) {
           const ph = document.createElement('span');
           ph.className = 'placeholder';
-          ph.textContent = 'رشته راهنما را وارد کنید (فقط R و L)';
+          ph.textContent = 'از دکمه‌های L و R استفاده کنید';
           sequenceLine.appendChild(ph);
 
           if (showCaret) {
@@ -552,7 +463,6 @@
           frag.appendChild(span);
         }
 
-        // Caret at the end, ONLY while typing (not during playback)
         if (showCaret) {
           const caret = document.createElement('span');
           caret.className = 'caret';
@@ -562,33 +472,47 @@
         sequenceLine.appendChild(frag);
       }
 
+      // Input Events
       inputSeq.addEventListener('input', function () {
         if (isRunning) return;
         sanitizeInput();
         renderSequence(-1);
       });
-
       inputSeq.addEventListener('focus', function () {
         sequenceLine.classList.add('focused');
         renderSequence(-1);
       });
-
       inputSeq.addEventListener('blur', function () {
         sequenceLine.classList.remove('focused');
         renderSequence(-1);
       });
-
       inputSeq.addEventListener('keyup', function () {
         if (isRunning) return;
         renderSequence(-1);
       });
 
-      inputSeq.addEventListener('click', function () {
+      // L & R Buttons Logic
+      btnL.addEventListener('click', function() {
         if (isRunning) return;
+        inputSeq.value += 'L';
+        sanitizeInput();
         renderSequence(-1);
       });
 
-      // Global keyboard capture (input is hidden off-screen)
+      btnR.addEventListener('click', function() {
+        if (isRunning) return;
+        inputSeq.value += 'R';
+        sanitizeInput();
+        renderSequence(-1);
+      });
+
+      btnDel.addEventListener('click', function() {
+        if (isRunning) return;
+        inputSeq.value = inputSeq.value.slice(0, -1);
+        sanitizeInput();
+        renderSequence(-1);
+      });
+
       document.addEventListener('keydown', function (e) {
         if (isRunning) return;
         if (e.ctrlKey || e.altKey || e.metaKey) return;
@@ -616,7 +540,6 @@
         }
       });
 
-      // Tap on the sequence line focuses the hidden input (mobile keyboard)
       sequenceLine.addEventListener('click', function () {
         if (isRunning) return;
         try { inputSeq.focus({ preventScroll: true }); } catch (err) { inputSeq.focus(); }
@@ -645,7 +568,7 @@
 
         const seq = sanitizeInput();
         if (!seq) {
-          statusMsg.innerText = 'لطفاً یک رشته متشکل از R و L وارد کنید.';
+          statusMsg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> لطفاً دنباله را وارد کنید.';
           statusMsg.className = 'status-msg warn';
           return;
         }
@@ -654,7 +577,6 @@
         isRunning = true;
         toggleControls(true);
 
-        // Blur so caret disappears during playback
         try { inputSeq.blur(); } catch (err) {}
         sequenceLine.classList.remove('focused');
 
@@ -667,10 +589,10 @@
             toggleControls(false);
 
             if (posR === posL) {
-              statusMsg.innerText = 'دوتا پا کنار همه!';
+              statusMsg.innerHTML = '<i class="fa-solid fa-check-circle"></i> دوتا پا کنار هم قرار گرفت!';
               statusMsg.className = 'status-msg info';
             } else {
-              statusMsg.innerText = 'دوتا پا کنار هم نیست.';
+              statusMsg.innerHTML = '<i class="fa-solid fa-xmark-circle"></i> دوتا پا کنار هم نیست.';
               statusMsg.className = 'status-msg warn';
             }
 
@@ -866,17 +788,9 @@
         ctx.moveTo(footL_x, footL_y - sy(2));
 
         if (dist < 0.2) {
-          ctx.quadraticCurveTo(
-            (footL_x + footR_x) / 2,
-            Math.max(footL_y, footR_y) + sy(16),
-            footR_x, footR_y - sy(2)
-          );
+          ctx.quadraticCurveTo((footL_x + footR_x) / 2, Math.max(footL_y, footR_y) + sy(16), footR_x, footR_y - sy(2));
         } else if (dist <= 1.8) {
-          ctx.quadraticCurveTo(
-            (footL_x + footR_x) / 2,
-            Math.max(footL_y, footR_y) + sy(8),
-            footR_x, footR_y - sy(2)
-          );
+          ctx.quadraticCurveTo((footL_x + footR_x) / 2, Math.max(footL_y, footR_y) + sy(8), footR_x, footR_y - sy(2));
         } else {
           ctx.lineTo(footR_x, footR_y - sy(2));
         }
@@ -884,17 +798,11 @@
       }
 
       function resetGame() {
-        if (stepTimer) {
-          clearTimeout(stepTimer);
-          stepTimer = null;
-        }
+        if (stepTimer) { clearTimeout(stepTimer); stepTimer = null; }
         isRunning = false;
-        posR = 0;
-        posL = 0;
-        visualR = 0;
-        visualL = 0;
-        liftR = 0;
-        liftL = 0;
+        posR = 0; posL = 0;
+        visualR = 0; visualL = 0;
+        liftR = 0; liftL = 0;
         cameraStep = 0;
         currentAnim = null;
         statusMsg.innerText = '';
@@ -908,14 +816,15 @@
       function toggleControls(disabled) {
         btnRun.disabled = disabled;
         btnHint.disabled = disabled;
+        btnL.disabled = disabled;
+        btnR.disabled = disabled;
+        btnDel.disabled = disabled;
       }
 
       document.addEventListener('visibilitychange', function () {
-        if (document.hidden && isRunning) {
-          if (stepTimer) {
-            clearTimeout(stepTimer);
-            stepTimer = null;
-          }
+        if (document.hidden && isRunning && stepTimer) {
+          clearTimeout(stepTimer);
+          stepTimer = null;
         }
       });
 

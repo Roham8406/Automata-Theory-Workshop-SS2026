@@ -2,85 +2,135 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>شبیه‌ساز تورینگ: دو-نواره (بررسی معکوس - غیرهمگام)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
-        body { font-family: 'Vazirmatn', sans-serif; background-color: #f3f4f6; }
         
-        #network {
+        html, body {
             width: 100%;
-            height: 500px;
-            border: 1px solid #e2e8f0;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
             background-color: #ffffff;
-            border-radius: 0.5rem;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 12px;
+            overflow: hidden;
         }
 
         .tape-cell { transition: all 0.15s ease-in-out; }
         .head-active-1 { 
             box-shadow: 0 0 0 4px #3b82f6; 
             z-index: 10; 
-            transform: scale(1.15); 
+            transform: scale(1.1); 
             background-color: #eff6ff !important;
         }
         .head-active-2 { 
             box-shadow: 0 0 0 4px #10b981; 
             z-index: 10; 
-            transform: scale(1.15); 
+            transform: scale(1.1); 
             background-color: #ecfdf5 !important;
         }
 
         .display-none {display: none;}
         
-        /* Hide scrollbars for tapes */
         .tapeScrollWrapper::-webkit-scrollbar { display: none; }
         .tapeScrollWrapper { -ms-overflow-style: none; scrollbar-width: none; }
+
+        #network-wrapper {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        #network {
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            background-color: #fafafa;
+            border-radius: 0.5rem;
+        }
+
+        @media (max-height: 700px) {
+           .game-container { gap: 6px; padding: 8px; }
+           .controls-panel { padding: 6px !important; gap: 6px !important; }
+           .tape-cell { height: 38px !important; width: 34px !important; }
+           .tape-cell span { font-size: 1.1rem !important; }
+           .tapeScrollWrapper { padding-top: 16px !important; padding-bottom: 6px !important; }
+           .head-label { top: -14px !important; font-size: 8px !important; padding: 0 2px !important;}
+           .title-text { font-size: 1rem !important; margin-bottom: 0 !important;}
+        }
     </style>
 </head>
-<body class="p-4 text-gray-800">
+<body class="text-gray-800">
 
-    <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-        <div class="mb-4 bg-slate-50 p-4 rounded-lg border border-slate-200 display-none">
-            <label class="block font-bold mb-2 text-sm text-slate-700">کد ماشین تورینگ (دو نواره - غیرهمگام):</label>
-            <textarea id="tmCode" rows="4" class="w-full border p-2 rounded text-left font-mono text-sm bg-white" dir="ltr">tm=prep (prep,0,0,prep,0,S,0,R)(prep,0,1,prep,0,S,1,R)(prep,1,0,prep,1,S,0,R)(prep,1,1,prep,1,S,1,R)(prep,_,0,prep,_,S,0,R)(prep,_,1,prep,_,S,1,R)(prep,0,_,compare,0,S,_,L)(prep,1,_,compare,1,S,_,L)(prep,_,_,compare,_,S,_,L)(compare,0,0,check_0,0,R,0,S)(compare,0,1,check_0,0,R,1,S)(compare,0,_,check_0,0,R,_,S)(compare,1,0,check_1,1,R,0,S)(compare,1,1,check_1,1,R,1,S)(compare,1,_,check_1,1,R,_,S)(compare,_,0,reject,_,S,0,S)(compare,_,1,reject,_,S,1,S)(compare,_,_,accept,_,S,_,S)(check_0,0,0,compare,0,S,0,L)(check_0,1,0,compare,1,S,0,L)(check_0,_,0,compare,_,S,0,L)(check_0,0,1,reject,0,S,1,S)(check_0,1,1,reject,1,S,1,S)(check_0,_,1,reject,_,S,1,S)(check_0,0,_,reject,0,S,_,S)(check_0,1,_,reject,1,S,_,S)(check_0,_,_,reject,_,S,_,S)(check_1,0,1,compare,0,S,1,L)(check_1,1,1,compare,1,S,1,L)(check_1,_,1,compare,_,S,1,L)(check_1,0,0,reject,0,S,0,S)(check_1,1,0,reject,1,S,0,S)(check_1,_,0,reject,_,S,0,S)(check_1,0,_,reject,0,S,_,S)(check_1,1,_,reject,1,S,_,S)(check_1,_,_,reject,_,S,_,S)</textarea>
+    <div class="game-container">
+        <!-- Algorithm Input -->
+        <div class="display-none">
+            <textarea id="tmCode" rows="4" dir="ltr">tm=prep (prep,0,0,prep,0,S,0,R)(prep,0,1,prep,0,S,1,R)(prep,1,0,prep,1,S,0,R)(prep,1,1,prep,1,S,1,R)(prep,_,0,prep,_,S,0,R)(prep,_,1,prep,_,S,1,R)(prep,0,_,compare,0,S,_,L)(prep,1,_,compare,1,S,_,L)(prep,_,_,compare,_,S,_,L)(compare,0,0,check_0,0,R,0,S)(compare,0,1,check_0,0,R,1,S)(compare,0,_,check_0,0,R,_,S)(compare,1,0,check_1,1,R,0,S)(compare,1,1,check_1,1,R,1,S)(compare,1,_,check_1,1,R,_,S)(compare,_,0,reject,_,S,0,S)(compare,_,1,reject,_,S,1,S)(compare,_,_,accept,_,S,_,S)(check_0,0,0,compare,0,S,0,L)(check_0,1,0,compare,1,S,0,L)(check_0,_,0,compare,_,S,0,L)(check_0,0,1,reject,0,S,1,S)(check_0,1,1,reject,1,S,1,S)(check_0,_,1,reject,_,S,1,S)(check_0,0,_,reject,0,S,_,S)(check_0,1,_,reject,1,S,_,S)(check_0,_,_,reject,_,S,_,S)(check_1,0,1,compare,0,S,1,L)(check_1,1,1,compare,1,S,1,L)(check_1,_,1,compare,_,S,1,L)(check_1,0,0,reject,0,S,0,S)(check_1,1,0,reject,1,S,0,S)(check_1,_,0,reject,_,S,0,S)(check_1,0,_,reject,0,S,_,S)(check_1,1,_,reject,1,S,_,S)(check_1,_,_,reject,_,S,_,S)</textarea>
         </div>
 
-        <!-- Controls -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border">
-            <div>
-                <label class="block font-bold mb-1 text-sm">ورودی نوار ۱:</label>
-                <input type="text" id="input1" value="110" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
+        <!-- Controls (Compact for mobile) -->
+        <div class="controls-panel flex flex-col sm:flex-row gap-3 bg-gray-50 p-2 sm:p-3 rounded-lg border shrink-0 items-center justify-between">
+            <div class="flex gap-2 w-full sm:w-auto">
+                <div class="flex-1 flex flex-col">
+                    <label class="font-bold text-[11px] md:text-xs mb-0.5 text-gray-600">ورودی نوار ۱:</label>
+                    <input type="text" id="input1" value="110" class="w-full border p-1 md:p-1.5 rounded text-left font-mono text-sm md:text-base outline-none focus:border-blue-500" dir="ltr">
+                </div>
+                <div class="flex-1 flex flex-col">
+                    <label class="font-bold text-[11px] md:text-xs mb-0.5 text-gray-600">ورودی نوار ۲:</label>
+                    <input type="text" id="input2" value="011" class="w-full border p-1 md:p-1.5 rounded text-left font-mono text-sm md:text-base outline-none focus:border-blue-500" dir="ltr">
+                </div>
             </div>
-            <div>
-                <label class="block font-bold mb-1 text-sm">ورودی نوار ۲:</label>
-                <input type="text" id="input2" value="011" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
-            </div>
-            <div class="md:col-span-2 flex justify-center gap-4 mt-2">
-                <button onclick="initSimulation()" class="w-12 h-12 flex justify-center items-center text-xl bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 transition" title="ریست نوارها">
+            
+            <div class="flex justify-center gap-2 mt-1 sm:mt-0">
+                <button onclick="initSimulation()" class="w-10 h-10 md:w-11 md:h-11 flex justify-center items-center text-lg bg-blue-600 text-white rounded-full shadow hover:bg-blue-700 transition" title="ریست نوارها">
                     <i class="fa-solid fa-rotate-right"></i>
                 </button>
-                <button onclick="stepSimulation()" id="stepBtn" class="w-12 h-12 flex justify-center items-center text-xl bg-green-600 text-white rounded-full shadow-md hover:bg-green-700 transition opacity-50 cursor-not-allowed" disabled title="یک گام">
+                <button onclick="stepSimulation()" id="stepBtn" class="w-10 h-10 md:w-11 md:h-11 flex justify-center items-center text-lg bg-green-600 text-white rounded-full shadow hover:bg-green-700 transition opacity-50 cursor-not-allowed" disabled title="یک گام">
                     <i class="fa-solid fa-forward-step"></i>
                 </button>
-                <button onclick="togglePlay()" id="playBtn" class="w-12 h-12 flex justify-center items-center text-xl bg-purple-600 text-white rounded-full shadow-md hover:bg-purple-700 transition opacity-50 cursor-not-allowed" disabled title="پخش / توقف خودکار">
+                <button onclick="togglePlay()" id="playBtn" class="w-10 h-10 md:w-11 md:h-11 flex justify-center items-center text-lg bg-purple-600 text-white rounded-full shadow hover:bg-purple-700 transition opacity-50 cursor-not-allowed" disabled title="پخش / توقف خودکار">
                     <i class="fa-solid fa-play"></i>
                 </button>
             </div>
         </div>
 
-        <div class="mb-4 text-center">
-            <p id="statusText" class="text-lg font-bold text-gray-600">آماده برای شروع شبیه‌سازی دو-نواره</p>
+        <!-- Status -->
+        <div class="text-center shrink-0">
+            <p id="statusText" class="text-sm md:text-base font-bold text-gray-600">آماده برای شروع شبیه‌سازی دو-نواره</p>
         </div>
 
         <!-- 2D Infinite Tapes -->
-        <div class="mb-6 relative grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="shrink-0 relative grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 w-full">
             <!-- Tape 1 -->
-            <div>
-                <h2 class="font-bold text-lg mb-2 text-slate-700">نوار ۱ (Tape 1)</h2>
-                <div id="tapeScrollWrapper1" class="tapeScrollWrapper overflow-x-hidden pb-6 pt-6 border rounded-lg bg-slate-100 shadow-inner relative" dir="ltr">
+            <div class="w-full relative">
+                <h2 class="font-bold text-[11px] md:text-sm mb-1 text-slate-700">نوار ۱ (Tape 1)</h2>
+                <div id="tapeScrollWrapper1" class="tapeScrollWrapper overflow-x-hidden pb-2 pt-5 border rounded-lg bg-slate-100 shadow-inner relative" dir="ltr">
                     <div id="tapeContainer1" class="flex justify-center items-center space-x-1 w-max px-[25vw]">
                         <!-- Cells generated via JS -->
                     </div>
@@ -88,9 +138,9 @@
             </div>
 
             <!-- Tape 2 -->
-            <div>
-                <h2 class="font-bold text-lg mb-2 text-slate-700">نوار ۲ (Tape 2)</h2>
-                <div id="tapeScrollWrapper2" class="tapeScrollWrapper overflow-x-hidden pb-6 pt-6 border rounded-lg bg-slate-100 shadow-inner relative" dir="ltr">
+            <div class="w-full relative">
+                <h2 class="font-bold text-[11px] md:text-sm mb-1 text-slate-700">نوار ۲ (Tape 2)</h2>
+                <div id="tapeScrollWrapper2" class="tapeScrollWrapper overflow-x-hidden pb-2 pt-5 border rounded-lg bg-slate-100 shadow-inner relative" dir="ltr">
                     <div id="tapeContainer2" class="flex justify-center items-center space-x-1 w-max px-[25vw]">
                         <!-- Cells generated via JS -->
                     </div>
@@ -99,8 +149,8 @@
         </div>
 
         <!-- Vis Network Diagram -->
-        <div class="w-full">
-            <h2 class="font-bold text-lg mb-2 text-slate-700">نمودار حالت‌های ماشین</h2>
+        <div id="network-wrapper">
+            <h2 class="font-bold text-[12px] md:text-sm mb-1 text-slate-700 shrink-0">نمودار حالت‌های ماشین</h2>
             <div id="network"></div>
         </div>
 
@@ -165,7 +215,6 @@
                 uniqueStates.add(toState);
 
                 let edgeKey = `${fromState}|${toState}`;
-                // Label format: r1,r2 ➔ w1,d1 | w2,d2
                 let label = `${r1},${r2} \u2794 ${w1},${dir1} | ${w2},${dir2}`;
                 
                 if (!transitionsMap[edgeKey]) transitionsMap[edgeKey] = [];
@@ -188,7 +237,7 @@
                     to: to,
                     label: transitionsMap[key].join('\n'),
                     arrows: 'to',
-                    font: { align: 'horizontal', size: 12, color: '#334155', background: 'rgba(255,255,255,0.9)' },
+                    font: { align: 'horizontal', size: 11, color: '#334155', background: 'rgba(255,255,255,0.9)' },
                     color: { color: '#94a3b8' },
                     smooth: { type: 'curvedCW', roundness: 0.15 } 
                 };
@@ -213,7 +262,7 @@
                     }
                 },
                 layout: { randomSeed: 5 },
-                interaction: { hover: true }
+                interaction: { hover: true, tooltipDelay: 200 }
             };
             network = new vis.Network(container, data, options);
         }
@@ -293,7 +342,8 @@
                 if (nextState !== 'accept' && nextState !== 'reject') {
                     nodes.update({id: nextState, color: ACTIVE_COLOR});
                 }
-                network.focus(nextState, { scale: 0.8, animation: { duration: 250 } });
+                // زوم کمتر مشابه نسخه تک نواره
+                network.focus(nextState, { scale: 0.5, animation: { duration: 250 } });
 
                 currentState = nextState;
                 physHead1 += getDirectionValue(dir1);
@@ -315,10 +365,18 @@
                 document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
                 document.getElementById('playBtn').classList.replace('bg-red-600', 'bg-purple-600');
             } else {
-                playInterval = setInterval(stepSimulation, 750);
+                playInterval = setInterval(stepSimulation, 800);
                 document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-pause"></i>';
                 document.getElementById('playBtn').classList.replace('bg-purple-600', 'bg-red-600');
             }
+        }
+
+        function getStateHint(state) {
+            if (state === 'prep') return "آماده‌سازی: انتقال مکانیکی هد دوم به انتهای رشته دوم";
+            if (state === 'compare') return "بررسی و حرکت هد اول به سمت راست";
+            if (state === 'check_0') return "بررسی و تطبیق کاراکتر '0' در نوار دوم";
+            if (state === 'check_1') return "بررسی و تطبیق کاراکتر '1' در نوار دوم";
+            return "در حال پردازش...";
         }
 
         function updateUI() {
@@ -328,9 +386,9 @@
             tape1.forEach((cell, index) => {
                 const isPhysHead = index === physHead1;
                 container1.innerHTML += `
-                    <div id="cell1-${index}" class="tape-cell border-2 ${isPhysHead ? 'border-blue-500 head-active-1 bg-blue-50' : 'border-slate-300 bg-white'} rounded w-12 h-14 flex justify-center items-center shrink-0 relative shadow-sm">
-                        ${isPhysHead ? '<div class="absolute -top-6 text-[10px] font-bold text-blue-600 bg-blue-100 px-1 py-0.5 rounded shadow">هد ۱</div>' : ''}
-                        <span class="font-mono text-xl text-slate-700">${cell}</span>
+                    <div id="cell1-${index}" class="tape-cell border-2 ${isPhysHead ? 'border-blue-500 head-active-1 bg-blue-50' : 'border-slate-300 bg-white'} rounded w-10 h-12 md:w-12 md:h-14 flex justify-center items-center shrink-0 relative shadow-sm">
+                        ${isPhysHead ? '<div class="head-label absolute -top-5 md:-top-6 text-[9px] md:text-[10px] font-bold text-blue-600 bg-blue-100 px-1 py-0.5 rounded shadow">هد ۱</div>' : ''}
+                        <span class="font-mono text-lg md:text-xl text-slate-700">${cell}</span>
                     </div>
                 `;
             });
@@ -341,17 +399,21 @@
             tape2.forEach((cell, index) => {
                 const isPhysHead = index === physHead2;
                 container2.innerHTML += `
-                    <div id="cell2-${index}" class="tape-cell border-2 ${isPhysHead ? 'border-green-500 head-active-2 bg-green-50' : 'border-slate-300 bg-white'} rounded w-12 h-14 flex justify-center items-center shrink-0 relative shadow-sm">
-                        ${isPhysHead ? '<div class="absolute -top-6 text-[10px] font-bold text-green-700 bg-green-100 px-1 py-0.5 rounded shadow">هد ۲</div>' : ''}
-                        <span class="font-mono text-xl text-slate-700">${cell}</span>
+                    <div id="cell2-${index}" class="tape-cell border-2 ${isPhysHead ? 'border-green-500 head-active-2 bg-green-50' : 'border-slate-300 bg-white'} rounded w-10 h-12 md:w-12 md:h-14 flex justify-center items-center shrink-0 relative shadow-sm">
+                        ${isPhysHead ? '<div class="head-label absolute -top-5 md:-top-6 text-[9px] md:text-[10px] font-bold text-green-700 bg-green-100 px-1 py-0.5 rounded shadow">هد ۲</div>' : ''}
+                        <span class="font-mono text-lg md:text-xl text-slate-700">${cell}</span>
                     </div>
                 `;
             });
 
+            // بروزرسانی وضعیت به همراه راهنمای فارسی
             let statText = "";
             if(currentState === 'accept') statText = "نتیجه: Accept (پذیرش) ✔️";
             else if(currentState === 'reject') statText = "نتیجه: Reject (رد) ❌";
-            else statText = `حالت فعلی: ${currentState} | خواندن: (${tape1[physHead1]}, ${tape2[physHead2]})`;
+            else {
+                let hint = getStateHint(currentState);
+                statText = `حالت: ${currentState} (${hint}) | خواندن: (${tape1[physHead1]}, ${tape2[physHead2]})`;
+            }
             
             document.getElementById('statusText').innerText = statText;
         }

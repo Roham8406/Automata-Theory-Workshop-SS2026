@@ -8,6 +8,10 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="format-detection" content="telephone=no">
   <title>مینی‌گیم اتوماتای پله 🤖</title>
+  
+  <!-- کتابخانه FontAwesome برای آیکون‌ها -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
   <style>
     :root {
       --bg: #ffffff;
@@ -69,7 +73,6 @@
       margin: auto;
     }
 
-    /* Keep the graph visually close to its title. */
     .intro-text {
       margin-bottom: -8px;
     }
@@ -131,7 +134,6 @@
       color: #475569;
     }
 
-    /* Base input styling */
     input[type="text"],
     select {
       padding: 8px 10px;
@@ -148,7 +150,6 @@
       appearance: none;
     }
 
-    /* Sequence input — bigger, monospace, animated chars */
     .sequence-input {
       letter-spacing: 2px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -158,7 +159,6 @@
       direction: ltr;
     }
 
-    /* Overlay that mirrors the input for per-character coloring */
     .input-overlay-wrapper {
       position: relative;
       width: 100%;
@@ -205,7 +205,6 @@
       will-change: transform, color;
     }
 
-    /* Active character during playback — R red, L blue */
     .input-overlay .char.active {
       transform: scale(1.4);
       font-weight: 900;
@@ -218,7 +217,6 @@
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
-    /* Edge picker */
     .edge-picker {
       position: absolute; z-index: 20; display: flex; gap: 4px; padding: 4px;
       background: #fff; border: 1px solid #cbd5e1; border-radius: 7px;
@@ -261,6 +259,10 @@
       -webkit-appearance: none;
       appearance: none;
       line-height: 1.3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .btn:active { transform: scale(0.98); }
@@ -279,7 +281,6 @@
       cursor: not-allowed;
     }
 
-    /* Canvas Card */
     .canvas-card-wrapper {
       width: 100%;
       max-width: 100%;
@@ -295,12 +296,9 @@
       border: 3px solid #000000;
       border-radius: 12px;
       overflow: visible;
-
-      /* 480×390 logical drawing area, responsive on screen. */
       width: min(480px, 100%);
       aspect-ratio: 480 / 390;
       height: auto;
-
       flex: 0 1 480px;
       max-width: 100%;
     }
@@ -309,17 +307,12 @@
       position: absolute;
       inset: 0;
       z-index: 1;
-
       width: 100%;
       height: 100%;
-
       display: block;
       background-color: #ffffff;
-
-      /* Prevent browser gestures from interfering with graph tapping. */
       touch-action: manipulation;
     }
-
 
     .state-node {
       position: absolute;
@@ -482,7 +475,7 @@
 
     <div class="graph-instructions">
       <div class="graph-title">یال‌های نمودار زیر را رسم کنید.</div>
-      <div class="graph-hint">برای رسم یال اول روی حالت مبدأ و بعد روی حالت مقصد کلیک کنید.</div>
+      <div class="graph-hint">ابتدا روی حالت مبدأ و بعد روی مقصد کلیک کنید. (دو بار کلیک روی نشانِ یال برای حذف)</div>
     </div>
 
     <div class="canvas-card-wrapper">
@@ -505,9 +498,9 @@
       </div>
 
       <div class="btn-group">
-        <button class="btn btn-hint" id="btnHint">راهنمایی تصادفی</button>
-        <button class="btn btn-run" id="btnRun">اجرا</button>
-        <button class="btn btn-reset" id="btnReset">از اول</button>
+        <button class="btn btn-hint" id="btnHint"><i class="fa-solid fa-dice"></i> تصادفی</button>
+        <button class="btn btn-run" id="btnRun"><i class="fa-solid fa-play"></i> اجرا</button>
+        <button class="btn btn-reset" id="btnReset"><i class="fa-solid fa-rotate-right"></i> از اول</button>
       </div>
     </div>
   </div>
@@ -532,7 +525,7 @@
 
       if (!ctx) {
         if (statusMsg) {
-          statusMsg.innerText = 'مرورگر شما از Canvas پشتیبانی نمی‌کند.';
+          statusMsg.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> مرورگر شما از Canvas پشتیبانی نمی‌کند.';
           statusMsg.className = 'status-msg warn';
         }
         return;
@@ -560,6 +553,7 @@
       let currentState = 0;
       let activeEdgeId = null;
       let isRunning = false;
+      let hasStarted = false; // متغیر جدید برای چک کردن شروع شبیه‌سازی
       let stepTimer = null;
 
       const CANVAS_W = 480;
@@ -638,7 +632,6 @@
         const { from, to } = pendingEdge;
         const conflict = edges.some(e => e.from === from && e.symbol === symbol);
         if (conflict) {
-          const state = STATES.find(s => s.id === from);
           cancelEdgeCreation();
           return;
         }
@@ -651,6 +644,7 @@
         if (isRunning || pendingEdge) return;
         const p = clientToCanvas(e.clientX, e.clientY);
         const node = nodeAt(p.x, p.y);
+        
         if (!node) {
           cancelEdgeCreation();
           return;
@@ -663,6 +657,28 @@
         showPicker(selectedSourceId, node.id);
       });
 
+      // ── Double Click to Delete Edge ──
+      canvas.addEventListener('dblclick', function (e) {
+        if (isRunning || pendingEdge) return;
+        const p = clientToCanvas(e.clientX, e.clientY);
+        const clickRadius = 18;
+
+        const clickedEdgeIndex = edges.findIndex(edge => {
+          if (edge.badgeX !== undefined && edge.badgeY !== undefined) {
+            const dx = p.x - edge.badgeX;
+            const dy = p.y - edge.badgeY;
+            return (dx * dx + dy * dy) <= clickRadius * clickRadius;
+          }
+          return false;
+        });
+
+        if (clickedEdgeIndex !== -1) {
+          edges.splice(clickedEdgeIndex, 1);
+          cancelEdgeCreation();
+          drawGraph();
+        }
+      });
+
       // ── Sequence input: sanitize + overlay ──
       function sanitizeInput() {
         const val = (inputSeq.value || '').toUpperCase().replace(/[^RL]/g, '');
@@ -670,7 +686,6 @@
         return val;
       }
 
-      // Render the invisible overlay chars (input text is transparent, overlay is colored)
       function renderOverlay(activeIndex) {
         if (activeIndex === undefined) activeIndex = -1;
         const val = sanitizeInput();
@@ -686,7 +701,6 @@
         inputOverlay.appendChild(frag);
       }
 
-      // Sync overlay scroll with input scroll
       inputSeq.addEventListener('scroll', function () {
         inputOverlay.scrollLeft = inputSeq.scrollLeft;
       });
@@ -696,11 +710,9 @@
         renderOverlay(-1);
       });
 
-      // Global keyboard capture (works even if input not focused — desktop)
       document.addEventListener('keydown', function (e) {
         if (isRunning) return;
         if (e.ctrlKey || e.altKey || e.metaKey) return;
-        // Skip if user is typing inside another editable element
         const tag = (e.target && e.target.tagName) || '';
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
@@ -747,16 +759,16 @@
 
         const seq = sanitizeInput();
         if (!seq) {
-          statusMsg.innerText = 'لطفاً یک رشته متشکل از R و L وارد کنید.';
+          statusMsg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> لطفاً یک رشته متشکل از R و L وارد کنید.';
           statusMsg.className = 'status-msg warn';
           return;
         }
 
         resetGame();
         isRunning = true;
+        hasStarted = true; // فعال شدن استایل برای گره فعلی
         toggleControls(true);
 
-        // Blur the input so the native caret doesn't conflict
         try { inputSeq.blur(); } catch (err) {}
 
         let stepIndex = 0;
@@ -769,7 +781,7 @@
             activeEdgeId = null;
 
             const finalStateObj = STATES.find(s => s.id === currentState);
-            statusMsg.innerText = `پایان اجرا! حالت نهایی: «${finalStateObj.title}»`;
+            statusMsg.innerHTML = `<i class="fa-solid fa-flag-checkered"></i> پایان اجرا! حالت نهایی: «${finalStateObj.title}»`;
             statusMsg.className = 'status-msg info';
 
             renderOverlay(-1);
@@ -788,7 +800,7 @@
             activeEdgeId = null;
 
             const stateObj = STATES.find(s => s.id === currentState);
-            statusMsg.innerText = `انتقالی برای حرف ${symbol} از حالت «${stateObj.short}» وجود ندارد.`;
+            statusMsg.innerHTML = `<i class="fa-solid fa-xmark-circle"></i> انتقالی برای حرف ${symbol} از حالت «${stateObj.short}» وجود ندارد.`;
             statusMsg.className = 'status-msg warn';
 
             renderOverlay(-1);
@@ -811,6 +823,7 @@
           }, animDuration * 0.7);
         }
 
+        drawGraph(); // رسم اولیه برای نمایش رنگ آبی در صورت نیاز
         doNextStep();
       });
 
@@ -824,12 +837,15 @@
           const toNode = STATES.find(s => s.id === e.to);
           const isActive = (e.id === activeEdgeId);
 
+          let badgePos;
           if (e.from === e.to) {
-            drawSelfLoop(fromNode, e.symbol, isActive);
+            badgePos = drawSelfLoop(fromNode, e.symbol, isActive);
           } else {
             const hasReverse = edges.some(rev => rev.from === e.to && rev.to === e.from);
-            drawEdge(fromNode, toNode, e.symbol, isActive, hasReverse);
+            badgePos = drawEdge(fromNode, toNode, e.symbol, isActive, hasReverse);
           }
+          e.badgeX = badgePos.x;
+          e.badgeY = badgePos.y;
         });
 
         drawNodes();
@@ -837,8 +853,10 @@
 
       function drawNodes() {
         STATES.forEach(node => {
-          const isCurrent = node.id === currentState;
+          // فقط در صورتی که بازی شروع شده باشد (hasStarted = true)، گره فعلی رنگ می‌گیرد
+          const isCurrent = (node.id === currentState) && hasStarted;
           const isSelected = node.id === selectedSourceId;
+          
           ctx.save();
           ctx.beginPath();
           ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
@@ -851,6 +869,7 @@
           ctx.font = '700 11px Vazirmatn, Tahoma, Arial, sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
+          
           const parts = node.short.split(' ');
           if (parts.length > 2 && node.id === 0) {
             ctx.fillText('پاها کنار', node.x, node.y - 7);
@@ -901,6 +920,7 @@
         drawBadge(labelX, labelY, symbol, isActive);
 
         ctx.restore();
+        return { x: labelX, y: labelY };
       }
 
       function drawSelfLoop(node, symbol, isActive) {
@@ -930,6 +950,7 @@
         drawBadge(badgeX, badgeY, symbol, isActive);
 
         ctx.restore();
+        return { x: badgeX, y: badgeY };
       }
 
       function drawArrowhead(x, y, angle, color) {
@@ -970,6 +991,7 @@
           stepTimer = null;
         }
         isRunning = false;
+        hasStarted = false; // بازگشت به حالت بدون هایلایت
         currentState = 0;
         activeEdgeId = null;
         cancelEdgeCreation();

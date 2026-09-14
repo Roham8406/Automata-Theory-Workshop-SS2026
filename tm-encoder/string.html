@@ -71,7 +71,6 @@
             max-width: 900px;
             background: var(--card-bg);
             border-radius: 16px;
-            /* box-shadow: var(--shadow-md); */
             padding: 24px;
             position: relative;
             min-height: 500px;
@@ -520,7 +519,7 @@
             }
 
             .drop-slot .label {
-                font-size: 9px;
+                font-size: 8px;
                 top: -20px;
             }
 
@@ -537,8 +536,14 @@
                 min-height: 60px;
             }
 
+            .result-bars {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                width: 100%;
+            }
+
             .result-bar {
-                min-width: 90px;
+                min-width: 0;
                 height: 40px;
                 font-size: 10px;
             }
@@ -644,7 +649,7 @@
             }
 
             .result-bar {
-                min-width: 70px;
+                min-width: 0;
                 height: 36px;
                 font-size: 9px;
                 padding: 0 3px;
@@ -711,7 +716,6 @@
                 <text id="text-q0-0" class="transition-text" x="165" y="215">0 → 0 , R</text>
 
                 <path id="trans-q0-q1" class="transition-path" d="M 240 125 L 405 125" marker-end="url(#arrowhead)" />
-                <!-- تبدیل Blank به _ -->
                 <text id="text-q0-q1" class="transition-text" x="290" y="115">_ → _ , L</text>
 
                 <path id="trans-q1-1" class="transition-path" d="M 430 90 C 400 40, 500 40, 470 90" marker-end="url(#arrowhead)" />
@@ -721,7 +725,6 @@
                 <text id="text-q1-q2-0" class="transition-text" x="540" y="100">0 → 1 , L</text>
 
                 <path id="trans-q1-q2-box" class="transition-path" d="M 490 140 L 655 140" marker-end="url(#arrowhead)" />
-                <!-- تبدیل Blank به _ -->
                 <text id="text-q1-q2-box" class="transition-text" x="540" y="155">_ → 1 , L</text>
             </svg>
         </div>
@@ -739,7 +742,6 @@
         <div class="feedback" id="feedback-step1"></div>
 
         <div class="action-buttons" id="action-buttons" style="display: none;">
-            <!-- اضافه شدن آیکون‌ها -->
             <button class="btn btn-success" id="btn-continue"><i class="fa-solid fa-check"></i> ادامه</button>
             <button class="btn btn-warning" id="btn-auto"><i class="fa-solid fa-bolt"></i> تکمیل خودکار</button>
         </div>
@@ -793,7 +795,6 @@
         </p>
 
         <div class="encoded-string" id="encoded-string-display">
-            <!-- جایگزینی کاراکتر خط تیره با آندرلاین -->
             q0(q0,0,q0,0,R)(q0,1,q1,1,R)(q1,0,q2,0,R)(q2,1,q2,1,R)(q2,0,q1,0,R)(q1,1,q0,1,R)(q0,_,accept,_,R)accept
         </div>
 
@@ -865,7 +866,6 @@
     </div>
 
     <script>
-        // جایگزینی مربع‌ها با _
         const transitions = [
             { id: 'q0-1', from: 'q0', read: '1', to: 'q0', write: '1', dir: 'R', svgId: 'trans-q0-1', textId: 'text-q0-1' },
             { id: 'q0-0', from: 'q0', read: '0', to: 'q0', write: '0', dir: 'R', svgId: 'trans-q0-0', textId: 'text-q0-0' },
@@ -1089,14 +1089,13 @@
                 slot.classList.add('correct');
                 slot.dataset.filled = 'true';
                 
-                // اصلاح باگ: انتقال فیزیکی کارت به داخل اسلات به جای محو کردن آن
                 slot.appendChild(card);
                 card.draggable = false;
                 card.classList.remove('hidden');
                 card.style.background = 'transparent';
                 card.style.border = 'none';
                 card.style.boxShadow = 'none';
-                card.style.color = '#14532d'; // همرنگ شدن با رنگ سبز موفقیت
+                card.style.color = '#14532d'; 
                 card.style.cursor = 'default';
                 card.style.width = '100%';
                 card.style.height = '100%';

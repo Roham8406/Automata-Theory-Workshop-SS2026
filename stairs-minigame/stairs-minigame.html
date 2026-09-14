@@ -2,156 +2,259 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
   <title>مینی‌گیم پله 🏃</title>
   <style>
-    * {
+    :root {
+      --canvas-max-w: 400px;
+      --bg: #ffffff;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --primary: #2563eb;
+    }
+
+    *,
+    *::before,
+    *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: Vazirmatn, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+      -moz-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      height: 100%;
     }
 
     body {
-      background-color: #f1f5f9;
-      color: #0f172a;
+      font-family: Vazirmatn, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      padding: 20px;
+      min-height: 100dvh;
+      min-height: -webkit-fill-available;
+      padding: 16px;
+      padding-top: max(16px, env(safe-area-inset-top));
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      overflow-x: hidden;
+      overscroll-behavior-y: contain;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     .game-container {
-      background: #ffffff;
-      padding: 24px;
+      background: var(--card);
+      padding: 20px;
       border-radius: 16px;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 18px;
+      gap: 16px;
       max-width: 480px;
       width: 100%;
+      margin: auto;
     }
 
-    h1 {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: #1e293b;
-    }
-
-    /* Controls Section */
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      width: 100%;
-    }
-
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .label-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #475569;
-    }
-
-    .speed-val {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #2563eb;
-      font-family: monospace;
-    }
-
-    input[type="text"] {
-      padding: 10px 14px;
-      font-size: 1rem;
-      border: 2px solid #cbd5e1;
-      border-radius: 8px;
-      outline: none;
-      letter-spacing: 2px;
-      font-family: monospace;
-      font-weight: bold;
-      text-transform: uppercase;
-      transition: border-color 0.2s;
-    }
-
-    input[type="text"]:focus {
-      border-color: #2563eb;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      accent-color: #2563eb;
-      cursor: pointer;
-    }
-
-    /* Command Sequence Display */
-    .sequence-display {
+    /* ── Sequence line: tappable area with soft dashed border ── */
+    .sequence-line {
       display: flex;
       flex-wrap: wrap;
-      gap: 4px;
-      min-height: 38px;
-      padding: 6px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      align-items: center;
-    }
-
-    .char-box {
-      width: 24px;
-      height: 26px;
-      display: flex;
-      align-items: center;
       justify-content: center;
-      font-family: monospace;
-      font-weight: bold;
-      font-size: 0.95rem;
-      border-radius: 4px;
-      border: 1px solid transparent;
-      color: #334155;
+      align-items: center;
+      gap: 8px 10px;
+      width: 100%;
+      min-height: 52px;
+      direction: ltr;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-weight: 700;
+      font-size: clamp(1.15rem, 4.5vw, 1.6rem);
+      color: #000000;
+      letter-spacing: 2px;
+      padding: 8px 14px;
+      user-select: none;
+      -webkit-user-select: none;
+      cursor: text;
+      line-height: 1.4;
+      border: 2px dashed #cbd5e1;
+      border-radius: 10px;
+      background-color: #f8fafc;
+      text-align: left;
+      transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .char-box.active {
-      background-color: #bfdbfe;
-      border-color: #3b82f6;
-      color: #1d4ed8;
-      transform: scale(1.1);
-      transition: all 0.15s ease;
+    .sequence-line:hover {
+      border-color: #94a3b8;
+      background-color: #f1f5f9;
     }
+
+    /* Focused state: blue accent */
+    .sequence-line.focused {
+      border-color: #2563eb;
+      border-style: solid;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .sequence-line.filled {
+      justify-content: flex-start;
+    }
+
+    .sequence-line .char {
+      display: inline-block;
+      color: #000000;
+      transition: color 0.15s ease, transform 0.15s ease;
+      transform-origin: center;
+      will-change: transform, color;
+    }
+
+    .sequence-line .char.active {
+      transform: scale(1.4);
+    }
+
+    .sequence-line .char.active.R {
+      color: #dc2626;
+    }
+
+    .sequence-line .char.active.L {
+      color: #2563eb;
+    }
+
+    .sequence-line .placeholder {
+      color: #94a3b8;
+      font-size: clamp(0.8rem, 2.8vw, 0.95rem);
+      font-weight: 500;
+      font-family: Vazirmatn, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      direction: rtl;
+      letter-spacing: 0;
+      text-align: center;
+      width: 100%;
+    }
+
+    /* Blinking caret — shown ONLY while user is typing (input focused, not running) */
+    .sequence-line .caret {
+      display: inline-block;
+      width: 2px;
+      height: 1.2em;
+      background-color: #0f172a;
+      margin-left: 2px;
+      margin-right: 2px;
+      vertical-align: middle;
+      animation: caret-blink 1s step-end infinite;
+      border-radius: 1px;
+      flex: 0 0 auto;
+    }
+
+    @keyframes caret-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Hidden input for mobile keyboard capture */
+    .hidden-input {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .canvas-card {
+      position: relative;
+      background: #eaeaea;
+      border: 4px solid #000000;
+      border-radius: 8px;
+      overflow: hidden;
+      width: 100%;
+      max-width: var(--canvas-max-w);
+      aspect-ratio: 400 / 380;
+      height: auto;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    @supports not (aspect-ratio: 1 / 1) {
+      .canvas-card::before {
+        content: "";
+        display: block;
+        padding-top: calc(380 / 400 * 100%);
+      }
+      .canvas-card canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+    }
+
+    canvas {
+      display: block;
+      background-color: #eaeaea;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .status-msg {
+      font-weight: 700;
+      font-size: clamp(0.85rem, 2.8vw, 1rem);
+      min-height: 24px;
+      text-align: center;
+      line-height: 1.5;
+      width: 100%;
+    }
+    .status-msg.info { color: #16a34a; }
+    .status-msg.warn { color: #dc2626; }
 
     .btn-group {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: var(--canvas-max-w);
     }
 
     .btn {
-      flex: 1;
-      padding: 10px 12px;
-      font-size: 0.88rem;
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 12px 8px;
+      font-size: clamp(0.72rem, 2.6vw, 0.9rem);
       font-weight: 700;
       border-radius: 8px;
       border: none;
       cursor: pointer;
       transition: background-color 0.2s, transform 0.1s;
+      white-space: nowrap;
+      font-family: inherit;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-appearance: none;
+      appearance: none;
+      line-height: 1.3;
     }
 
-    .btn:active {
-      transform: scale(0.98);
-    }
+    .btn:active { transform: scale(0.97); }
 
     .btn-hint { background-color: #e2e8f0; color: #334155; }
     .btn-hint:hover { background-color: #cbd5e1; }
@@ -159,433 +262,694 @@
     .btn-run { background-color: #16a34a; color: #ffffff; }
     .btn-run:hover { background-color: #15803d; }
 
-    .btn-reset { background-color: #ef4444; color: #ffffff; }
-    .btn-reset:hover { background-color: #dc2626; }
+    .btn-reset { background-color: #93c5fd; color: #1e3a8a; }
+    .btn-reset:hover { background-color: #60a5fa; }
 
     .btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
 
-    /* Canvas Box */
-    .canvas-card {
-      position: relative;
-      background: #eaeaea;
-      border: 4px solid #000000;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    /* ── Tablet ── */
+    @media (max-width: 640px) {
+      :root { --canvas-max-w: 380px; }
+
+      .game-container {
+        padding: 18px;
+        gap: 14px;
+      }
+
+      .sequence-line {
+        font-size: clamp(1.1rem, 4.8vw, 1.5rem);
+      }
     }
 
-    canvas {
-      display: block;
-      background-color: #eaeaea;
+    /* ── Mobile ── */
+    @media (max-width: 420px) {
+      :root { --canvas-max-w: 340px; }
+
+      body {
+        padding: 10px;
+        padding-top: max(10px, env(safe-area-inset-top));
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+      }
+
+      .game-container {
+        padding: 14px;
+        gap: 12px;
+        border-radius: 12px;
+      }
+
+      .sequence-line {
+        gap: 6px 8px;
+        min-height: 46px;
+        letter-spacing: 1.5px;
+        padding: 7px 10px;
+      }
+
+      .btn {
+        padding: 11px 6px;
+      }
+
+      .btn-group {
+        gap: 6px;
+      }
     }
 
-    /* Status Message */
-    .status-msg {
-      font-weight: 700;
-      font-size: 1rem;
-      min-height: 24px;
-      text-align: center;
+    /* ── Small Mobile ── */
+    @media (max-width: 360px) {
+      :root { --canvas-max-w: 280px; }
+
+      .game-container { padding: 12px; gap: 10px; }
+
+      .btn {
+        font-size: 0.7rem;
+        padding: 10px 4px;
+      }
+
+      .sequence-line {
+        font-size: 1rem;
+        gap: 5px 6px;
+        padding: 6px 8px;
+      }
     }
-    .status-msg.info { color: #16a34a; }
-    .status-msg.warn { color: #dc2626; }
+
+    @media (max-width: 320px) {
+      :root { --canvas-max-w: 240px; }
+
+      .btn {
+        font-size: 0.65rem;
+        padding: 9px 3px;
+        border-radius: 6px;
+      }
+
+      .sequence-line {
+        font-size: 0.9rem;
+      }
+    }
+
+    /* ── Landscape phones ── */
+    @media (max-height: 500px) and (orientation: landscape) {
+      body {
+        padding: 8px;
+      }
+
+      .game-container {
+        padding: 12px;
+        gap: 8px;
+        max-width: 100%;
+      }
+
+      .sequence-line {
+        min-height: 36px;
+        font-size: 1.1rem;
+      }
+
+      .canvas-card {
+        max-width: 300px;
+      }
+    }
+
+    /* ── Reduced motion ── */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      .sequence-line .caret {
+        animation: none;
+        opacity: 1;
+      }
+    }
+
+    /* Keep white background even in dark mode */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #ffffff;
+        --card: #ffffff;
+        --text: #0f172a;
+      }
+    }
   </style>
 </head>
 <body>
 
   <div class="game-container">
-    <h1>مینی‌گیم پله 🏃</h1>
 
-    <div class="controls">
-      <div class="input-group">
-        <label for="inputSeq">رشته راهنما (فقط R و L):</label>
-        <input type="text" id="inputSeq" dir="ltr" placeholder="مثلا: RLRRLRL" value="RLRRLRL">
-      </div>
+    <input type="text"
+           id="inputSeq"
+           class="hidden-input"
+           value="RLRRLRL"
+           autocomplete="off"
+           autocapitalize="characters"
+           autocorrect="off"
+           spellcheck="false"
+           inputmode="text"
+           aria-label="رشته راهنما">
 
-      <div class="input-group">
-        <div class="label-row">
-          <label for="stepSpeed">زمان هر گام:</label>
-          <span class="speed-val" id="speedLabel">0.8 ثانیه</span>
-        </div>
-        <input type="range" id="stepSpeed" min="300" max="1000" step="100" value="800">
-      </div>
+    <div class="sequence-line" id="sequenceLine" dir="ltr" role="textbox" aria-label="رشته راهنما" tabindex="0"></div>
 
-      <div class="sequence-display" id="sequenceDisplay" dir="ltr"></div>
+    <div id="statusMsg" class="status-msg" role="status" aria-live="polite"></div>
 
-      <div class="btn-group">
-        <button class="btn btn-hint" id="btnHint">راهنمایی تصادفی</button>
-        <button class="btn btn-run" id="btnRun">الفرار!</button>
-        <button class="btn btn-reset" id="btnReset">از اول</button>
-      </div>
+    <div class="canvas-card" id="canvasCard">
+      <canvas id="gameCanvas"></canvas>
     </div>
 
-    <div id="statusMsg" class="status-msg"></div>
-
-    <div class="canvas-card">
-      <canvas id="gameCanvas" width="400" height="380"></canvas>
+    <div class="btn-group">
+      <button type="button" class="btn btn-hint" id="btnHint">راهنمایی تصادفی</button>
+      <button type="button" class="btn btn-run" id="btnRun">الفرار!</button>
+      <button type="button" class="btn btn-reset" id="btnReset">از اول</button>
     </div>
   </div>
 
   <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+    (function () {
+      'use strict';
 
-    // DOM Elements
-    const inputSeq = document.getElementById('inputSeq');
-    const stepSpeed = document.getElementById('stepSpeed');
-    const speedLabel = document.getElementById('speedLabel');
-    const sequenceDisplay = document.getElementById('sequenceDisplay');
-    const statusMsg = document.getElementById('statusMsg');
-    const btnHint = document.getElementById('btnHint');
-    const btnRun = document.getElementById('btnRun');
-    const btnReset = document.getElementById('btnReset');
+      const STEP_DURATION = 1000;
 
-    // Game Logic State
-    let posR = 0; // Right foot step position
-    let posL = 0; // Left foot step position
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
+      const canvasCard = document.getElementById('canvasCard');
 
-    // Visual State
-    let visualR = 0;
-    let visualL = 0;
-    let liftR = 0;
-    let liftL = 0;
+      const inputSeq = document.getElementById('inputSeq');
+      const sequenceLine = document.getElementById('sequenceLine');
+      const statusMsg = document.getElementById('statusMsg');
+      const btnHint = document.getElementById('btnHint');
+      const btnRun = document.getElementById('btnRun');
+      const btnReset = document.getElementById('btnReset');
 
-    let cameraStep = 0;
-
-    let isRunning = false;
-    let stepTimer = null;
-
-    // Movement Animation Variable
-    let currentAnim = null;
-
-    // Constants for Step Geometry
-    const STEP_W = 60;
-    const STEP_H = 50;
-    const BASE_X = 60;
-    const BASE_Y = 320;
-    const FOOT_LIFT_MAX = 30;
-
-    // Helper: Convert step index to canvas coordinates
-    function stepToCanvasCoords(stepIdx, cam) {
-      const relStep = stepIdx - cam;
-      const x = BASE_X + relStep * STEP_W;
-      const y = BASE_Y - relStep * STEP_H;
-      return { x, y };
-    }
-
-    // Format & Render Command Sequence
-    function renderSequenceDisplay(activeIndex = -1) {
-      sequenceDisplay.innerHTML = '';
-      const val = inputSeq.value.toUpperCase().replace(/[^RL]/g, '');
-      inputSeq.value = val;
-
-      for (let i = 0; i < val.length; i++) {
-        const span = document.createElement('span');
-        span.className = `char-box ${i === activeIndex ? 'active' : ''}`;
-        span.innerText = val[i];
-        sequenceDisplay.appendChild(span);
-      }
-    }
-
-    // Speed Slider Update
-    stepSpeed.addEventListener('input', () => {
-      const ms = parseInt(stepSpeed.value);
-      speedLabel.innerText = `${(ms / 1000).toFixed(1)} ثانیه`;
-    });
-
-    inputSeq.addEventListener('input', () => renderSequenceDisplay());
-
-    // Generate Random R/L Hint
-    btnHint.addEventListener('click', () => {
-      if (isRunning) return;
-      const len = Math.floor(Math.random() * 13) + 8;
-      let res = '';
-      for (let i = 0; i < len; i++) {
-        res += Math.random() < 0.5 ? 'R' : 'L';
-      }
-      inputSeq.value = res;
-      renderSequenceDisplay();
-      resetGame();
-    });
-
-    // Run Logic
-    btnRun.addEventListener('click', () => {
-      if (isRunning) return;
-
-      const seq = inputSeq.value.toUpperCase().replace(/[^RL]/g, '');
-      if (!seq) {
-        statusMsg.innerText = 'لطفاً یک رشته متشکل از R و L وارد کنید.';
-        statusMsg.className = 'status-msg warn';
+      if (!ctx) {
+        if (statusMsg) {
+          statusMsg.innerText = 'مرورگر شما از Canvas پشتیبانی نمی‌کند.';
+          statusMsg.className = 'status-msg warn';
+        }
         return;
       }
 
-      resetGame();
-      isRunning = true;
-      toggleControls(true);
+      const DESIGN_W = 400;
+      const DESIGN_H = 380;
 
-      let stepIndex = 0;
-      const duration = parseInt(stepSpeed.value) || 800;
+      let SCALE = 1;
+      let DPR = 1;
 
-      function doNextStep() {
-        if (stepIndex >= seq.length) {
-          isRunning = false;
-          toggleControls(false);
-          
-          // Final check: are both feet on the same step?
-          if (posR === posL) {
-            statusMsg.innerText = 'دوتا پا کنار همه!';
-            statusMsg.className = 'status-msg info';
-          } else {
-            statusMsg.innerText = 'دوتا پا کنار هم نیست.';
-            statusMsg.className = 'status-msg warn';
+      let posR = 0, posL = 0;
+      let visualR = 0, visualL = 0;
+      let liftR = 0, liftL = 0;
+      let cameraStep = 0;
+
+      let isRunning = false;
+      let stepTimer = null;
+      let currentAnim = null;
+
+      const STEP_W = 60;
+      const STEP_H = 50;
+      const BASE_X = 60;
+      const BASE_Y = 320;
+      const FOOT_LIFT_MAX = 30;
+
+      const prefersReducedMotion = window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function resizeCanvas() {
+        if (!canvasCard || !canvas) return;
+        const rect = canvasCard.getBoundingClientRect();
+        const cssW = Math.max(1, rect.width);
+        const cssH = Math.max(1, rect.height);
+
+        DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+        const newW = Math.round(cssW * DPR);
+        const newH = Math.round(cssH * DPR);
+
+        if (canvas.width !== newW || canvas.height !== newH) {
+          canvas.width = newW;
+          canvas.height = newH;
+        }
+
+        const scaleW = canvas.width / DESIGN_W;
+        const scaleH = canvas.height / DESIGN_H;
+        SCALE = Math.min(scaleW, scaleH);
+      }
+
+      function sx(v) { return v * SCALE; }
+      function sy(v) { return v * SCALE; }
+
+      function stepToCanvasCoords(stepIdx, cam) {
+        const relStep = stepIdx - cam;
+        const x = sx(BASE_X + relStep * STEP_W);
+        const y = sy(BASE_Y - relStep * STEP_H);
+        return { x, y };
+      }
+
+      function sanitizeInput() {
+        const val = (inputSeq.value || '').toUpperCase().replace(/[^RL]/g, '');
+        if (inputSeq.value !== val) inputSeq.value = val;
+        return val;
+      }
+
+      function isInputFocused() {
+        return document.activeElement === inputSeq;
+      }
+
+      // Render the sequence line.
+      // - Caret appears ONLY when user is typing (input focused) and game is NOT running.
+      // - During playback, no caret — only active char changes color/scale.
+      function renderSequence(activeIndex) {
+        if (activeIndex === undefined) activeIndex = -1;
+        const val = sanitizeInput();
+        sequenceLine.innerHTML = '';
+
+        if (val.length > 0) {
+          sequenceLine.classList.add('filled');
+        } else {
+          sequenceLine.classList.remove('filled');
+        }
+
+        const showCaret = !isRunning && isInputFocused();
+
+        if (!val) {
+          const ph = document.createElement('span');
+          ph.className = 'placeholder';
+          ph.textContent = 'رشته راهنما را وارد کنید (فقط R و L)';
+          sequenceLine.appendChild(ph);
+
+          if (showCaret) {
+            const caret = document.createElement('span');
+            caret.className = 'caret';
+            sequenceLine.appendChild(caret);
           }
-
-          renderSequenceDisplay(-1);
           return;
         }
 
-        renderSequenceDisplay(stepIndex);
-        const cmd = seq[stepIndex];
-        executeStepCommand(cmd, duration);
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < val.length; i++) {
+          const span = document.createElement('span');
+          span.className = 'char ' + val[i] + (i === activeIndex ? ' active' : '');
+          span.textContent = val[i];
+          frag.appendChild(span);
+        }
 
-        stepIndex++;
-        stepTimer = setTimeout(doNextStep, duration);
+        // Caret at the end, ONLY while typing (not during playback)
+        if (showCaret) {
+          const caret = document.createElement('span');
+          caret.className = 'caret';
+          frag.appendChild(caret);
+        }
+
+        sequenceLine.appendChild(frag);
       }
 
-      doNextStep();
-    });
+      inputSeq.addEventListener('input', function () {
+        if (isRunning) return;
+        sanitizeInput();
+        renderSequence(-1);
+      });
 
-    // Execute single step with constraint checks
-    function executeStepCommand(cmd, duration) {
-      if (cmd === 'R') {
-        const nextR = posR + 1;
-        if (Math.abs(nextR - posL) > 2) {
-          triggerLegAnimation('R', posR, posR + 1, true, duration);
+      inputSeq.addEventListener('focus', function () {
+        sequenceLine.classList.add('focused');
+        renderSequence(-1);
+      });
+
+      inputSeq.addEventListener('blur', function () {
+        sequenceLine.classList.remove('focused');
+        renderSequence(-1);
+      });
+
+      inputSeq.addEventListener('keyup', function () {
+        if (isRunning) return;
+        renderSequence(-1);
+      });
+
+      inputSeq.addEventListener('click', function () {
+        if (isRunning) return;
+        renderSequence(-1);
+      });
+
+      // Global keyboard capture (input is hidden off-screen)
+      document.addEventListener('keydown', function (e) {
+        if (isRunning) return;
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+        const k = e.key;
+        if (k === 'r' || k === 'R') {
+          e.preventDefault();
+          inputSeq.value += 'R';
+          sanitizeInput();
+          renderSequence(-1);
+        } else if (k === 'l' || k === 'L') {
+          e.preventDefault();
+          inputSeq.value += 'L';
+          sanitizeInput();
+          renderSequence(-1);
+        } else if (k === 'Backspace') {
+          e.preventDefault();
+          inputSeq.value = inputSeq.value.slice(0, -1);
+          sanitizeInput();
+          renderSequence(-1);
+        } else if (k === 'Delete') {
+          e.preventDefault();
+          inputSeq.value = '';
+          renderSequence(-1);
+        }
+      });
+
+      // Tap on the sequence line focuses the hidden input (mobile keyboard)
+      sequenceLine.addEventListener('click', function () {
+        if (isRunning) return;
+        try { inputSeq.focus({ preventScroll: true }); } catch (err) { inputSeq.focus(); }
+      });
+
+      sequenceLine.addEventListener('touchstart', function () {
+        if (isRunning) return;
+        try { inputSeq.focus({ preventScroll: true }); } catch (err) { inputSeq.focus(); }
+      }, { passive: true });
+
+      btnHint.addEventListener('click', function () {
+        if (isRunning) return;
+        const len = Math.floor(Math.random() * 13) + 8;
+        let res = '';
+        for (let i = 0; i < len; i++) {
+          res += Math.random() < 0.5 ? 'R' : 'L';
+        }
+        inputSeq.value = res;
+        renderSequence(-1);
+        resetGame();
+        renderSequence(-1);
+      });
+
+      btnRun.addEventListener('click', function () {
+        if (isRunning) return;
+
+        const seq = sanitizeInput();
+        if (!seq) {
+          statusMsg.innerText = 'لطفاً یک رشته متشکل از R و L وارد کنید.';
+          statusMsg.className = 'status-msg warn';
+          return;
+        }
+
+        resetGame();
+        isRunning = true;
+        toggleControls(true);
+
+        // Blur so caret disappears during playback
+        try { inputSeq.blur(); } catch (err) {}
+        sequenceLine.classList.remove('focused');
+
+        let stepIndex = 0;
+        const duration = STEP_DURATION;
+
+        function doNextStep() {
+          if (stepIndex >= seq.length) {
+            isRunning = false;
+            toggleControls(false);
+
+            if (posR === posL) {
+              statusMsg.innerText = 'دوتا پا کنار همه!';
+              statusMsg.className = 'status-msg info';
+            } else {
+              statusMsg.innerText = 'دوتا پا کنار هم نیست.';
+              statusMsg.className = 'status-msg warn';
+            }
+
+            renderSequence(-1);
+            return;
+          }
+
+          renderSequence(stepIndex);
+          const cmd = seq[stepIndex];
+          executeStepCommand(cmd, duration);
+
+          stepIndex++;
+          stepTimer = setTimeout(doNextStep, duration);
+        }
+
+        doNextStep();
+      });
+
+      function executeStepCommand(cmd, duration) {
+        if (cmd === 'R') {
+          const nextR = posR + 1;
+          if (Math.abs(nextR - posL) > 2) {
+            triggerLegAnimation('R', posR, posR + 1, true, duration);
+          } else {
+            triggerLegAnimation('R', posR, nextR, false, duration);
+            posR = nextR;
+          }
+        } else if (cmd === 'L') {
+          const nextL = posL + 1;
+          if (Math.abs(nextL - posR) > 2) {
+            triggerLegAnimation('L', posL, posL + 1, true, duration);
+          } else {
+            triggerLegAnimation('L', posL, nextL, false, duration);
+            posL = nextL;
+          }
+        }
+      }
+
+      function triggerLegAnimation(foot, startVal, targetVal, fail, duration) {
+        currentAnim = {
+          foot: foot,
+          startVal: startVal,
+          targetVal: targetVal,
+          fail: fail,
+          startTime: performance.now(),
+          duration: prefersReducedMotion ? Math.min(duration, 200) : duration
+        };
+      }
+
+      function renderLoop(now) {
+        liftR = 0;
+        liftL = 0;
+
+        if (currentAnim) {
+          const elapsed = now - currentAnim.startTime;
+          const totalDuration = currentAnim.duration;
+          const moveTime = totalDuration * 0.75;
+          const rawProgress = Math.min(1, elapsed / moveTime);
+
+          if (currentAnim.fail) {
+            let p;
+            if (rawProgress < 0.5) {
+              p = (rawProgress / 0.5) * 0.5;
+            } else {
+              p = 0.5 * (1 - (rawProgress - 0.5) / 0.5);
+            }
+
+            const curStep = currentAnim.startVal + p * (currentAnim.targetVal - currentAnim.startVal);
+            const currentLift = Math.sin(rawProgress * Math.PI) * (FOOT_LIFT_MAX * 0.7);
+
+            if (currentAnim.foot === 'R') {
+              visualR = curStep;
+              liftR = currentLift;
+            } else {
+              visualL = curStep;
+              liftL = currentLift;
+            }
+          } else {
+            const p = 0.5 - Math.cos(rawProgress * Math.PI) / 2;
+            const curStep = currentAnim.startVal + p * (currentAnim.targetVal - currentAnim.startVal);
+            const currentLift = Math.sin(rawProgress * Math.PI) * FOOT_LIFT_MAX;
+
+            if (currentAnim.foot === 'R') {
+              visualR = curStep;
+              liftR = currentLift;
+            } else {
+              visualL = curStep;
+              liftL = currentLift;
+            }
+          }
+
+          if (elapsed >= totalDuration) {
+            if (!currentAnim.fail) {
+              if (currentAnim.foot === 'R') visualR = currentAnim.targetVal;
+              else visualL = currentAnim.targetVal;
+            } else {
+              if (currentAnim.foot === 'R') visualR = currentAnim.startVal;
+              else visualL = currentAnim.startVal;
+            }
+            currentAnim = null;
+          }
         } else {
-          triggerLegAnimation('R', posR, nextR, false, duration);
-          posR = nextR;
+          visualR = posR;
+          visualL = posL;
         }
-      } else if (cmd === 'L') {
-        const nextL = posL + 1;
-        if (Math.abs(nextL - posR) > 2) {
-          triggerLegAnimation('L', posL, posL + 1, true, duration);
+
+        const targetCam = Math.min(visualR, visualL);
+        cameraStep += (targetCam - cameraStep) * 0.08;
+
+        drawCanvas();
+        requestAnimationFrame(renderLoop);
+      }
+
+      function drawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3.5 * SCALE;
+        ctx.lineCap = 'square';
+        ctx.beginPath();
+
+        const startStep = Math.floor(cameraStep) - 2;
+        const endStep = Math.floor(cameraStep) + 8;
+
+        for (let s = startStep; s <= endStep; s++) {
+          const p1 = stepToCanvasCoords(s, cameraStep);
+          const p2 = { x: p1.x + sx(STEP_W), y: p1.y };
+          const p3 = { x: p2.x, y: p2.y - sy(STEP_H) };
+
+          if (s === startStep) ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.lineTo(p3.x, p3.y);
+        }
+        ctx.stroke();
+
+        const footOffX = sx(22);
+        const footR_Base = stepToCanvasCoords(visualR, cameraStep);
+        const footL_Base = stepToCanvasCoords(visualL, cameraStep);
+
+        const footR_x = footR_Base.x + footOffX;
+        const footR_y = footR_Base.y - sy(liftR);
+
+        const footL_x = footL_Base.x + footOffX - sx(6);
+        const footL_y = footL_Base.y - sy(liftL);
+
+        const groundY = Math.min(footR_Base.y, footL_Base.y);
+        const hipX = (footR_x + footL_x) / 2;
+        const hipY = groundY - sy(65);
+
+        const headRadius = sx(11);
+        const headX = hipX;
+        const headY = hipY - sy(45);
+
+        ctx.lineWidth = 2.8 * SCALE;
+        ctx.strokeStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(headX, headY + headRadius);
+        ctx.lineTo(hipX, hipY);
+        ctx.stroke();
+
+        const kneeR_x = (hipX + footR_x) / 2 + sx(liftR > 0 ? 10 : 6);
+        const kneeR_y = (hipY + footR_y) / 2 - sy(liftR > 0 ? 12 : 4);
+        ctx.beginPath();
+        ctx.moveTo(hipX, hipY);
+        ctx.lineTo(kneeR_x, kneeR_y);
+        ctx.lineTo(footR_x, footR_y);
+        ctx.stroke();
+
+        const kneeL_x = (hipX + footL_x) / 2 - sx(liftL > 0 ? 2 : 6);
+        const kneeL_y = (hipY + footL_y) / 2 - sy(liftL > 0 ? 12 : 4);
+        ctx.beginPath();
+        ctx.moveTo(hipX, hipY);
+        ctx.lineTo(kneeL_x, kneeL_y);
+        ctx.lineTo(footL_x, footL_y);
+        ctx.stroke();
+
+        const dist = Math.abs(visualR - visualL);
+
+        ctx.lineWidth = 2 * SCALE;
+        ctx.strokeStyle = '#475569';
+        ctx.beginPath();
+        ctx.arc(footR_x, footR_y - sy(2), sx(4), 0, Math.PI * 2);
+        ctx.arc(footL_x, footL_y - sy(2), sx(4), 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 2 * SCALE;
+        ctx.beginPath();
+        ctx.moveTo(footL_x, footL_y - sy(2));
+
+        if (dist < 0.2) {
+          ctx.quadraticCurveTo(
+            (footL_x + footR_x) / 2,
+            Math.max(footL_y, footR_y) + sy(16),
+            footR_x, footR_y - sy(2)
+          );
+        } else if (dist <= 1.8) {
+          ctx.quadraticCurveTo(
+            (footL_x + footR_x) / 2,
+            Math.max(footL_y, footR_y) + sy(8),
+            footR_x, footR_y - sy(2)
+          );
         } else {
-          triggerLegAnimation('L', posL, nextL, false, duration);
-          posL = nextL;
+          ctx.lineTo(footR_x, footR_y - sy(2));
         }
-      }
-    }
-
-    function triggerLegAnimation(foot, startVal, targetVal, fail, duration) {
-      currentAnim = {
-        foot,
-        startVal,
-        targetVal,
-        fail,
-        startTime: performance.now(),
-        duration
-      };
-    }
-
-    // Main Canvas Render & Animation Loop
-    function renderLoop(now) {
-      liftR = 0;
-      liftL = 0;
-
-      if (currentAnim) {
-        const elapsed = now - currentAnim.startTime;
-        const totalDuration = currentAnim.duration;
-        const moveTime = totalDuration * 0.75;
-        const rawProgress = Math.min(1, elapsed / moveTime);
-
-        if (currentAnim.fail) {
-          let p = 0;
-          if (rawProgress < 0.5) {
-            p = (rawProgress / 0.5) * 0.5;
-          } else {
-            p = 0.5 * (1 - (rawProgress - 0.5) / 0.5);
-          }
-          
-          const curStep = currentAnim.startVal + p * (currentAnim.targetVal - currentAnim.startVal);
-          const currentLift = Math.sin(rawProgress * Math.PI) * (FOOT_LIFT_MAX * 0.7);
-
-          if (currentAnim.foot === 'R') {
-            visualR = curStep;
-            liftR = currentLift;
-          } else {
-            visualL = curStep;
-            liftL = currentLift;
-          }
-
-        } else {
-          const p = 0.5 - Math.cos(rawProgress * Math.PI) / 2;
-          const curStep = currentAnim.startVal + p * (currentAnim.targetVal - currentAnim.startVal);
-          const currentLift = Math.sin(rawProgress * Math.PI) * FOOT_LIFT_MAX;
-
-          if (currentAnim.foot === 'R') {
-            visualR = curStep;
-            liftR = currentLift;
-          } else {
-            visualL = curStep;
-            liftL = currentLift;
-          }
-        }
-
-        if (elapsed >= totalDuration) {
-          if (!currentAnim.fail) {
-            if (currentAnim.foot === 'R') visualR = currentAnim.targetVal;
-            else visualL = currentAnim.targetVal;
-          } else {
-            if (currentAnim.foot === 'R') visualR = currentAnim.startVal;
-            else visualL = currentAnim.startVal;
-          }
-          currentAnim = null;
-        }
-      } else {
-        visualR = posR;
-        visualL = posL;
+        ctx.stroke();
       }
 
-      // Smooth Camera Follow
-      const targetCam = Math.min(visualR, visualL);
-      cameraStep += (targetCam - cameraStep) * 0.08;
-
-      drawCanvas();
-      requestAnimationFrame(renderLoop);
-    }
-
-    function drawCanvas() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // 1. Draw Staircase
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 3.5;
-      ctx.lineCap = 'square';
-      ctx.beginPath();
-
-      const startStep = Math.floor(cameraStep) - 2;
-      const endStep = Math.floor(cameraStep) + 8;
-
-      for (let s = startStep; s <= endStep; s++) {
-        const p1 = stepToCanvasCoords(s, cameraStep);
-        const p2 = { x: p1.x + STEP_W, y: p1.y };
-        const p3 = { x: p2.x, y: p2.y - STEP_H };
-
-        if (s === startStep) {
-          ctx.moveTo(p1.x, p1.y);
+      function resetGame() {
+        if (stepTimer) {
+          clearTimeout(stepTimer);
+          stepTimer = null;
         }
-        ctx.lineTo(p2.x, p2.y);
-        ctx.lineTo(p3.x, p3.y);
+        isRunning = false;
+        posR = 0;
+        posL = 0;
+        visualR = 0;
+        visualL = 0;
+        liftR = 0;
+        liftL = 0;
+        cameraStep = 0;
+        currentAnim = null;
+        statusMsg.innerText = '';
+        statusMsg.className = 'status-msg';
+        toggleControls(false);
+        renderSequence(-1);
       }
-      ctx.stroke();
 
-      // 2. Foot Coordinates
-      const footOffX = 22;
-      const footR_Base = stepToCanvasCoords(visualR, cameraStep);
-      const footL_Base = stepToCanvasCoords(visualL, cameraStep);
+      btnReset.addEventListener('click', resetGame);
 
-      const footR_x = footR_Base.x + footOffX;
-      const footR_y = footR_Base.y - liftR;
-
-      const footL_x = footL_Base.x + footOffX - 6;
-      const footL_y = footL_Base.y - liftL;
-
-      // 3. Stick Figure Body Dynamics
-      const groundY = Math.min(footR_Base.y, footL_Base.y);
-      const hipX = (footR_x + footL_x) / 2;
-      const hipY = groundY - 65;
-
-      const headRadius = 11;
-      const headX = hipX;
-      const headY = hipY - 45;
-
-      // Head
-      ctx.lineWidth = 2.8;
-      ctx.strokeStyle = '#000000';
-      ctx.beginPath();
-      ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Torso
-      ctx.beginPath();
-      ctx.moveTo(headX, headY + headRadius);
-      ctx.lineTo(hipX, hipY);
-      ctx.stroke();
-
-      // Legs
-      const kneeR_x = (hipX + footR_x) / 2 + (liftR > 0 ? 10 : 6);
-      const kneeR_y = (hipY + footR_y) / 2 - (liftR > 0 ? 12 : 4);
-      ctx.beginPath();
-      ctx.moveTo(hipX, hipY);
-      ctx.lineTo(kneeR_x, kneeR_y);
-      ctx.lineTo(footR_x, footR_y);
-      ctx.stroke();
-
-      const kneeL_x = (hipX + footL_x) / 2 - (liftL > 0 ? 2 : 6);
-      const kneeL_y = (hipY + footL_y) / 2 - (liftL > 0 ? 12 : 4);
-      ctx.beginPath();
-      ctx.moveTo(hipX, hipY);
-      ctx.lineTo(kneeL_x, kneeL_y);
-      ctx.lineTo(footL_x, footL_y);
-      ctx.stroke();
-
-      // 4. Shackles & Chain Dynamics
-      const dist = Math.abs(visualR - visualL);
-
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#475569';
-      ctx.beginPath();
-      ctx.arc(footR_x, footR_y - 2, 4, 0, Math.PI * 2);
-      ctx.arc(footL_x, footL_y - 2, 4, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.strokeStyle = '#64748b';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(footL_x, footL_y - 2);
-
-      if (dist < 0.2) {
-        ctx.quadraticCurveTo((footL_x + footR_x) / 2, Math.max(footL_y, footR_y) + 16, footR_x, footR_y - 2);
-      } else if (dist <= 1.8) {
-        ctx.quadraticCurveTo((footL_x + footR_x) / 2, Math.max(footL_y, footR_y) + 8, footR_x, footR_y - 2);
-      } else {
-        ctx.lineTo(footR_x, footR_y - 2);
+      function toggleControls(disabled) {
+        btnRun.disabled = disabled;
+        btnHint.disabled = disabled;
       }
-      ctx.stroke();
-    }
 
-    // Reset Game State
-    function resetGame() {
-      if (stepTimer) clearTimeout(stepTimer);
-      isRunning = false;
-      posR = 0;
-      posL = 0;
-      visualR = 0;
-      visualL = 0;
-      liftR = 0;
-      liftL = 0;
-      cameraStep = 0;
-      currentAnim = null;
-      statusMsg.innerText = '';
-      statusMsg.className = 'status-msg';
-      toggleControls(false);
-      renderSequenceDisplay(-1);
-    }
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden && isRunning) {
+          if (stepTimer) {
+            clearTimeout(stepTimer);
+            stepTimer = null;
+          }
+        }
+      });
 
-    btnReset.addEventListener('click', resetGame);
+      sanitizeInput();
+      renderSequence(-1);
 
-    function toggleControls(disabled) {
-      btnRun.disabled = disabled;
-      btnHint.disabled = disabled;
-      inputSeq.disabled = disabled;
-      stepSpeed.disabled = disabled;
-    }
+      let resizeRaf = null;
+      function scheduleResize() {
+        if (resizeRaf) return;
+        resizeRaf = requestAnimationFrame(function () {
+          resizeRaf = null;
+          resizeCanvas();
+        });
+      }
 
-    // Initialize & Start Render Loop
-    renderSequenceDisplay();
-    requestAnimationFrame(renderLoop);
+      window.addEventListener('resize', scheduleResize, { passive: true });
+      window.addEventListener('orientationchange', scheduleResize, { passive: true });
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', scheduleResize, { passive: true });
+        window.visualViewport.addEventListener('scroll', scheduleResize, { passive: true });
+      }
+
+      if (typeof ResizeObserver !== 'undefined' && canvasCard) {
+        const ro = new ResizeObserver(scheduleResize);
+        ro.observe(canvasCard);
+      }
+
+      resizeCanvas();
+      requestAnimationFrame(function () {
+        resizeCanvas();
+        requestAnimationFrame(renderLoop);
+      });
+    })();
   </script>
 </body>
 </html>

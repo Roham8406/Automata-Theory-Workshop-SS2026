@@ -12,13 +12,13 @@
         
         #network {
             width: 100%;
-            height: 450px;
+            height: 600px;
             border: 1px solid #e2e8f0;
-            background-color: #fafafa;
+            background-color: #ffffff;
             border-radius: 0.5rem;
         }
 
-        .tape-cell { transition: all 0.2s ease-in-out; }
+        .tape-cell { transition: all 0.15s ease-in-out; }
         .head-active { 
             box-shadow: 0 0 0 4px #3b82f6; 
             z-index: 10; 
@@ -35,9 +35,15 @@
 <body class="p-4 text-gray-800">
 
     <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-        <h1 class="text-2xl font-bold text-center mb-2 text-blue-700">مینی‌گیم رستا: شبیه‌ساز ماشین تورینگ Hw#Hw'</h1>
-        <p class="text-center text-gray-500 mb-6 text-sm">همراه با دیاگرام تعاملی، نوار بی‌نهایت دوطرفه و رهگیری خودکار هد</p>
+        <h1 class="text-2xl font-bold text-center mb-2 text-blue-700">مینی‌گیم رستا: ماشین تورینگ Hw#Hw'</h1>
+        <p class="text-center text-gray-500 mb-6 text-sm">کد الگوریتم را تغییر دهید تا گراف به صورت پویا رسم شود.</p>
         
+        <!-- Algorithm Input -->
+        <div class="mb-4 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <label class="block font-bold mb-2 text-sm text-slate-700">کد ماشین تورینگ (ورودی الگوریتم):</label>
+            <textarea id="tmCode" rows="4" class="w-full border p-2 rounded text-left font-mono text-sm bg-white" dir="ltr">tm=findH1 (findH1,0,findH1,0,R)(findH1,1,findH1,1,R)(findH1,#,findH1,#,R)(findH1,H,readH1,H,R)(readH1,0,findH2_0,0,R)(readH1,1,findH2_1,1,R)(readH1,#,findH2_end,#,R)(findH2_0,0,findH2_0,0,R)(findH2_0,1,findH2_0,1,R)(findH2_0,#,findH2_0,#,R)(findH2_0,H,compare_0,H,R)(findH2_1,0,findH2_1,0,R)(findH2_1,1,findH2_1,1,R)(findH2_1,#,findH2_1,#,R)(findH2_1,H,compare_1,H,R)(compare_0,0,write_0_H2,H,L)(compare_0,1,reject,1,R)(compare_0,_,reject,_,R)(compare_1,1,write_1_H2,H,L)(compare_1,0,reject,0,R)(compare_1,_,reject,_,R)(write_0_H2,H,returnH1,0,L)(write_1_H2,H,returnH1,1,L)(returnH1,0,returnH1,0,L)(returnH1,1,returnH1,1,L)(returnH1,#,returnH1,#,L)(returnH1,H,advanceH1,H,R)(advanceH1,0,write_0_H1,H,L)(advanceH1,1,write_1_H1,H,L)(write_0_H1,H,findH1,0,R)(write_1_H1,H,findH1,1,R)(findH2_end,0,findH2_end,0,R)(findH2_end,1,findH2_end,1,R)(findH2_end,#,findH2_end,#,R)(findH2_end,H,checkH2_end,H,R)(checkH2_end,_,accept,_,R)(checkH2_end,0,reject,0,R)(checkH2_end,1,reject,1,R)</textarea>
+        </div>
+
         <!-- Controls -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border">
             <div>
@@ -49,14 +55,14 @@
                 <input type="text" id="input2" value="101" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
             </div>
             <div class="md:col-span-2 flex justify-center gap-3 mt-2">
-                <button onclick="initSimulation()" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">۱. ریست نوار (Hw#Hw')</button>
+                <button onclick="initSimulation()" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">۱. پردازش گراف و ریست نوار</button>
                 <button onclick="stepSimulation()" id="stepBtn" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition opacity-50 cursor-not-allowed" disabled>۲. یک گام تورینگ</button>
                 <button onclick="togglePlay()" id="playBtn" class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700 transition opacity-50 cursor-not-allowed" disabled>۳. پخش خودکار</button>
             </div>
         </div>
 
         <div class="mb-4 text-center">
-            <p id="statusText" class="text-lg font-bold text-gray-600">ابتدا روی «ریست نوار» کلیک کنید.</p>
+            <p id="statusText" class="text-lg font-bold text-gray-600">ابتدا روی «پردازش گراف و ریست نوار» کلیک کنید.</p>
         </div>
 
         <!-- The 1D Infinite Tape -->
@@ -79,85 +85,61 @@
     </div>
 
     <script>
-        // The exact Turing Machine dictionary
-        const tmAlgorithm = {
-            'findH1,0': ['findH1', '0', 1],
-            'findH1,1': ['findH1', '1', 1],
-            'findH1,#': ['findH1', '#', 1],
-            'findH1,H': ['readH1', 'H', 1],
-            
-            'readH1,0': ['findH2_0', '0', 1],
-            'readH1,1': ['findH2_1', '1', 1],
-            'readH1,#': ['findH2_end', '#', 1],
-            
-            'findH2_0,0': ['findH2_0', '0', 1],
-            'findH2_0,1': ['findH2_0', '1', 1],
-            'findH2_0,#': ['findH2_0', '#', 1],
-            'findH2_0,H': ['compare_0', 'H', 1],
-            
-            'findH2_1,0': ['findH2_1', '0', 1],
-            'findH2_1,1': ['findH2_1', '1', 1],
-            'findH2_1,#': ['findH2_1', '#', 1],
-            'findH2_1,H': ['compare_1', 'H', 1],
-            
-            'compare_0,0': ['write_0_H2', 'H', -1],
-            'compare_0,1': ['reject', '1', 1],
-            'compare_0,_': ['reject', '_', 1],
-            
-            'compare_1,1': ['write_1_H2', 'H', -1],
-            'compare_1,0': ['reject', '0', 1],
-            'compare_1,_': ['reject', '_', 1],
-            
-            'write_0_H2,H': ['returnH1', '0', -1],
-            'write_1_H2,H': ['returnH1', '1', -1],
-            
-            'returnH1,0': ['returnH1', '0', -1],
-            'returnH1,1': ['returnH1', '1', -1],
-            'returnH1,#': ['returnH1', '#', -1],
-            'returnH1,H': ['advanceH1', 'H', 1],
-            
-            'advanceH1,0': ['write_0_H1', 'H', -1],
-            'advanceH1,1': ['write_1_H1', 'H', -1],
-            
-            'write_0_H1,H': ['findH1', '0', 1],
-            'write_1_H1,H': ['findH1', '1', 1],
-            
-            'findH2_end,0': ['findH2_end', '0', 1],
-            'findH2_end,1': ['findH2_end', '1', 1],
-            'findH2_end,#': ['findH2_end', '#', 1],
-            'findH2_end,H': ['checkH2_end', 'H', 1],
-            
-            'checkH2_end,_': ['accept', '_', 1],
-            'checkH2_end,0': ['reject', '0', 1],
-            'checkH2_end,1': ['reject', '1', 1]
-        };
-
+        let tmMap = {};
+        let initialTMState = '';
         let tape = [];
         let physHead = 0;
-        let currentState = 'findH1'; 
+        let currentState = ''; 
         let playInterval = null;
         const BLANK = '_';
 
-        // Vis.js Network Variables
+        // Vis.js Variables
         let nodes, edges, network;
         const DEFAULT_COLOR = { background: '#ffffff', border: '#94a3b8' };
         const ACTIVE_COLOR = { background: '#fef08a', border: '#ca8a04' };
 
-        // Parse Algorithm to generate Network Data
+        // Parse Algorithm safely
+        function parseAlgorithm() {
+            tmMap = {};
+            let rawText = document.getElementById('tmCode').value.trim();
+            // Remove 'tm=' if present
+            let cleanText = rawText.replace(/^tm=/, '').trim();
+            
+            // Extract start state (everything before the first '(' )
+            initialTMState = cleanText.split(/\s*\(/)[0].trim();
+            if(!initialTMState) initialTMState = 'findH1'; // fallback
+
+            let regex = /\(([^)]+)\)/g;
+            let match;
+            while ((match = regex.exec(cleanText)) !== null) {
+                let parts = match[1].split(',');
+                if(parts.length === 5) {
+                    let fromState = parts[0].trim();
+                    let readChar = parts[1].trim();
+                    let toState = parts[2].trim();
+                    let writeChar = parts[3].trim();
+                    let moveDir = parts[4].trim() === 'R' ? 1 : -1;
+                    
+                    tmMap[`${fromState},${readChar}`] = [toState, writeChar, moveDir];
+                }
+            }
+        }
+
         function generateNetworkData() {
             let uniqueStates = new Set();
-            let transitionsMap = {}; // "from_to": [labels...]
+            let transitionsMap = {}; 
 
-            Object.keys(tmAlgorithm).forEach(key => {
+            Object.keys(tmMap).forEach(key => {
                 let [fromState, readChar] = key.split(',');
-                let [toState, writeChar, dir] = tmAlgorithm[key];
+                let [toState, writeChar, dir] = tmMap[key];
                 let dirStr = dir === 1 ? 'R' : 'L';
                 
                 uniqueStates.add(fromState);
                 uniqueStates.add(toState);
 
-                let edgeKey = `${fromState}_${toState}`;
-                let label = `${readChar} \u2192 ${writeChar}, ${dirStr}`;
+                // Using '|' delimiter safely prevents bugs with underscores in state names!
+                let edgeKey = `${fromState}|${toState}`;
+                let label = `${readChar} -> ${writeChar}, ${dirStr}`;
                 
                 if (!transitionsMap[edgeKey]) transitionsMap[edgeKey] = [];
                 transitionsMap[edgeKey].push(label);
@@ -173,15 +155,15 @@
             }));
 
             let edgesData = Object.keys(transitionsMap).map(key => {
-                let [from, to] = key.split('_');
+                let [from, to] = key.split('|');
                 return {
                     from: from,
                     to: to,
-                    label: transitionsMap[key].join('\n'), // Group multiple rules on one edge
+                    label: transitionsMap[key].join('\n'),
                     arrows: 'to',
-                    font: { align: 'horizontal', size: 11, color: '#64748b' },
-                    color: { color: '#cbd5e1' },
-                    smooth: { type: 'dynamic' } // Curved lines
+                    font: { align: 'horizontal', size: 12, color: '#334155', background: 'rgba(255,255,255,0.8)' },
+                    color: { color: '#94a3b8' },
+                    smooth: { type: 'curvedCW', roundness: 0.15 } // Curves prevent overlapping edges
                 };
             });
 
@@ -196,11 +178,14 @@
             const container = document.getElementById('network');
             const options = {
                 physics: {
-                    solver: 'forceAtlas2Based',
-                    forceAtlas2Based: { gravitationalConstant: -100, centralGravity: 0.01, springLength: 150 },
-                    stabilization: { iterations: 150 }
+                    barnesHut: {
+                        gravitationalConstant: -3000,
+                        centralGravity: 0.1,
+                        springLength: 200, // Gives nodes more breathing room
+                        springConstant: 0.04
+                    }
                 },
-                layout: { randomSeed: 2 },
+                layout: { randomSeed: 5 },
                 interaction: { hover: true }
             };
             network = new vis.Network(container, data, options);
@@ -208,21 +193,25 @@
 
         function initSimulation() {
             clearInterval(playInterval);
+            
+            // 1. Parse TM and Draw Graph
+            parseAlgorithm();
+            initNetwork();
+
+            // 2. Setup Tape
             let s1 = document.getElementById('input1').value || '';
             let s2 = document.getElementById('input2').value || '';
             
-            // Tape initialization: Hw#Hw'
             tape = ['H', ...s1.split(''), '#', 'H', ...s2.split('')];
             
-            // Add initial padding on both sides to look infinite
+            // Padding on both sides
             for(let i=0; i<15; i++) {
                 tape.push(BLANK);
                 tape.unshift(BLANK);
             }
             
-            // Our logical index 0 is now shifted due to unshift
             physHead = 15; 
-            currentState = 'findH1';
+            currentState = initialTMState;
             
             document.getElementById('stepBtn').disabled = false;
             document.getElementById('stepBtn').classList.remove('opacity-50', 'cursor-not-allowed');
@@ -230,10 +219,11 @@
             document.getElementById('playBtn').classList.remove('opacity-50', 'cursor-not-allowed');
             document.getElementById('playBtn').innerText = '۳. پخش خودکار';
             
-            if(!network) initNetwork();
-            
             updateUI();
             centerTapeOnHead();
+            
+            // Highlight initial node
+            if(nodes.get(currentState)) nodes.update({id: currentState, color: ACTIVE_COLOR});
         }
 
         function stepSimulation() {
@@ -242,24 +232,21 @@
                 return;
             }
 
-            // Infinite Tape logic (dynamically expand if needed)
+            // Infinite Tape logic
             if (physHead >= tape.length - 2) {
-                tape.push(BLANK);
-                tape.push(BLANK);
+                tape.push(BLANK); tape.push(BLANK);
             }
             if (physHead <= 2) {
-                tape.unshift(BLANK);
-                tape.unshift(BLANK);
-                physHead += 2; // Shift head to match new array indices
+                tape.unshift(BLANK); tape.unshift(BLANK);
+                physHead += 2; 
             }
 
             let readChar = tape[physHead];
             let transitionKey = currentState + ',' + readChar;
             
-            if (tmAlgorithm[transitionKey]) {
-                let [nextState, writeChar, moveDirection] = tmAlgorithm[transitionKey];
+            if (tmMap[transitionKey]) {
+                let [nextState, writeChar, moveDirection] = tmMap[transitionKey];
                 
-                // Execute TM instruction
                 tape[physHead] = writeChar;
                 
                 // Visual Highlight Update
@@ -269,10 +256,10 @@
                 if (nextState !== 'accept' && nextState !== 'reject') {
                     nodes.update({id: nextState, color: ACTIVE_COLOR});
                 }
-                network.focus(nextState, { scale: 1.2, animation: { duration: 300 } });
+                network.focus(nextState, { scale: 1.1, animation: { duration: 250 } });
 
                 currentState = nextState;
-                physHead += moveDirection; // 1 for R, -1 for L
+                physHead += moveDirection;
             } else {
                 document.getElementById('statusText').innerText = `خطا: هیچ انتقالی برای (${currentState}, ${readChar}) پیدا نشد!`;
                 if(playInterval) togglePlay();
@@ -297,7 +284,6 @@
         }
 
         function updateUI() {
-            // Update Tape Visuals
             const container = document.getElementById('tapeContainer');
             container.innerHTML = '';
             
@@ -314,7 +300,6 @@
                 container.innerHTML += cellHTML;
             });
 
-            // Update Text Status
             let statText = "";
             if(currentState === 'accept') statText = "نتیجه: Accept (پذیرش) ✔️";
             else if(currentState === 'reject') statText = "نتیجه: Reject (رد) ❌";
@@ -323,7 +308,6 @@
             document.getElementById('statusText').innerText = statText;
         }
 
-        // Auto-scroll logic to keep head centered
         function centerTapeOnHead() {
             const headElement = document.getElementById(`cell-${physHead}`);
             const wrapper = document.getElementById('tapeScrollWrapper');
@@ -332,7 +316,6 @@
                 const headWidth = headElement.offsetWidth;
                 const wrapperWidth = wrapper.offsetWidth;
                 
-                // Scroll to center the head exactly in the middle of the wrapper
                 wrapper.scrollTo({
                     left: headLeft - (wrapperWidth / 2) + (headWidth / 2),
                     behavior: 'smooth'
@@ -340,9 +323,9 @@
             }
         }
 
-        // Initialize empty network on load
+        // Initialize default empty graph structure
         window.onload = () => {
-            initNetwork();
+            initSimulation();
         };
     </script>
 </body>

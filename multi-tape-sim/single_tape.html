@@ -3,93 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شبیه‌ساز ماشین تورینگ: تقلیل دو نواره به تک نواره</title>
+    <title>شبیه‌ساز تک‌نواره: الگوریتم Hw#Hw'</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
         body { font-family: 'Vazirmatn', sans-serif; background-color: #f3f4f6; }
         .tape-cell { transition: all 0.2s ease-in-out; }
         .head-active { box-shadow: 0 0 0 4px #3b82f6; z-index: 10; transform: scale(1.05); }
-        .virtual-head { color: #ef4444; font-weight: bold; font-size: 1.2rem; line-height: 1; }
-        .node { transition: fill 0.3s, stroke 0.3s; }
-        .node-active { fill: #fef08a; stroke: #ca8a04; stroke-width: 4px; }
+        .virtual-head { color: #ef4444; font-weight: bold; }
+        .state-box { transition: all 0.2s ease; border-width: 2px; border-color: transparent; }
+        .state-active { background-color: #fef08a; border-color: #ca8a04; color: #854d0e; font-weight: bold; transform: scale(1.05); shadow: md; }
     </style>
 </head>
 <body class="p-6 text-gray-800">
 
-    <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-        <h1 class="text-2xl font-bold text-center mb-6 text-blue-700">مینی‌گیم رستا: ادغام نوارها و هدهای مجازی</h1>
+    <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <h1 class="text-2xl font-bold text-center mb-2 text-blue-700">مینی‌گیم رستا: شبیه‌سازی الگوریتم تورینگ</h1>
+        <p class="text-center text-gray-500 mb-6 text-sm">موتور این شبیه‌ساز دقیقاً براساس جدول انتقال‌های (Transitions) اختصاصی شما کار می‌کند.</p>
         
         <!-- Controls -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border">
             <div>
-                <label class="block font-bold mb-1 text-sm">نوار اول (رشته ۱):</label>
-                <input type="text" id="input1" value="101" class="w-full border p-2 rounded text-left" dir="ltr">
+                <label class="block font-bold mb-1 text-sm">رشته اول (w):</label>
+                <input type="text" id="input1" value="101" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
             </div>
             <div>
-                <label class="block font-bold mb-1 text-sm">نوار دوم (رشته ۲):</label>
-                <input type="text" id="input2" value="101" class="w-full border p-2 rounded text-left" dir="ltr">
+                <label class="block font-bold mb-1 text-sm">رشته دوم (w'):</label>
+                <input type="text" id="input2" value="101" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
             </div>
             <div class="md:col-span-2 flex justify-center gap-3 mt-2">
-                <button onclick="mergeTapes()" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">۱. ادغام نوارها</button>
-                <button onclick="stepSimulation()" id="stepBtn" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition opacity-50 cursor-not-allowed" disabled>۲. یک قدم فیزیکی</button>
+                <button onclick="initTape()" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 transition">۱. ریست نوار (Hw#Hw')</button>
+                <button onclick="stepSimulation()" id="stepBtn" class="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 transition opacity-50 cursor-not-allowed" disabled>۲. یک گام تورینگ</button>
                 <button onclick="togglePlay()" id="playBtn" class="bg-purple-600 text-white px-4 py-2 rounded shadow hover:bg-purple-700 transition opacity-50 cursor-not-allowed" disabled>۳. پخش خودکار</button>
             </div>
         </div>
 
-        <!-- Simulation Status -->
         <div class="mb-4 text-center">
-            <p id="statusText" class="text-lg font-bold text-gray-600">ابتدا رشته‌ها را وارد کرده و روی «ادغام نوارها» کلیک کنید.</p>
+            <p id="statusText" class="text-lg font-bold text-gray-600">ابتدا روی «ریست نوار» کلیک کنید.</p>
         </div>
 
-        <!-- Diagram & State -->
-        <div class="flex flex-col md:flex-row gap-6 mb-8 items-center justify-center">
-            <div class="bg-gray-50 p-4 rounded-lg border w-full md:w-1/2 flex flex-col items-center">
-                <h2 class="font-bold text-lg mb-2">الگوریتم منطقی (مقایسه رشته‌ها)</h2>
-                <svg width="300" height="150" viewBox="0 0 300 150">
-                    <!-- Arrows -->
-                    <path d="M 60 75 A 30 30 0 1 1 60 74" fill="none" stroke="gray" stroke-width="2" marker-end="url(#arrow)"/>
-                    <text x="30" y="30" font-size="12" fill="gray">1,1 -> R,R</text>
-                    <text x="30" y="45" font-size="12" fill="gray">0,0 -> R,R</text>
-                    
-                    <line x1="90" y1="75" x2="190" y2="40" stroke="gray" stroke-width="2" marker-end="url(#arrow)"/>
-                    <text x="120" y="45" font-size="12" fill="gray">_,_ (پایان)</text>
-
-                    <line x1="90" y1="75" x2="190" y2="110" stroke="gray" stroke-width="2" marker-end="url(#arrow)"/>
-                    <text x="100" y="115" font-size="12" fill="gray">نابرابر (Mismatch)</text>
-
-                    <!-- Nodes -->
-                    <circle id="node_q_compare" cx="60" cy="75" r="30" class="node fill-white stroke-gray-400 stroke-2" />
-                    <text x="60" y="80" text-anchor="middle" font-size="14" font-weight="bold">Compare</text>
-
-                    <circle id="node_q_accept" cx="220" cy="40" r="30" class="node fill-white stroke-gray-400 stroke-2" />
-                    <text x="220" y="45" text-anchor="middle" font-size="14" font-weight="bold">Accept</text>
-
-                    <circle id="node_q_reject" cx="220" cy="110" r="30" class="node fill-white stroke-gray-400 stroke-2" />
-                    <text x="220" y="115" text-anchor="middle" font-size="14" font-weight="bold">Reject</text>
-                    
-                    <defs>
-                        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-                          <path d="M0,0 L0,6 L9,3 z" fill="gray" />
-                        </marker>
-                    </defs>
-                </svg>
-            </div>
-            
-            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 w-full md:w-1/2">
-                <h2 class="font-bold text-lg mb-2 text-blue-800">حافظه فیزیکی (Physical Head)</h2>
-                <ul class="text-sm space-y-2">
-                    <li><strong>حالت فیزیکی: </strong><span id="physPhase" class="text-blue-600 font-bold">-</span></li>
-                    <li><strong>خوانده شده از هد ۱: </strong><span id="read1" class="font-mono bg-white px-2 py-1 border rounded">-</span></li>
-                    <li><strong>خوانده شده از هد ۲: </strong><span id="read2" class="font-mono bg-white px-2 py-1 border rounded">-</span></li>
-                </ul>
-                <p class="text-xs text-gray-500 mt-2">ماشین فیزیکی برای شبیه‌سازی دو هد مجازی، مجبور است دائماً روی نوار جاروب (Sweep) کند.</p>
+        <!-- Dynamic State Machine Dashboard -->
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 w-full mb-6">
+            <h2 class="font-bold text-lg mb-4 text-slate-700 text-center">جدول حالت‌ها (State Machine Dashboard)</h2>
+            <div class="grid grid-cols-2 md:grid-cols-6 gap-2 text-xs text-center" id="statesContainer">
+                <!-- Group 1 -->
+                <div class="flex flex-col gap-1">
+                    <div class="font-bold text-slate-500 mb-1 border-b pb-1">جستجوی H1</div>
+                    <div id="state_findH1" class="state-box bg-white p-2 rounded shadow-sm">findH1</div>
+                    <div id="state_readH1" class="state-box bg-white p-2 rounded shadow-sm">readH1</div>
+                </div>
+                <!-- Group 2 -->
+                <div class="flex flex-col gap-1">
+                    <div class="font-bold text-slate-500 mb-1 border-b pb-1">جستجوی H2</div>
+                    <div id="state_findH2_0" class="state-box bg-white p-2 rounded shadow-sm">findH2_0</div>
+                    <div id="state_findH2_1" class="state-box bg-white p-2 rounded shadow-sm">findH2_1</div>
+                    <div id="state_findH2_end" class="state-box bg-white p-2 rounded shadow-sm">findH2_end</div>
+                </div>
+                <!-- Group 3 -->
+                <div class="flex flex-col gap-1">
+                    <div class="font-bold text-slate-500 mb-1 border-b pb-1">مقایسه</div>
+                    <div id="state_compare_0" class="state-box bg-white p-2 rounded shadow-sm">compare_0</div>
+                    <div id="state_compare_1" class="state-box bg-white p-2 rounded shadow-sm">compare_1</div>
+                    <div id="state_checkH2_end" class="state-box bg-white p-2 rounded shadow-sm">checkH2_end</div>
+                </div>
+                <!-- Group 4 -->
+                <div class="flex flex-col gap-1">
+                    <div class="font-bold text-slate-500 mb-1 border-b pb-1">شیفت H2</div>
+                    <div id="state_write_0_H2" class="state-box bg-white p-2 rounded shadow-sm">write_0_H2</div>
+                    <div id="state_write_1_H2" class="state-box bg-white p-2 rounded shadow-sm">write_1_H2</div>
+                </div>
+                <!-- Group 5 -->
+                <div class="flex flex-col gap-1">
+                    <div class="font-bold text-slate-500 mb-1 border-b pb-1">بازگشت و شیفت H1</div>
+                    <div id="state_returnH1" class="state-box bg-white p-2 rounded shadow-sm">returnH1</div>
+                    <div id="state_advanceH1" class="state-box bg-white p-2 rounded shadow-sm">advanceH1</div>
+                    <div id="state_write_0_H1" class="state-box bg-white p-2 rounded shadow-sm">write_0_H1</div>
+                    <div id="state_write_1_H1" class="state-box bg-white p-2 rounded shadow-sm">write_1_H1</div>
+                </div>
+                <!-- Group 6 -->
+                <div class="flex flex-col gap-1">
+                    <div class="font-bold text-slate-500 mb-1 border-b pb-1">نتیجه نهایی</div>
+                    <div id="state_accept" class="state-box bg-green-100 p-2 rounded shadow-sm">accept</div>
+                    <div id="state_reject" class="state-box bg-red-100 p-2 rounded shadow-sm">reject</div>
+                </div>
             </div>
         </div>
 
-        <!-- The Tape -->
+        <!-- The 1D Tape -->
         <div class="overflow-x-auto pb-6">
-            <div id="tapeContainer" class="flex justify-start items-center space-x-1 space-x-reverse min-w-max px-4">
+            <div id="tapeContainer" class="flex justify-start items-center space-x-1 space-x-reverse min-w-max px-4 py-8">
                 <!-- Cells generated via JS -->
             </div>
         </div>
@@ -97,49 +99,78 @@
     </div>
 
     <script>
+        // The exact Turing Machine dictionary based on the user's prompt
+        const tmAlgorithm = {
+            'findH1,0': ['findH1', '0', 1],
+            'findH1,1': ['findH1', '1', 1],
+            'findH1,#': ['findH1', '#', 1],
+            'findH1,H': ['readH1', 'H', 1],
+            
+            'readH1,0': ['findH2_0', '0', 1],
+            'readH1,1': ['findH2_1', '1', 1],
+            'readH1,#': ['findH2_end', '#', 1],
+            
+            'findH2_0,0': ['findH2_0', '0', 1],
+            'findH2_0,1': ['findH2_0', '1', 1],
+            'findH2_0,#': ['findH2_0', '#', 1],
+            'findH2_0,H': ['compare_0', 'H', 1],
+            
+            'findH2_1,0': ['findH2_1', '0', 1],
+            'findH2_1,1': ['findH2_1', '1', 1],
+            'findH2_1,#': ['findH2_1', '#', 1],
+            'findH2_1,H': ['compare_1', 'H', 1],
+            
+            'compare_0,0': ['write_0_H2', 'H', -1],
+            'compare_0,1': ['reject', '1', 1],
+            'compare_0,_': ['reject', '_', 1],
+            
+            'compare_1,1': ['write_1_H2', 'H', -1],
+            'compare_1,0': ['reject', '0', 1],
+            'compare_1,_': ['reject', '_', 1],
+            
+            'write_0_H2,H': ['returnH1', '0', -1],
+            'write_1_H2,H': ['returnH1', '1', -1],
+            
+            'returnH1,0': ['returnH1', '0', -1],
+            'returnH1,1': ['returnH1', '1', -1],
+            'returnH1,#': ['returnH1', '#', -1],
+            'returnH1,H': ['advanceH1', 'H', 1],
+            
+            'advanceH1,0': ['write_0_H1', 'H', -1],
+            'advanceH1,1': ['write_1_H1', 'H', -1],
+            
+            'write_0_H1,H': ['findH1', '0', 1],
+            'write_1_H1,H': ['findH1', '1', 1],
+            
+            'findH2_end,0': ['findH2_end', '0', 1],
+            'findH2_end,1': ['findH2_end', '1', 1],
+            'findH2_end,#': ['findH2_end', '#', 1],
+            'findH2_end,H': ['checkH2_end', 'H', 1],
+            
+            'checkH2_end,_': ['accept', '_', 1],
+            'checkH2_end,0': ['reject', '0', 1],
+            'checkH2_end,1': ['reject', '1', 1]
+        };
+
         let tape = [];
         let physHead = 0;
-        let logicalState = 'q_start'; // q_start, q_compare, q_accept, q_reject
-        let phase = 'INIT'; 
-        /* Phases:
-           READ_SWEEP: Move right to find h1 and h2
-           REWIND_EVAL: Move left to start, then evaluate logical state
-           WRITE_SWEEP: Move right to update h1, h2 and shift markers
-           REWIND_NEXT: Move left to start to begin next cycle
-        */
-        let storedC1 = null;
-        let storedC2 = null;
-        let foundH1 = false;
-        let foundH2 = false;
-        
-        let newC1 = null, newC2 = null;
-        let dir1 = 0, dir2 = 0; // 1: Right, 0: Stay
-        let writtenH1 = false, writtenH2 = false;
-
+        let currentState = 'findH1'; 
         let playInterval = null;
-
         const BLANK = '_';
-        const TAPE_LENGTH = 12;
 
-        function mergeTapes() {
+        function initTape() {
             clearInterval(playInterval);
             let s1 = document.getElementById('input1').value || '';
             let s2 = document.getElementById('input2').value || '';
             
-            tape = [];
-            for (let i = 0; i < TAPE_LENGTH; i++) {
-                tape.push({
-                    c1: i < s1.length ? s1[i] : BLANK,
-                    h1: i === 0, // Virtual head 1 starts at index 0
-                    c2: i < s2.length ? s2[i] : BLANK,
-                    h2: i === 0  // Virtual head 2 starts at index 0
-                });
-            }
+            // Tape initialization: Hw#Hw'
+            tape = ['H', ...s1.split(''), '#', 'H', ...s2.split('')];
+            
+            // Padding
+            for(let i=0; i<8; i++) tape.push(BLANK);
             
             physHead = 0;
-            logicalState = 'q_compare';
-            phase = 'READ_SWEEP';
-            resetVars();
+            currentState = 'findH1';
             
             document.getElementById('stepBtn').disabled = false;
             document.getElementById('stepBtn').classList.remove('opacity-50', 'cursor-not-allowed');
@@ -150,93 +181,35 @@
             updateUI();
         }
 
-        function resetVars() {
-            storedC1 = null; storedC2 = null;
-            foundH1 = false; foundH2 = false;
-            writtenH1 = false; writtenH2 = false;
-            newC1 = null; newC2 = null; dir1 = 0; dir2 = 0;
-        }
-
         function stepSimulation() {
-            if (logicalState === 'q_accept' || logicalState === 'q_reject') {
-                document.getElementById('statusText').innerText = "شبیه‌سازی پایان یافته است.";
+            if (currentState === 'accept' || currentState === 'reject') {
                 if(playInterval) togglePlay();
                 return;
             }
 
-            if (phase === 'READ_SWEEP') {
-                let cell = tape[physHead];
-                if (cell.h1 && !foundH1) { storedC1 = cell.c1; foundH1 = true; }
-                if (cell.h2 && !foundH2) { storedC2 = cell.c2; foundH2 = true; }
-                
-                if (foundH1 && foundH2) {
-                    phase = 'REWIND_EVAL';
-                } else {
-                    if (physHead < TAPE_LENGTH - 1) physHead++;
-                    else phase = 'REWIND_EVAL'; // Fallback
-                }
-            } 
-            else if (phase === 'REWIND_EVAL') {
-                if (physHead > 0) {
-                    physHead--;
-                } else {
-                    // Evaluate Logical Algorithm
-                    if (storedC1 === storedC2) {
-                        if (storedC1 === BLANK) {
-                            logicalState = 'q_accept';
-                        } else {
-                            logicalState = 'q_compare';
-                            newC1 = storedC1; newC2 = storedC2;
-                            dir1 = 1; dir2 = 1; // Move both right
-                        }
-                    } else {
-                        logicalState = 'q_reject';
-                    }
-                    
-                    if (logicalState === 'q_accept' || logicalState === 'q_reject') {
-                        phase = 'HALTED';
-                    } else {
-                        phase = 'WRITE_SWEEP';
-                        foundH1 = false; foundH2 = false; // reuse as 'processed' flags
-                    }
-                }
+            // Expand tape dynamically if head moves too far right
+            if (physHead >= tape.length - 1) tape.push(BLANK);
+            // Handle negative index (should theoretically not happen with this TM, but safe to add)
+            if (physHead < 0) {
+                tape.unshift(BLANK);
+                physHead = 0;
             }
-            else if (phase === 'WRITE_SWEEP') {
-                let cell = tape[physHead];
-                
-                if (cell.h1 && !foundH1) {
-                    cell.c1 = newC1;
-                    cell.h1 = false;
-                    if (physHead + dir1 < TAPE_LENGTH) tape[physHead + dir1].next_h1 = true;
-                    foundH1 = true;
-                }
-                
-                if (cell.h2 && !foundH2) {
-                    cell.c2 = newC2;
-                    cell.h2 = false;
-                    if (physHead + dir2 < TAPE_LENGTH) tape[physHead + dir2].next_h2 = true;
-                    foundH2 = true;
-                }
 
-                if (foundH1 && foundH2) {
-                    // Apply next_h tags
-                    tape.forEach(t => { 
-                        if(t.next_h1) { t.h1 = true; delete t.next_h1; }
-                        if(t.next_h2) { t.h2 = true; delete t.next_h2; }
-                    });
-                    phase = 'REWIND_NEXT';
-                } else {
-                    if (physHead < TAPE_LENGTH - 1) physHead++;
-                    else phase = 'REWIND_NEXT';
-                }
-            }
-            else if (phase === 'REWIND_NEXT') {
-                if (physHead > 0) {
-                    physHead--;
-                } else {
-                    resetVars();
-                    phase = 'READ_SWEEP';
-                }
+            let readChar = tape[physHead];
+            let transitionKey = currentState + ',' + readChar;
+            
+            if (tmAlgorithm[transitionKey]) {
+                let [nextState, writeChar, moveDirection] = tmAlgorithm[transitionKey];
+                
+                // Execute TM instruction
+                tape[physHead] = writeChar;
+                currentState = nextState;
+                physHead += moveDirection; // 1 for R, -1 for L
+            } else {
+                // Halt state if no transition found
+                document.getElementById('statusText').innerText = `خطا: هیچ انتقالی برای (${currentState}, ${readChar}) پیدا نشد!`;
+                if(playInterval) togglePlay();
+                return;
             }
 
             updateUI();
@@ -249,7 +222,7 @@
                 document.getElementById('playBtn').innerText = '۳. پخش خودکار';
                 document.getElementById('playBtn').classList.replace('bg-red-600', 'bg-purple-600');
             } else {
-                playInterval = setInterval(stepSimulation, 300);
+                playInterval = setInterval(stepSimulation, 250); // Speed
                 document.getElementById('playBtn').innerText = 'توقف پخش';
                 document.getElementById('playBtn').classList.replace('bg-purple-600', 'bg-red-600');
             }
@@ -262,46 +235,31 @@
             
             tape.forEach((cell, index) => {
                 const isPhysHead = index === physHead;
+                const isVirtualHead = cell === 'H';
+                
                 const cellHTML = `
-                    <div class="tape-cell border-2 ${isPhysHead ? 'border-blue-500 head-active bg-blue-50' : 'border-gray-300 bg-white'} rounded w-16 flex flex-col items-center py-2 shrink-0 relative">
-                        ${isPhysHead ? '<div class="absolute -top-6 text-xs font-bold text-blue-600">هد فیزیکی</div>' : ''}
-                        
-                        <!-- Track 1 -->
-                        <div class="w-full flex flex-col items-center border-b border-dashed border-gray-300 pb-1 mb-1">
-                            <span class="font-mono text-lg font-bold">${cell.c1}</span>
-                            <span class="virtual-head h-4">${cell.h1 ? '▼' : ''}</span>
-                        </div>
-                        
-                        <!-- Track 2 -->
-                        <div class="w-full flex flex-col items-center">
-                            <span class="virtual-head h-4">${cell.h2 ? '▲' : ''}</span>
-                            <span class="font-mono text-lg font-bold">${cell.c2}</span>
-                        </div>
+                    <div class="tape-cell border-2 ${isPhysHead ? 'border-blue-500 head-active bg-blue-50' : 'border-gray-300 bg-white'} rounded w-12 h-16 flex justify-center items-center shrink-0 relative shadow-sm">
+                        ${isPhysHead ? '<div class="absolute -top-7 text-xs font-bold text-blue-600 bg-blue-100 px-1 rounded shadow">هد</div>' : ''}
+                        <span class="font-mono text-xl ${isVirtualHead ? 'virtual-head text-2xl' : ''}">${cell}</span>
                     </div>
                 `;
                 container.innerHTML += cellHTML;
             });
 
-            // Update Physical Info
-            document.getElementById('physPhase').innerText = phase === 'READ_SWEEP' ? 'حرکت به راست (خواندن)' : 
-                                                            phase === 'REWIND_EVAL' ? 'بازگشت به مبدا (محاسبه منطق)' :
-                                                            phase === 'WRITE_SWEEP' ? 'حرکت به راست (نوشتن و انتقال هد)' :
-                                                            phase === 'REWIND_NEXT' ? 'بازگشت به مبدا (آماده‌سازی)' : 'متوقف';
-            document.getElementById('read1').innerText = storedC1 !== null ? storedC1 : '-';
-            document.getElementById('read2').innerText = storedC2 !== null ? storedC2 : '-';
-
-            // Update Status Text
-            let statText = "";
-            if(logicalState === 'q_accept') statText = "نتیجه منطقی: پذیرش (رشته‌ها برابرند) ✔️";
-            else if(logicalState === 'q_reject') statText = "نتیجه منطقی: رد (رشته‌ها نابرابرند) ❌";
-            else statText = `وضعیت منطقی: مقایسه... (فاز فیزیکی: ${phase})`;
-            document.getElementById('statusText').innerText = statText;
-
-            // Update SVG Diagram
-            document.querySelectorAll('.node').forEach(n => n.classList.remove('node-active'));
-            if(document.getElementById('node_' + logicalState)) {
-                document.getElementById('node_' + logicalState).classList.add('node-active');
+            // Update State Dashboard Highlights
+            document.querySelectorAll('.state-box').forEach(el => el.classList.remove('state-active'));
+            let activeStateEl = document.getElementById('state_' + currentState);
+            if(activeStateEl) {
+                activeStateEl.classList.add('state-active');
             }
+
+            // Update Text Status
+            let statText = "";
+            if(currentState === 'accept') statText = "نتیجه: Accept (پذیرش) ✔️";
+            else if(currentState === 'reject') statText = "نتیجه: Reject (رد) ❌";
+            else statText = `حالت فعلی: ${currentState} | خواندن: ${tape[physHead]}`;
+            
+            document.getElementById('statusText').innerText = statText;
         }
     </script>
 </body>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>شبیه‌ساز تورینگ: دو-نواره (هدهای غیرهمگام)</title>
+    <title>شبیه‌ساز تورینگ: دو-نواره (بررسی معکوس - غیرهمگام)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -43,24 +43,20 @@
 <body class="p-4 text-gray-800">
 
     <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-        
-        <!-- Algorithm Input (Hidden by default, containing the Async 2-Tape Compare Algorithm) -->
-        <!-- Format: (currentState, read1, read2, nextState, write1, move1, write2, move2) -->
-        <!-- Here, we compare, move Head 1, then transition to a state where we solely move Head 2 -->
         <div class="mb-4 bg-slate-50 p-4 rounded-lg border border-slate-200 display-none">
             <label class="block font-bold mb-2 text-sm text-slate-700">کد ماشین تورینگ (دو نواره - غیرهمگام):</label>
-            <textarea id="tmCode" rows="4" class="w-full border p-2 rounded text-left font-mono text-sm bg-white" dir="ltr">tm=compare (compare,0,0,move_H2_0,0,R,0,S)(compare,1,1,move_H2_1,1,R,1,S)(compare,_,_,accept,_,S,_,S)(compare,0,1,reject,0,S,1,S)(compare,1,0,reject,1,S,0,S)(compare,0,_,reject,0,S,_,S)(compare,1,_,reject,1,S,_,S)(compare,_,0,reject,_,S,0,S)(compare,_,1,reject,_,S,1,S)(move_H2_0,0,0,compare,0,S,0,R)(move_H2_0,1,0,compare,1,S,0,R)(move_H2_0,_,0,compare,_,S,0,R)(move_H2_1,0,1,compare,0,S,1,R)(move_H2_1,1,1,compare,1,S,1,R)(move_H2_1,_,1,compare,_,S,1,R)</textarea>
+            <textarea id="tmCode" rows="4" class="w-full border p-2 rounded text-left font-mono text-sm bg-white" dir="ltr">tm=prep (prep,0,0,prep,0,S,0,R)(prep,0,1,prep,0,S,1,R)(prep,1,0,prep,1,S,0,R)(prep,1,1,prep,1,S,1,R)(prep,_,0,prep,_,S,0,R)(prep,_,1,prep,_,S,1,R)(prep,0,_,compare,0,S,_,L)(prep,1,_,compare,1,S,_,L)(prep,_,_,compare,_,S,_,L)(compare,0,0,check_0,0,R,0,S)(compare,0,1,check_0,0,R,1,S)(compare,0,_,check_0,0,R,_,S)(compare,1,0,check_1,1,R,0,S)(compare,1,1,check_1,1,R,1,S)(compare,1,_,check_1,1,R,_,S)(compare,_,0,reject,_,S,0,S)(compare,_,1,reject,_,S,1,S)(compare,_,_,accept,_,S,_,S)(check_0,0,0,compare,0,S,0,L)(check_0,1,0,compare,1,S,0,L)(check_0,_,0,compare,_,S,0,L)(check_0,0,1,reject,0,S,1,S)(check_0,1,1,reject,1,S,1,S)(check_0,_,1,reject,_,S,1,S)(check_0,0,_,reject,0,S,_,S)(check_0,1,_,reject,1,S,_,S)(check_0,_,_,reject,_,S,_,S)(check_1,0,1,compare,0,S,1,L)(check_1,1,1,compare,1,S,1,L)(check_1,_,1,compare,_,S,1,L)(check_1,0,0,reject,0,S,0,S)(check_1,1,0,reject,1,S,0,S)(check_1,_,0,reject,_,S,0,S)(check_1,0,_,reject,0,S,_,S)(check_1,1,_,reject,1,S,_,S)(check_1,_,_,reject,_,S,_,S)</textarea>
         </div>
 
         <!-- Controls -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded-lg border">
             <div>
                 <label class="block font-bold mb-1 text-sm">ورودی نوار ۱:</label>
-                <input type="text" id="input1" value="101" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
+                <input type="text" id="input1" value="110" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
             </div>
             <div>
                 <label class="block font-bold mb-1 text-sm">ورودی نوار ۲:</label>
-                <input type="text" id="input2" value="101" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
+                <input type="text" id="input2" value="011" class="w-full border p-2 rounded text-left font-mono" dir="ltr">
             </div>
             <div class="md:col-span-2 flex justify-center gap-4 mt-2">
                 <button onclick="initSimulation()" class="w-12 h-12 flex justify-center items-center text-xl bg-blue-600 text-white rounded-full shadow-md hover:bg-blue-700 transition" title="ریست نوارها">
@@ -76,7 +72,7 @@
         </div>
 
         <div class="mb-4 text-center">
-            <p id="statusText" class="text-lg font-bold text-gray-600">آماده برای شروع شبیه‌سازی دو-نواره (حرکت غیرهمگام هِدها)</p>
+            <p id="statusText" class="text-lg font-bold text-gray-600">آماده برای شروع شبیه‌سازی دو-نواره</p>
         </div>
 
         <!-- 2D Infinite Tapes -->
@@ -135,7 +131,7 @@
             let cleanText = rawText.replace(/^tm=/, '').trim();
             
             initialTMState = cleanText.split(/\s*\(/)[0].trim();
-            if(!initialTMState) initialTMState = 'compare';
+            if(!initialTMState) initialTMState = 'prep';
 
             let regex = /\(([^)]+)\)/g;
             let match;

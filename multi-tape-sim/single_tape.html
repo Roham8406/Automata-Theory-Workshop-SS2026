@@ -1,219 +1,193 @@
-<!doctype html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>شبیه‌سازی ماشین تورینگ تک‌نواره</title>
+<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ماشین تورینگ تک‌نواره</title><style>
+*{box-sizing:border-box}body{margin:0;background:#090b0f;color:#eef1f5;font-family:Tahoma,Arial,sans-serif}main{max-width:1250px;margin:auto;padding:28px 20px}header{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #282d35;padding-bottom:18px}h1{font-size:24px;margin:0}.muted{color:#89929e;font-size:13px;margin-top:7px}.status{color:#9aa3af;font-size:13px;white-space:nowrap}.status b{color:#fff}.machine{margin-top:28px}.inputs{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;margin-bottom:24px}.field label{display:block;color:#aeb6c0;font-size:13px;margin-bottom:7px}.field input{width:100%;background:#101319;color:#fff;border:1px solid #3a424d;border-radius:5px;padding:11px 12px;font:700 18px Consolas,monospace;direction:ltr}.inputBtn{height:43px}.label{color:#aeb6c0;font-size:14px;margin:14px 0 8px}.tapeWrap{position:relative;overflow:auto;padding:82px 8px 72px;scroll-behavior:smooth}.tape{display:flex;direction:ltr;justify-content:center;gap:5px;min-width:max-content}.cell{position:relative;width:62px;height:62px;flex:0 0 62px;background:#15191f;border:1px solid #3b434e;border-radius:4px;display:flex;align-items:center;justify-content:center;font:700 23px Consolas,monospace}.cell.head{border:3px solid #fff!important;box-shadow:0 0 0 2px #ffffff55!important}.cell.headA{border:1px solid #3b434e!important;box-shadow:none!important;background:#15191f;color:#eef1f5;font-family:Consolas,monospace;font-size:23px}.cell.headB{border:1px solid #3b434e!important;box-shadow:none!important;background:#15191f;color:#eef1f5;font-family:Consolas,monospace;font-size:23px}.cell.sep{background:#20252c;color:#aeb6c0}.cell.physical{outline:3px solid #fff;outline-offset:3px}.physicalMarker{position:absolute;top:12px;width:62px;height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;z-index:5;transition:left .45s linear}.physicalMarker .arrow{font-size:22px;line-height:18px;color:#fff}.physicalMarker .txt{font-size:11px;font-weight:700;color:#cfd5dd;white-space:nowrap}.legend{display:flex;justify-content:center;gap:22px;color:#89929e;font-size:12px;margin-top:6px}.legendItem{display:flex;align-items:center;gap:7px}.dot{width:11px;height:11px;border:1px solid #fff;border-radius:2px}.dot.a,.dot.b{border-color:#fff}.read{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.box{background:#101319;border:1px solid #282e37;border-radius:4px;padding:13px}.box span{display:block;color:#7f8895;font-size:11px;margin-bottom:6px}.box b{font:700 22px Consolas,monospace}.info{margin-top:18px;background:#101319;border:1px solid #282e37;border-radius:4px;padding:16px}.op{font-size:16px;margin-bottom:7px}.detail{font-size:13px;color:#9aa4b0;line-height:1.9}.controls{text-align:center;margin-top:16px}.btn{background:#171b21;color:#eee;border:1px solid #3a424d;border-radius:4px;padding:9px 18px;cursor:pointer}.btn:hover{background:#20252d}.result{display:none;text-align:center;border-top:1px solid #282e37;margin-top:24px;padding-top:24px}.result.show{display:block}.result h2{font-size:30px;margin:0 0 8px}.result p{color:#9aa4b0}@media(max-width:700px){main{padding:22px 12px}header{display:block}.status{margin-top:10px}.inputs{grid-template-columns:1fr}.read{grid-template-columns:1fr}.cell,.physicalMarker{width:50px;flex-basis:50px}}
+
+.graphPanel{margin-top:22px;background:#101319;border:1px solid #282e37;border-radius:6px;padding:16px}.graphTitle{font-size:15px;margin-bottom:5px}.graphHint{font-size:12px;color:#89929e;margin-bottom:14px}.graph{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;direction:ltr}.gNode{min-width:104px;padding:10px 9px;border:1px solid #3a424d;border-radius:7px;background:#15191f;text-align:center;transition:.2s}.gNode b{display:block;font-size:12px}.gNode span{display:block;font-size:10px;color:#89929e;margin-top:4px}.gNode.active{border-color:#fff;box-shadow:0 0 0 2px #ffffff22,0 0 18px #ffffff18;transform:translateY(-2px)}.gNode.done{opacity:.55}.gArrow{font-size:18px;color:#69727e}.gBranch{width:100%;text-align:center;color:#89929e;font-size:11px}.graphLegend{margin-top:12px;text-align:center;color:#89929e;font-size:11px}
+@media(max-width:700px){.gNode{min-width:88px}.gArrow{font-size:15px}}
+.tmGraph{width:100%;overflow-x:auto;overflow-y:hidden;border:1px solid #252b33;border-radius:10px;background:#0c0f13}.tmGraph svg{width:100%;min-width:760px;height:auto;display:block}.tmGraph .edge{fill:none;stroke:#707987;stroke-width:2}.tmGraph .edge.reject{stroke:#707987}.tmGraph .edge.loop{stroke:#707987}.tmGraph marker path{fill:#707987}.tmGraph .state circle{fill:#15191f;stroke:#8b949e;stroke-width:2}.tmGraph .state text{fill:#f1f3f5;font-size:18px;font-weight:700;text-anchor:middle}.tmGraph .state.active circle{stroke:#fff;stroke-width:4;filter:drop-shadow(0 0 8px #fff)}.tmGraph .state.active text{fill:#fff}.tmGraph .terminal circle{stroke:#8b949e}.tmGraph .edgeLabel{fill:#c1c7cf;font-size:13px;font-weight:600;text-anchor:middle;paint-order:stroke;stroke:#0c0f13;stroke-width:5px;stroke-linejoin:round}.graphLegend{margin-top:10px;text-align:center;color:#89929e;font-size:11px}.speedControl{margin:14px auto 0;max-width:360px;color:#aeb6c0;font-size:12px}.speedControl label{display:block;margin-bottom:7px}.speedControl b{color:#fff}.speedControl input{width:100%;accent-color:#fff;cursor:pointer}</style>
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#090b0f;color:#eef1f5;font-family:Tahoma,Arial,sans-serif}
-main{max-width:1150px;margin:auto;padding:30px 20px}
-header{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #282d35;padding-bottom:18px}
-h1{font-size:24px;margin:0}.muted{color:#89929e;font-size:13px;margin-top:7px}
-.status{color:#9aa3af;font-size:13px;white-space:nowrap}.status b{color:#fff}
-.machine{margin-top:38px}.label{color:#aeb6c0;font-size:14px;margin-bottom:10px}
-
-/* One physical tape. Each cell contains exactly ONE visible thing:
-   its symbol OR the word HEAD. No A/B text is placed inside a cell. */
-.tapeWrap{position:relative;overflow:auto;padding:58px 8px 26px}
-.tape{display:flex;direction:ltr;justify-content:center;gap:5px;min-width:max-content}
-.cell{position:relative;width:58px;height:58px;flex:0 0 58px;background:#15191f;border:1px solid #3b434e;border-radius:4px;display:flex;align-items:center;justify-content:center;font:700 24px Consolas,monospace}
-.cell.sep{background:#20252c;color:#a48cff}
-.cell.logicalA,.cell.logicalB{background:#15191f;color:#fff;border:2px solid #fff}
-.cell.logicalA{box-shadow:inset 0 0 0 2px #a48cff55}
-.cell.logicalB{box-shadow:inset 0 0 0 2px #63dfff55}
-.cell.physical{outline:3px solid #fff;outline-offset:3px}
-
-/* The physical head is NOT put inside a cell and never changes the cell content.
-   It is a moving marker directly above the current physical cell. */
-.physicalMarker{position:absolute;top:8px;width:58px;height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;transition:left 1.35s linear}
-.physicalMarker .arrow{font-size:22px;line-height:18px;color:#fff}
-.physicalMarker .txt{font-size:11px;font-weight:700;color:#cfd5dd;white-space:nowrap;margin-top:2px}
-
-.legend{display:flex;justify-content:center;gap:22px;color:#89929e;font-size:12px;margin-top:6px}
-.legendItem{display:flex;align-items:center;gap:7px}.dot{width:11px;height:11px;border:1px solid #fff;border-radius:2px}.dot.a{box-shadow:inset 0 0 0 3px #a48cff55}.dot.b{box-shadow:inset 0 0 0 3px #63dfff55}
-.info{margin-top:25px;background:#101319;border:1px solid #282e37;border-radius:4px;padding:16px}
-.op{font-size:16px;margin-bottom:7px}.detail{font-size:13px;color:#9aa4b0;line-height:1.9}
-.controls{text-align:center;margin-top:16px}.btn{background:#171b21;color:#eee;border:1px solid #3a424d;border-radius:4px;padding:9px 18px;cursor:pointer}.btn:hover{background:#20252d}
-.result{display:none;text-align:center;border-top:1px solid #282e37;margin-top:24px;padding-top:24px}.result.show{display:block}.result h2{font-size:30px;margin:0 0 8px}.result p{color:#9aa4b0}
-@media(max-width:650px){main{padding:22px 12px}header{display:block}.status{margin-top:10px}.cell{width:48px;height:48px;flex-basis:48px}.physicalMarker{width:48px}}
+#graph,#tmGraph,#stateGraph,#diagram,.graph,.tm-graph,.state-diagram,.diagram-section,.graph-section,
+.graph-container,.diagram-container { display:none !important; }
 </style>
-</head>
-<body><main>
-<header>
-<div><h1>شبیه‌سازی ماشین تورینگ تک‌نواره</h1>
-<div class="muted">یک نوار فیزیکی واحد؛ HEADها خودِ خانه‌های نوار هستند و هد فیزیکی روی نوار حرکت می‌کند.</div></div>
-<div class="status">مرحله <b id="step">۰</b> | وضعیت <b id="state">در حال اجرا</b></div>
-</header>
-
-<section class="machine">
-<div class="label">یک نوار فیزیکی: A # B</div>
-
-<div class="tapeWrap" id="tapeWrap">
-  <div id="physicalMarker" class="physicalMarker">
-    <div class="arrow">▼</div>
-    <div class="txt">هد فیزیکی</div>
-  </div>
-  <div id="tape" class="tape"></div>
-</div>
-
-<div class="legend">
-  <div class="legendItem"><span class="dot a"></span> HEAD منطقی A</div>
-  <div class="legendItem"><span class="dot b"></span> HEAD منطقی B</div>
-  <div class="legendItem"><span class="dot"></span> موقعیت هد فیزیکی</div>
-</div>
-
-<div class="info"><div class="op" id="op"></div><div class="detail" id="detail"></div></div>
-<div class="controls"><button class="btn" id="pauseBtn" onclick="toggle()">توقف</button> <button class="btn" onclick="restart()">شروع دوباره</button></div>
-<div id="result" class="result"><h2 id="resultTitle"></h2><p id="resultText"></p></div>
-</section></main>
-
-<script>
-const A="010110",B="010110";
-const symbols=[...A,"#",...B];
-
-let ha=0;                 // logical A head position
-let hb=A.length+1;        // logical B head position
-let physical=0;           // one physical head position
-let step=0,phase="goA",paused=false,timer=null;
-
+</head><body><main><header><div><h1>شبیه‌سازی ماشین تورینگ تک‌نواره</h1><div class="muted">دو نشانهٔ H روی یک نوار مشترک قرار دارند؛ هد فیزیکی آن‌ها را یکی‌یکی پیدا می‌کند.</div></div><div class="status">مرحله <b id="step">۰</b> | وضعیت <b id="state">آماده</b></div></header><section class="machine"><div class="inputs"><div class="field"><label for="inputA">ورودی A (فقط ۰ و ۱)</label><input id="inputA" value="010110"></div><div class="field"><label for="inputB">ورودی B (فقط ۰ و ۱)</label><input id="inputB" value="010110"></div><button class="btn inputBtn" onclick="loadInput()">اجرای ورودی</button><button class="btn inputBtn" onclick="openExternalTM()">باز کردن در شبیه‌ساز اصلی</button></div></div><div class="label">نوار مشترک</div><div class="muted">ساختار اولیه: <b dir="ltr">H 1 0 1 0 1 1 0 # H 1 0 1 0 1 1 0</b></div><div class="tapeWrap" id="tapeWrap"><div id="physicalMarker" class="physicalMarker"><div class="arrow">▼</div><div class="txt">هد فیزیکی</div></div><div id="tape" class="tape"></div></div><div class="legend"><div class="legendItem"><span class="dot"></span> H</div><div class="legendItem"><span class="dot"></span> موقعیت هد فیزیکی</div></div><div class="read"><div class="box"><span>نماد A که خوانده شد</span><b id="ra">—</b></div><div class="box"><span>نماد B که خوانده شد</span><b id="rb">—</b></div></div><div class="info"><div class="op" id="op"></div><div class="detail" id="detail"></div></div><div class="controls"><button class="btn" id="pauseBtn" onclick="toggle()">توقف</button> <button class="btn" onclick="restart()">شروع دوباره</button><div class="speedControl"><label for="speed">سرعت شبیه‌سازی: <b id="speedValue">1×</b></label><input id="speed" type="range" min="0.5" max="3" step="0.5" value="1" oninput="setSpeed(this.value)"></div></div><div id="result" class="result"><h2 id="resultTitle"></h2><p id="resultText"></p></div></section></main><script>
+let A='010110',B='010110';
+let tape=[],aHead=0,bHead=0,physical=0,step=0,phase='findA',paused=false,timer=null;
+let speed=1,savedMove='',moveOld=0,moveTarget=0,moveKind='';
 const $=id=>document.getElementById(id);
+function valid(s){return /^[01]+$/.test(s)}
+function openExternalTM(){
+  const a=$('inputA').value.trim(), b=$('inputB').value.trim();
+  if(!valid(a)||!valid(b)){msg('ورودی نامعتبر','هر دو ورودی باید غیرخالی و فقط شامل ۰ و ۱ باشند.');return}
+  const tm=`findH1 (findH1,0,findH1,0,R)(findH1,1,findH1,1,R)(findH1,#,findH1,#,R)(findH1,H,readH1,H,R)(readH1,0,findH2_0,0,R)(readH1,1,findH2_1,1,R)(readH1,#,findH2_end,#,R)(findH2_0,0,findH2_0,0,R)(findH2_0,1,findH2_0,1,R)(findH2_0,#,findH2_0,#,R)(findH2_0,H,compare_0,H,R)(findH2_1,0,findH2_1,0,R)(findH2_1,1,findH2_1,1,R)(findH2_1,#,findH2_1,#,R)(findH2_1,H,compare_1,H,R)(compare_0,0,write_0_H2,H,L)(compare_0,1,reject,1,R)(compare_0,_,reject,_,R)(compare_1,1,write_1_H2,H,L)(compare_1,0,reject,0,R)(compare_1,_,reject,_,R)(write_0_H2,H,returnH1,0,L)(write_1_H2,H,returnH1,1,L)(returnH1,0,returnH1,0,L)(returnH1,1,returnH1,1,L)(returnH1,#,returnH1,#,L)(returnH1,H,advanceH1,H,R)(advanceH1,0,write_0_H1,H,L)(advanceH1,1,write_1_H1,H,L)(write_0_H1,H,findH1,0,R)(write_1_H1,H,findH1,1,R)(findH2_end,0,findH2_end,0,R)(findH2_end,1,findH2_end,1,R)(findH2_end,#,findH2_end,#,R)(findH2_end,H,checkH2_end,H,R)(checkH2_end,_,accept,_,R)(checkH2_end,0,reject,0,R)(checkH2_end,1,reject,1,R)`;
+  const url='https://roham8406.github.io/Automata-Theory-Workshop-SS2026/tm-simulator/tm-simulator.html?tm='+encodeURIComponent(tm)+'&input='+encodeURIComponent(`H${a}#H${b}`);
+  window.open(url,'_blank','noopener');
+}
 
+function build(){
+  tape=['HEAD_A',...A.split(''),'#','HEAD_B',...B.split('')];
+  aHead=0;bHead=A.length+2;physical=0;
+}
+function symbolAfter(headIndex){return tape[headIndex+1]}
 function draw(){
-  const tape=$("tape");
-  tape.innerHTML="";
-
-  symbols.forEach((symbol,i)=>{
-    const c=document.createElement("div");
-
-    // A cell has exactly one visible content: HEAD.
-    // The underlying symbol remains in JS and is restored when the head moves.
-    if(i===ha){
-      c.className="cell logicalA";
-      c.textContent="HEAD";
-    }else if(i===hb){
-      c.className="cell logicalB";
-      c.textContent="HEAD";
+  const e=$('tape');e.innerHTML='';
+  tape.forEach((token,i)=>{
+    const c=document.createElement('div');c.className='cell';
+    if(token==='HEAD_A'||token==='HEAD_B'){
+      c.classList.add('head');c.textContent='H';
     }else{
-      c.className="cell"+(symbol==="#"?" sep":"");
-      c.textContent=symbol;
+      c.textContent=token;
+      if(token==='#')c.classList.add('sep');
     }
-
-    if(i===physical)c.classList.add("physical");
-    tape.appendChild(c);
+    if(i===physical)c.classList.add('physical');
+    e.appendChild(c);
   });
-
-  requestAnimationFrame(positionPhysicalMarker);
-  $("step").textContent=step.toLocaleString("fa-IR");
+  requestAnimationFrame(positionMarker);
+  $('step').textContent=step.toLocaleString('fa-IR');
+  setGraph(phase);
 }
-
-function positionPhysicalMarker(){
-  const wrap=$("tapeWrap"), marker=$("physicalMarker"), cells=[...$("tape").children];
-  const target=cells[physical];
+function setGraph(p){
+  const map={
+    findA:'q0',moveToAValue:'q1',readA:'q1',
+    findB:'q2',moveToBValue:'q3',readB:'q3',
+    compare:'q4',moveB:'q4',returnA:'q4',moveA:'q4',
+    moveA_toNext:'q4',writeA_H:'q4',returnA_old:'q4',restoreA_old:'q4',
+    moveB_prepare:'q4',moveB_toNext:'q4',writeB_H:'q4',returnB_old:'q4',restoreB_old:'q4'
+  };
+  const st=map[p];
+  document.querySelectorAll('.tmGraph .state').forEach(n=>n.classList.toggle('active',n.dataset.state===st));
+}
+function positionMarker(){
+  const wrap=$('tapeWrap'),marker=$('physicalMarker'),cells=[...$('tape').children],target=cells[physical];
   if(!target)return;
-  const wr=wrap.getBoundingClientRect(), tr=target.getBoundingClientRect();
-  marker.style.left=(tr.left-wr.left+wrap.scrollLeft)+"px";
+  const wr=wrap.getBoundingClientRect(),tr=target.getBoundingClientRect();
+  marker.style.left=(tr.left-wr.left+wrap.scrollLeft)+'px';
 }
-
-function msg(o,d){$("op").textContent=o;$("detail").textContent=d}
-
-function moveTo(target,next){
+function msg(o,d){$('op').textContent=o;$('detail').textContent=d}
+function setSpeed(v){
+  speed=Number(v);
+  $('speedValue').textContent=(speed%1===0?speed.toFixed(0):speed.toFixed(1))+'×';
+}
+function wait(ms){return Math.max(80,Math.round(ms/speed))}
+function schedule(actionOrMs=1500,ms=1500){
+  clearTimeout(timer);
+  if(typeof actionOrMs==='function')timer=setTimeout(actionOrMs,wait(ms));
+  else timer=setTimeout(run,wait(actionOrMs));
+}
+function movePhysicalTo(target,after){
   if(paused)return;
-
-  if(physical===target){
-    phase=next;
-    timer=setTimeout(run,6000);
-    return;
-  }
-
-  physical += target>physical?1:-1;
-  step++;
-  draw();
-
-  msg("هد فیزیکی روی نوار حرکت می‌کند.",
-      `هد فیزیکی خانه‌به‌خانه حرکت کرد و اکنون روی خانه‌ی ${physical.toLocaleString("fa-IR")} است.`);
-
-  timer=setTimeout(()=>moveTo(target,next),1500);
+  if(physical===target){phase=after;schedule(700);return}
+  physical+=target>physical?1:-1;step++;draw();
+  msg('هد فیزیکی حرکت می‌کند.',`هد فیزیکی فقط یک خانه حرکت کرد و اکنون روی خانه ${physical+1} قرار دارد.`);
+  schedule(()=>movePhysicalTo(target,after),430);
 }
-
+function beginHeadMove(headName){
+  const idx=headName==='A'?aHead:bHead;
+  const next=idx+1;
+  if(next>=tape.length || tape[next]==='#' || tape[next]==='HEAD_A' || tape[next]==='HEAD_B') return false;
+  moveOld=idx;moveTarget=next;moveKind=headName;savedMove=tape[next];
+  phase=headName==='A'?'moveA_toNext':'moveB_toNext';
+  draw();
+  msg(`حرکت ${headName}: ابتدا به خانهٔ بعد می‌رویم.`,`برای جابه‌جایی H${headName}، ابتدا هد فیزیکی باید واقعاً روی نماد ${savedMove} برود.`);
+  schedule(()=>movePhysicalTo(moveTarget,headName==='A'?'writeA_H':'writeB_H'),250);
+  return true;
+}
+function moveHeadStep(headName){
+  const idx=headName==='A'?aHead:bHead;
+  const next=idx+1;
+  if(next>=tape.length || tape[next]==='#' || tape[next]==='HEAD_A' || tape[next]==='HEAD_B') return false;
+  moveOld=idx;moveTarget=next;moveKind=headName;savedMove=tape[next];
+  phase=headName==='A'?'moveA_toNext':'moveB_toNext';
+  movePhysicalTo(moveTarget,headName==='A'?'writeA_H':'writeB_H');
+  return true;
+}
 function run(){
   if(paused)return;
   draw();
-
-  if(phase==="goA"){
-    msg("هد فیزیکی به HEAD منطقی A می‌رود.",
-        "HEAD منطقی A خودِ یکی از خانه‌های نوار است؛ هد فیزیکی برای خواندن آن به همان خانه می‌رود.");
-    phase="movingA";
-    timer=setTimeout(()=>moveTo(ha,"readA"),2500);
-
-  }else if(phase==="readA"){
-    msg("ماشین نماد HEAD A را می‌خواند.",
-        `نماد اصلی این خانه: ${symbols[ha]}`);
-    phase="goB";
-    timer=setTimeout(run,6000);
-
-  }else if(phase==="goB"){
-    msg("هد فیزیکی به HEAD منطقی B می‌رود.",
-        "HEAD منطقی B هم یک خانه‌ی واقعی از همان نوار است؛ هد فیزیکی حالا به آن می‌رود.");
-    phase="movingB";
-    timer=setTimeout(()=>moveTo(hb,"readB"),2500);
-
-  }else if(phase==="readB"){
-    msg("ماشین نماد HEAD B را می‌خواند.",
-        `نماد اصلی این خانه: ${symbols[hb]}`);
-    phase="compare";
-    timer=setTimeout(run,6000);
-
-  }else if(phase==="compare"){
-    if(symbols[ha]!==symbols[hb])return finish(false);
-
-    if(ha===A.length-1 && hb===symbols.length-1)return finish(true);
-
-    msg("دو نماد برابرند.",
-        `${symbols[ha]} = ${symbols[hb]} ✓`);
-    phase="advance";
-    timer=setTimeout(run,6000);
-
-  }else if(phase==="advance"){
-    ha++;
-    hb++;
-    step++;
-    draw();
-
-    msg("HEADها یک خانه جلو می‌روند.",
-        "خانه‌ی قبلی دوباره نماد اصلی خود را نشان می‌دهد و خانه‌ی بعدی به HEAD تبدیل می‌شود.");
-    phase="goA";
-    timer=setTimeout(run,6000);
+  if(phase==='findA'){
+    msg('۱) پیدا کردن H مربوط به A.','هد فیزیکی روی خودِ H قرار می‌گیرد.');
+    schedule(()=>movePhysicalTo(aHead,'moveToAValue'),650);
+  }else if(phase==='moveToAValue'){
+    const target=aHead+1;
+    if(target>=tape.length||tape[target]==='#'||tape[target]==='HEAD_B')return finish(false);
+    msg('۲) رفتن روی نماد A.','هد فیزیکی یک خانه جلو می‌رود و واقعاً روی نماد بعد از H قرار می‌گیرد.');
+    schedule(()=>movePhysicalTo(target,'readA'),450);
+  }else if(phase==='readA'){
+    const v=symbolAfter(aHead);
+    if(v!=='0'&&v!=='1')return finish(false);
+    $('ra').textContent=v;$('rb').textContent='—';
+    msg('۳) خواندن نماد A.',`نماد خوانده‌شده = ${v}. حالا هد فیزیکی باید H دوم را پیدا کند.`);
+    phase='findB';schedule();
+  }else if(phase==='findB'){
+    msg('۴) پیدا کردن H مربوط به B.','هد فیزیکی روی همان نوار حرکت می‌کند تا به H دوم برسد.');
+    schedule(()=>movePhysicalTo(bHead,'moveToBValue'),650);
+  }else if(phase==='moveToBValue'){
+    const target=bHead+1;
+    if(target>=tape.length)return finish(false);
+    msg('۵) رفتن روی نماد B.','هد فیزیکی از روی H وارد خانهٔ بعدی می‌شود و واقعاً روی نماد B قرار می‌گیرد.');
+    schedule(()=>movePhysicalTo(target,'readB'),450);
+  }else if(phase==='readB'){
+    const v=symbolAfter(bHead);
+    if(v!=='0'&&v!=='1')return finish(false);
+    $('rb').textContent=v;
+    msg('۶) خواندن نماد B.',`نماد خوانده‌شده = ${v}. حالا دو نماد با هم مقایسه می‌شوند.`);
+    phase='compare';schedule();
+  }else if(phase==='compare'){
+    const av=symbolAfter(aHead),bv=symbolAfter(bHead);
+    if(av!==bv)return finish(false);
+    if(aHead===A.length-1 || bHead===B.length-1){
+      return finish(aHead===A.length-1 && bHead===B.length-1);
+    }
+    msg('۷) تصمیم بر اساس دو نماد.',`${av} = ${bv} ✓ — حرکت دو H هم‌زمان نیست؛ ابتدا H_B و سپس H_A جابه‌جا می‌شود.`);
+    phase='moveB';schedule();
+  }else if(phase==='moveB'){
+    if(!moveHeadStep('B'))return finish(true);
+  }else if(phase==='writeB_H'){
+    tape[moveTarget]='HEAD_B';draw();
+    msg('۸) نوشتن H روی نماد B.',`نماد ${savedMove} موقتاً با H جایگزین شد. H قبلی هنوز سر جای خود است؛ حالا هد فیزیکی باید برگردد.`);
+    phase='returnB_old';schedule(()=>movePhysicalTo(moveOld,'restoreB_old'),350);
+  }else if(phase==='restoreB_old'){
+    tape[moveOld]=savedMove;bHead=moveTarget;draw();
+    msg('۹) بازگرداندن نماد قبلی.',`نماد ${savedMove} به خانهٔ H قبلی برگردانده شد؛ در نتیجه H به خانهٔ بعد منتقل شد.`);
+    phase='returnA';schedule(800);
+  }else if(phase==='returnA'){
+    msg('۱۰) برگشتن برای H_A.','هد فیزیکی برمی‌گردد تا H_A را پیدا کند؛ H_B دیگر جابه‌جا نمی‌شود.');
+    schedule(()=>movePhysicalTo(aHead,'moveA'),650);
+  }else if(phase==='moveA'){
+    if(!moveHeadStep('A'))return finish(A.length===B.length);
+  }else if(phase==='writeA_H'){
+    tape[moveTarget]='HEAD_A';draw();
+    msg('۱۱) نوشتن H روی نماد A.',`نماد ${savedMove} موقتاً با H جایگزین شد. حالا هد فیزیکی باید به H قبلی برگردد.`);
+    phase='returnA_old';schedule(()=>movePhysicalTo(moveOld,'restoreA_old'),350);
+  }else if(phase==='restoreA_old'){
+    tape[moveOld]=savedMove;aHead=moveTarget;draw();
+    msg('۱۲) بازگرداندن نماد قبلی.',`نماد ${savedMove} به خانهٔ قبلی برگشت و H به خانهٔ بعد منتقل شد.`);
+    phase='findA';schedule(850);
   }
 }
-
 function finish(ok){
   clearTimeout(timer);
-  $("state").textContent=ok?"پذیرش":"رد";
-  $("result").classList.add("show");
-  $("resultTitle").textContent=ok?"ACCEPT":"REJECT";
-  $("resultText").textContent=ok?"دو رشته یکسان بودند.":"دو رشته یکسان نبودند.";
-  msg("اجرای ماشین تمام شد.",ok?"ماشین به وضعیت پذیرش رسید.":"ماشین به وضعیت رد رسید.");
+  $('state').textContent=ok?'پذیرش':'رد';
+  $('result').classList.add('show');
+  $('resultTitle').textContent=ok?'ACCEPT':'REJECT';
+  $('resultText').textContent=ok?'دو ورودی کاملاً یکسان بودند.':'دو ورودی یکسان نیستند.';
+  msg('اجرای ماشین تمام شد.',ok?'تمام موقعیت‌های دو ورودی برابر بودند.':'در یک موقعیت، نمادهای A و B متفاوت بودند.');
 }
-
 function toggle(){
-  paused=!paused;
-  $("pauseBtn").textContent=paused?"ادامه":"توقف";
-  $("state").textContent=paused?"متوقف":"در حال اجرا";
+  paused=!paused;$('pauseBtn').textContent=paused?'ادامه':'توقف';
+  $('state').textContent=paused?'متوقف':'در حال اجرا';
   if(!paused)run();
 }
-
-function restart(){
-  clearTimeout(timer);
-  ha=0;hb=A.length+1;physical=0;step=0;phase="goA";paused=false;
-  $("pauseBtn").textContent="توقف";
-  $("state").textContent="در حال اجرا";
-  $("result").classList.remove("show");
-  run();
+function loadInput(){
+  const a=$('inputA').value.trim(),b=$('inputB').value.trim();
+  if(!valid(a)||!valid(b)){msg('ورودی نامعتبر','هر دو ورودی باید غیرخالی و فقط شامل ۰ و ۱ باشند.');return}
+  A=a;B=b;restart();
 }
-
-window.addEventListener("resize",positionPhysicalMarker);
-$("tapeWrap").addEventListener("scroll",positionPhysicalMarker);
+function restart(){
+  clearTimeout(timer);step=0;phase='findA';paused=false;
+  $('pauseBtn').textContent='توقف';$('state').textContent='در حال اجرا';
+  $('result').classList.remove('show');$('ra').textContent='—';$('rb').textContent='—';
+  build();draw();schedule(500);
+}
+window.addEventListener('resize',positionMarker);
+$('tapeWrap').addEventListener('scroll',positionMarker);
 restart();
-</script>
-</body>
-</html>
+</script></body></html>

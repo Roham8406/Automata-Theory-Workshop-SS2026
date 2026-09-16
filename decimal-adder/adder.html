@@ -295,7 +295,7 @@
             };
             network = new vis.Network(container, data, options);
             // خاموش کردن فیزیک بعد از پایدار شدن برای جلوگیری از کندی
-            network.on("stabilizationIterationsDone", function () { network.setOptions( { physics: false } ); });
+            // network.on("stabilizationIterationsDone", function () { network.setOptions( { physics: false } ); });
         }
 
         function initSimulation() {

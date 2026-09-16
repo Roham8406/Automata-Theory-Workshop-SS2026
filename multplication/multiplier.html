@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ماشین تورینگ: ضرب ده‌دهی ۵-نواره</title>
+    <title>ماشین تورینگ: ضرب ده‌دهی ۵-نواره (مکانیکی کامل)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -59,7 +59,7 @@
 
     <div class="game-container">
         
-        <h1 class="title-text text-lg md:text-xl font-bold text-center text-blue-700 shrink-0">ماشین تورینگ: ضرب و جمع ستونی (۵ نواره)</h1>
+        <h1 class="title-text text-lg md:text-xl font-bold text-center text-blue-700 shrink-0">ماشین تورینگ: ضرب ستونی (مکانیکِ خالص - ۵ نواره)</h1>
 
         <!-- Controls -->
         <div class="controls-panel flex flex-col sm:flex-row gap-2 bg-gray-50 p-2 rounded-lg border shrink-0 items-center justify-between">
@@ -176,30 +176,48 @@
 
             addFrame('شروع', 'آغاز عملیات ضرب و جمع ستونی');
 
-            // ---- Phase 1: Multiplication to Rows ----
-            let shift = 0;
+            // ---- Phase 1: Multiplication to Rows (Fully Mechanical) ----
             let row_starts = [];
 
             while (t2[h2] !== '_') {
-                let mult = parseInt(t2[h2]);
-                addFrame('خواندن_مضروب', `خواندن رقم ${mult} از نوار ۲`);
+                let current_digit = t2[h2];
+                // 1. علامت‌گذاری رقم فعلی
+                t2[h2] = `[${current_digit}]`;
+                addFrame('علامت‌گذاری', `علامت‌گذاری رقم ${current_digit} برای محاسبه ارزش مکانی`);
                 
                 row_starts.push(h3);
 
-                for (let s=0; s<shift; s++) {
+                // 2. محاسبه مکانیکی صفرها (ارزش مکانی) با پیمایش نوار 2 به سمت راست
+                addFrame('شروع_شمارش', 'حرکت به راست روی نوار ۲ برای بررسی ارقام قبلی');
+                h2++;
+                while (t2[h2] !== '_') {
+                    addFrame('پیمایش_به_راست', `مشاهده رقم ${t2[h2]} در سمت راست`);
                     t3[h3] = '0';
-                    addFrame('درج_صفر', 'درج صفر ارزش مکانی در نوار ۳');
+                    addFrame('درج_صفر', 'درج یک صفر در نوار ۳ (ارزش مکانی)');
                     h3--;
+                    h2++;
                 }
+                addFrame('پایان_شمارش', 'رسیدن به انتهای عدد دوم');
 
+                // 3. بازگشت به چپ برای پیدا کردن رقم علامت‌گذاری شده
+                h2--;
+                while (!t2[h2].includes('[')) {
+                    addFrame('بازگشت_هد', 'حرکت به چپ برای یافتن رقم مبدأ');
+                    h2--;
+                }
+                addFrame('یافتن_رقم', 'رسیدن به رقم اصلی برای شروع عملیات ضرب');
+
+                // آماده‌سازی برای ضرب
+                let mult = parseInt(current_digit);
                 h1 = start_h1;
                 t5[h5] = '0';
-                addFrame('ریست_نقلی', 'صفر کردن نوار Carry (نوار ۵)');
+                addFrame('ریست_نقلی', 'صفر کردن نوار نقلی (Carry) و آماده‌سازی هد ۱');
 
+                // ضرب کردن
                 while (t1[h1] !== '_') {
                     let val = parseInt(t1[h1]);
                     let c = parseInt(t5[h5]);
-                    addFrame('ضرب_رقم', `ضرب ${val} در ${mult} + نقلی ${c}`);
+                    addFrame('ضرب_رقم', `محاسبه: ${val} × ${mult} + نقلی ${c}`);
 
                     let p = val * mult + c;
                     t3[h3] = (p % 10).toString();
@@ -218,13 +236,14 @@
                     h3--;
                 }
 
+                // پاک کردن علامت و حرکت به رقم بعدی
+                t2[h2] = current_digit;
                 h2--;
                 if (t2[h2] !== '_') {
                     t3[h3] = '+';
-                    addFrame('پایان_ردیف', 'ثبت علامت + برای جدا کردن ردیف‌ها');
+                    addFrame('پایان_ردیف', 'ثبت علامت + در نوار ۳ برای جدا کردن ردیف‌ها');
                     h3--;
                 }
-                shift++;
             }
 
             addFrame('آماده‌سازی_جمع', 'تولید ردیف‌ها تمام شد. آماده‌سازی برای جمع دوتا دوتا');
@@ -297,7 +316,7 @@
                 document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
                 document.getElementById('playBtn').classList.replace('bg-red-600', 'bg-purple-600');
             } else {
-                playInterval = setInterval(stepSimulation, 400); // سرعت اجرای فریم‌ها
+                playInterval = setInterval(stepSimulation, 350);
                 document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-pause"></i>';
                 document.getElementById('playBtn').classList.replace('bg-purple-600', 'bg-red-600');
             }
@@ -309,15 +328,18 @@
             
             tapeArray.forEach((cell, index) => {
                 const isPhysHead = index === physHead;
-                const textColor = (cell === '+' || cell === '=') ? 'text-red-500 font-bold' : 'text-slate-700';
+                const isMarked = cell.length > 1 && cell.includes('['); 
+                let displayChar = isMarked ? cell.replace('[', '').replace(']', '') : cell;
+                
+                let textColor = (displayChar === '+' || displayChar === '=') ? 'text-red-500 font-bold' : 'text-slate-700';
+                if(isMarked) textColor = 'text-green-600 font-black scale-125';
 
-                // افکت بزرگتر شدن برای نوار نقلی (نوار ۵)
-                let extraSize = containerId === 'tapeContainer5' && cell !== '_' ? 'font-black scale-110 text-red-600' : textColor;
+                let extraSize = containerId === 'tapeContainer5' && displayChar !== '_' && displayChar !== '0' ? 'font-black scale-110 text-red-600' : textColor;
 
                 const cellHTML = `
                     <div id="${containerId}-cell-${index}" class="tape-cell border ${isPhysHead ? highlightClass + ' shadow-md' : 'border-slate-300 bg-white'} rounded w-8 h-10 md:w-11 md:h-12 flex justify-center items-center shrink-0 relative shadow-sm">
                         ${isPhysHead ? `<div class="absolute -top-4 md:-top-5 text-[8px] md:text-[10px] font-bold text-white bg-slate-800 px-1 py-0.5 rounded shadow whitespace-nowrap z-20">${headLabel}</div>` : ''}
-                        <span class="font-mono text-sm md:text-lg ${extraSize} transition-transform">${cell}</span>
+                        <span class="font-mono text-sm md:text-lg ${extraSize} transition-transform">${displayChar}</span>
                     </div>
                 `;
                 container.innerHTML += cellHTML;

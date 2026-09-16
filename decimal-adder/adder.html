@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ماشین تورینگ: جمع‌کننده ده‌دهی</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #ffffff;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 12px;
+            overflow: hidden;
+        }
+
+        .tape-cell { transition: all 0.15s ease-in-out; }
+        .head-active { 
+            box-shadow: 0 0 0 4px #3b82f6; 
+            z-index: 10; 
+            transform: scale(1.15); 
+            background-color: #eff6ff !important;
+        }
+
+        .display-none {display: none;}
+        
+        #tapeScrollWrapper::-webkit-scrollbar { display: none; }
+        #tapeScrollWrapper { -ms-overflow-style: none; scrollbar-width: none; }
+
+        #network-wrapper {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        #network {
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            background-color: #fafafa;
+            border-radius: 0.5rem;
+        }
+
+        @media (max-height: 700px) {
+           .game-container { gap: 6px; padding: 8px; }
+           .controls-panel { padding: 6px !important; gap: 6px !important; }
+           .tape-cell { height: 42px !important; width: 38px !important; }
+           .tape-cell span { font-size: 1.2rem !important; }
+           #tapeScrollWrapper { padding-top: 18px !important; padding-bottom: 6px !important; }
+           .head-label { top: -16px !important; font-size: 8px !important; padding: 0 2px !important;}
+           .title-text { font-size: 1rem !important; margin-bottom: 0 !important;}
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="game-container">
+        
+        <h1 class="title-text text-xl md:text-2xl font-bold text-center text-blue-700 shrink-0">ماشین تورینگ: جمع‌کننده ده‌دهی (انسانی)</h1>
+
+        <!-- Controls (Compact for mobile) -->
+        <div class="controls-panel flex flex-col sm:flex-row gap-3 bg-gray-50 p-2 sm:p-3 rounded-lg border shrink-0 items-center justify-between">
+            <div class="flex gap-2 w-full sm:w-auto flex-1">
+                <div class="flex-1 flex flex-col">
+                    <label class="font-bold text-[11px] md:text-xs mb-0.5 text-gray-600">عبارت جمع (مثال: 459+758):</label>
+                    <input type="text" id="inputExpr" value="459+758" class="w-full border p-1 md:p-1.5 rounded text-left font-mono text-sm md:text-base outline-none focus:border-blue-500" dir="ltr">
+                </div>
+            </div>
+            
+            <div class="flex justify-center gap-2 mt-1 sm:mt-0">
+                <button onclick="initSimulation()" class="w-10 h-10 md:w-11 md:h-11 flex justify-center items-center text-lg bg-blue-600 text-white rounded-full shadow hover:bg-blue-700 transition" title="ریست نوار">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button onclick="stepSimulation()" id="stepBtn" class="w-10 h-10 md:w-11 md:h-11 flex justify-center items-center text-lg bg-green-600 text-white rounded-full shadow hover:bg-green-700 transition opacity-50 cursor-not-allowed" disabled title="یک گام">
+                    <i class="fa-solid fa-forward-step"></i>
+                </button>
+                <button onclick="togglePlay()" id="playBtn" class="w-10 h-10 md:w-11 md:h-11 flex justify-center items-center text-lg bg-purple-600 text-white rounded-full shadow hover:bg-purple-700 transition opacity-50 cursor-not-allowed" disabled title="پخش / توقف خودکار">
+                    <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="text-center shrink-0">
+            <p id="statusText" class="text-sm md:text-base font-bold text-gray-600">آماده برای شروع شبیه‌سازی</p>
+        </div>
+
+        <!-- The 1D Infinite Tape -->
+        <div class="shrink-0 relative">
+            <h2 class="font-bold text-[12px] md:text-sm mb-1 text-slate-700">نوار حافظه فیزیکی</h2>
+            <div id="tapeScrollWrapper" class="overflow-x-hidden pb-3 pt-6 border rounded-lg bg-slate-100 shadow-inner relative" dir="ltr">
+                <div id="tapeContainer" class="flex justify-center items-center space-x-1 w-max px-[50vw]">
+                    <!-- Cells generated via JS -->
+                </div>
+            </div>
+            <div class="absolute top-[60%] left-1/2 w-1 h-16 bg-blue-300/30 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0"></div>
+        </div>
+
+        <!-- Vis Network Diagram -->
+        <div id="network-wrapper">
+            <h2 class="font-bold text-[12px] md:text-sm mb-1 text-slate-700 shrink-0">نمودار حالت‌های ماشین (فشرده)</h2>
+            <div id="network"></div>
+        </div>
+
+    </div>
+
+    <script>
+        let tmMap = {};
+        let initialTMState = 'init';
+        let tape = [];
+        let physHead = 0;
+        let currentState = ''; 
+        let playInterval = null;
+        const BLANK = '_';
+
+        // Vis.js Variables
+        let nodes, edges, network;
+        const DEFAULT_COLOR = { background: '#ffffff', border: '#94a3b8' };
+        const ACTIVE_COLOR = { background: '#fef08a', border: '#ca8a04' };
+
+        // هاردکد کردن هوشمندِ جمع‌کننده در JS
+        function parseAlgorithm() {
+            tmMap = {};
+            const add = (f, r, t, w, d) => tmMap[`${f},${r}`] = [t, w, d === 'R' ? 1 : -1];
+            const m = (num) => String.fromCharCode(97 + parseInt(num)); // 0->a, 1->b... برای علامت‌گذاری
+
+            // 1. init: رفتن به انتهای نوار و نوشتن '='
+            for(let i=0; i<=9; i++) add('init', i.toString(), 'init', i.toString(), 'R');
+            add('init', '+', 'init', '+', 'R');
+            add('init', BLANK, 'find_B_c0', '=', 'L');
+
+            // منطق اصلی با رقم نقلی 0 و 1
+            for(let c=0; c<=1; c++) {
+                // 2. find_B: پیدا کردن آخرین رقم علامت‌گذاری نشده از عدد دوم
+                add(`find_B_c${c}`, '=', `find_B_c${c}`, '=', 'L');
+                for(let i=0; i<=9; i++) {
+                    add(`find_B_c${c}`, m(i), `find_B_c${c}`, m(i), 'L'); // اسکیپ کردنِ رقم پردازش‌شده
+                    add(`find_B_c${c}`, i.toString(), `goto_A_c${c}_v${i}`, m(i), 'L'); // خواندن رقم
+                }
+                add(`find_B_c${c}`, '+', `proc_A_c${c}`, '+', 'L'); // عدد دوم تمام شد
+
+                // 3. goto_A: حرکت به چپ برای پیدا کردن رقم متناظر از عدد اول
+                for(let v=0; v<=9; v++) {
+                    for(let i=0; i<=9; i++) {
+                        add(`goto_A_c${c}_v${v}`, i.toString(), `goto_A_c${c}_v${v}`, i.toString(), 'L');
+                        add(`goto_A_c${c}_v${v}`, m(i), `goto_A_c${c}_v${v}`, m(i), 'L');
+                    }
+                    add(`goto_A_c${c}_v${v}`, '+', `goto_A_c${c}_v${v}`, '+', 'L');
+
+                    // رقم پیدا شد، جمع کن
+                    for(let a=0; a<=9; a++) {
+                        let sum = c + v + a;
+                        let nc = sum >= 10 ? 1 : 0;
+                        let d = sum % 10;
+                        add(`goto_A_c${c}_v${v}`, a.toString(), `goto_eq_c${nc}_w${d}`, m(a), 'R');
+                    }
+                    // اگر عدد اول کوتاه‌تر بود (رسیدن به بلنک)
+                    let sum = c + v;
+                    let nc = sum >= 10 ? 1 : 0;
+                    let d = sum % 10;
+                    add(`goto_A_c${c}_v${v}`, BLANK, `goto_eq_c${nc}_w${d}`, BLANK, 'R');
+                }
+
+                // 4. proc_A: وقتی عدد دوم تمام شده ولی عدد اول و یا رقم نقلی باقیست
+                for(let i=0; i<=9; i++) add(`proc_A_c${c}`, m(i), `proc_A_c${c}`, m(i), 'L');
+                for(let a=0; a<=9; a++) {
+                    let sum = c + a;
+                    let nc = sum >= 10 ? 1 : 0;
+                    let d = sum % 10;
+                    add(`proc_A_c${c}`, a.toString(), `goto_eq_c${nc}_w${d}`, m(a), 'R');
+                }
+                if (c === 1) add(`proc_A_c${c}`, BLANK, `goto_eq_c0_w1`, BLANK, 'R');
+                else add(`proc_A_c${c}`, BLANK, `cleanup`, BLANK, 'R');
+
+                // 5. goto_eq: بردن رقم حاصل‌جمع به سمت راست تا رسیدن به '='
+                for(let d=0; d<=9; d++) {
+                    for(let i=0; i<=9; i++) {
+                        add(`goto_eq_c${c}_w${d}`, i.toString(), `goto_eq_c${c}_w${d}`, i.toString(), 'R');
+                        add(`goto_eq_c${c}_w${d}`, m(i), `goto_eq_c${c}_w${d}`, m(i), 'R');
+                    }
+                    add(`goto_eq_c${c}_w${d}`, '+', `goto_eq_c${c}_w${d}`, '+', 'R');
+                    add(`goto_eq_c${c}_w${d}`, '=', `insert_${d}_c${c}`, '=', 'R');
+                }
+
+                // 6. insert: درج رقم به صورت Shift کردن تمام ارقام بعدی به سمت راست
+                for(let d=0; d<=9; d++) {
+                    add(`insert_${d}_c${c}`, BLANK, `return_c${c}`, d.toString(), 'L');
+                    for(let z=0; z<=9; z++) {
+                        add(`insert_${d}_c${c}`, z.toString(), `insert_${z}_c${c}`, d.toString(), 'R');
+                    }
+                }
+
+                // 7. return: بازگشت به عقب برای عملیات بعدی
+                for(let i=0; i<=9; i++) add(`return_c${c}`, i.toString(), `return_c${c}`, i.toString(), 'L');
+                add(`return_c${c}`, '=', `find_B_c${c}`, '=', 'L');
+            }
+
+            // 8. cleanup: پاک کردن علامت‌گذاری‌ها و پایان
+            for(let i=0; i<=9; i++) {
+                add(`cleanup`, i.toString(), `cleanup`, i.toString(), 'R');
+                add(`cleanup`, m(i), `cleanup`, i.toString(), 'R');
+            }
+            add(`cleanup`, '+', `cleanup`, '+', 'R');
+            add(`cleanup`, '=', `cleanup`, '=', 'R');
+            add(`cleanup`, BLANK, `accept`, BLANK, 'L');
+        }
+
+        function generateNetworkData() {
+            let uniqueStates = new Set();
+            let transitionsMap = {}; 
+
+            Object.keys(tmMap).forEach(key => {
+                let [fromState, readChar] = key.split(',');
+                let [toState, writeChar, dir] = tmMap[key];
+                let dirStr = dir === 1 ? 'R' : 'L';
+                
+                uniqueStates.add(fromState);
+                uniqueStates.add(toState);
+
+                let edgeKey = `${fromState}|${toState}`;
+                let label = `${readChar} -> ${writeChar}, ${dirStr}`;
+                
+                if (!transitionsMap[edgeKey]) transitionsMap[edgeKey] = [];
+                // محدود کردن طول لیبل برای گراف سبک‌تر
+                if(transitionsMap[edgeKey].length < 3) transitionsMap[edgeKey].push(label);
+                else if(transitionsMap[edgeKey].length === 3) transitionsMap[edgeKey].push('...');
+            });
+
+            let nodesData = Array.from(uniqueStates).map(state => ({
+                id: state,
+                label: state.replace(/_v[0-9]+/, '_vX').replace(/_w[0-9]+/, '_wX'), // ساده‌سازی نام‌ها
+                shape: 'circle',
+                color: (state === 'accept' ? {background:'#bbf7d0', border:'#22c55e'} : DEFAULT_COLOR),
+                font: { size: 12, face: 'Vazirmatn', bold: true }
+            }));
+
+            let edgesData = Object.keys(transitionsMap).map(key => {
+                let [from, to] = key.split('|');
+                return {
+                    from: from,
+                    to: to,
+                    label: transitionsMap[key].join('\n'),
+                    arrows: 'to',
+                    font: { align: 'horizontal', size: 9, color: '#64748b', background: 'rgba(255,255,255,0.7)' },
+                    color: { color: '#cbd5e1' },
+                    smooth: { type: 'dynamic' } 
+                };
+            });
+
+            return { nodes: new vis.DataSet(nodesData), edges: new vis.DataSet(edgesData) };
+        }
+
+        function initNetwork() {
+            const data = generateNetworkData();
+            nodes = data.nodes;
+            edges = data.edges;
+
+            const container = document.getElementById('network');
+            const options = {
+                layout: { improvedLayout: false },
+                physics: {
+                    enabled: true,
+                    barnesHut: { gravitationalConstant: -800, springLength: 100, springConstant: 0.04 },
+                    stabilization: { iterations: 100 }
+                },
+                interaction: { hover: true }
+            };
+            network = new vis.Network(container, data, options);
+            // خاموش کردن فیزیک بعد از پایدار شدن برای جلوگیری از کندی مرورگر
+            network.on("stabilizationIterationsDone", function () { network.setOptions( { physics: false } ); });
+        }
+
+        function initSimulation() {
+            if(playInterval) togglePlay();
+            
+            parseAlgorithm();
+            initNetwork();
+
+            let expr = document.getElementById('inputExpr').value.trim().replace(/\s+/g, '');
+            if(!expr.includes('+')) expr += '+0';
+
+            tape = [];
+            for(let i=0; i<20; i++) tape.push(BLANK); // فضای کافی برای عملیات حمل (Carry)
+            tape.push(...expr.split(''));
+            for(let i=0; i<25; i++) tape.push(BLANK); // فضای کافی برای درج نتیجه
+            
+            physHead = 20; 
+            currentState = initialTMState;
+            
+            document.getElementById('stepBtn').disabled = false;
+            document.getElementById('stepBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('playBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
+            document.getElementById('playBtn').classList.replace('bg-red-600', 'bg-purple-600');
+            
+            updateUI();
+            centerTapeOnHead(true);
+            
+            if(nodes.get(currentState)) nodes.update({id: currentState, color: ACTIVE_COLOR});
+        }
+
+        function stepSimulation() {
+            if (currentState === 'accept' || currentState === 'reject') {
+                if(playInterval) togglePlay();
+                return;
+            }
+
+            if (physHead >= tape.length - 2) {
+                tape.push(BLANK); tape.push(BLANK);
+            }
+            if (physHead <= 2) {
+                tape.unshift(BLANK); tape.unshift(BLANK);
+                physHead += 2; 
+            }
+
+            let readChar = tape[physHead];
+            let transitionKey = currentState + ',' + readChar;
+            
+            if (tmMap[transitionKey]) {
+                let [nextState, writeChar, moveDirection] = tmMap[transitionKey];
+                
+                tape[physHead] = writeChar;
+                
+                if (currentState !== nextState && currentState !== 'accept' && currentState !== 'reject') {
+                    if(nodes.get(currentState)) nodes.update({id: currentState, color: DEFAULT_COLOR});
+                }
+                if (nextState !== 'accept' && nextState !== 'reject') {
+                    if(nodes.get(nextState)) nodes.update({id: nextState, color: ACTIVE_COLOR});
+                }
+                if(nodes.get(nextState)) network.focus(nextState, { scale: 0.6, animation: { duration: 150 } });
+
+                currentState = nextState;
+                physHead += moveDirection;
+            } else {
+                document.getElementById('statusText').innerText = `خطا: هیچ انتقالی برای (${currentState}, ${readChar}) پیدا نشد!`;
+                if(playInterval) togglePlay();
+                return;
+            }
+
+            updateUI();
+            centerTapeOnHead();
+        }
+
+        function togglePlay() {
+            if (playInterval) {
+                clearInterval(playInterval);
+                playInterval = null;
+                document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
+                document.getElementById('playBtn').classList.replace('bg-red-600', 'bg-purple-600');
+            } else {
+                playInterval = setInterval(stepSimulation, 300); // سرعت مناسب برای ماشین سنگین
+                document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-pause"></i>';
+                document.getElementById('playBtn').classList.replace('bg-purple-600', 'bg-red-600');
+            }
+        }
+
+        function getStateHint(state) {
+            if (state === 'init') return "حرکت به انتهای عبارت برای نوشتن '='";
+            if (state.startsWith('find_B')) return "پیدا کردن رقمِ جدید از عدد دوم";
+            if (state.startsWith('goto_A')) return "حرکت به سمت عدد اول برای جمع و ایجاد نقلی";
+            if (state.startsWith('proc_A')) return "پردازش ارقام باقی‌مانده عدد اول";
+            if (state.startsWith('goto_eq')) return "حمل رقم حاصل‌جمع به سمت مساوی";
+            if (state.startsWith('insert')) return "درج رقم حاصل‌جمع و شیفت دادن بقیه ارقام";
+            if (state.startsWith('return')) return "بازگشت برای پردازش رقم بعدی";
+            if (state === 'cleanup') return "پاک‌سازی نشانگرها و بازیابی اعداد اصلی";
+            if (state === 'accept') return "پایان عملیات جمع!";
+            return "در حال پردازش...";
+        }
+
+        function isMarked(char) {
+            return char >= 'a' && char <= 'j';
+        }
+
+        function unmarkDisplay(char) {
+            if(isMarked(char)) return String.fromCharCode(char.charCodeAt(0) - 97);
+            return char;
+        }
+
+        function updateUI() {
+            const container = document.getElementById('tapeContainer');
+            container.innerHTML = '';
+            
+            tape.forEach((cell, index) => {
+                const isPhysHead = index === physHead;
+                const marked = isMarked(cell);
+                const displayChar = unmarkDisplay(cell);
+                
+                const cellHTML = `
+                    <div id="cell-${index}" class="tape-cell border-2 ${isPhysHead ? 'border-blue-500 head-active bg-blue-50' : 'border-slate-300 bg-white'} rounded w-10 h-12 md:w-14 md:h-16 flex justify-center items-center shrink-0 relative shadow-sm">
+                        ${isPhysHead ? '<div class="head-label absolute -top-5 md:-top-7 text-[9px] md:text-xs font-bold text-blue-600 bg-blue-100 px-1 py-0.5 rounded shadow">هد</div>' : ''}
+                        <span class="font-mono text-lg md:text-2xl ${marked ? 'text-red-500 font-bold' : 'text-slate-700'}">${displayChar}</span>
+                    </div>
+                `;
+                container.innerHTML += cellHTML;
+            });
+
+            let statText = "";
+            if(currentState === 'accept') {
+                statText = "نتیجه: Accept (پایان عملیات جمع) ✔️";
+            } else if(currentState === 'reject') {
+                statText = "نتیجه: Reject (خطا) ❌";
+            } else {
+                let hint = getStateHint(currentState);
+                statText = `حالت فعلی: ${currentState} (${hint}) | خواندن: ${unmarkDisplay(tape[physHead])}`;
+            }
+            
+            document.getElementById('statusText').innerText = statText;
+        }
+
+        function centerTapeOnHead(instant = false) {
+            setTimeout(() => {
+                const headElement = document.getElementById(`cell-${physHead}`);
+                const wrapper = document.getElementById('tapeScrollWrapper');
+                if (headElement && wrapper) {
+                    const headLeft = headElement.offsetLeft;
+                    const headWidth = headElement.offsetWidth;
+                    const wrapperWidth = wrapper.offsetWidth;
+                    
+                    wrapper.scrollTo({
+                        left: headLeft - (wrapperWidth / 2) + (headWidth / 2),
+                        behavior: instant ? 'auto' : 'smooth'
+                    });
+                }
+            }, 10);
+        }
+
+        window.onload = () => {
+            initSimulation();
+        };
+    </script>
+</body>
+</html>

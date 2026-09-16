@@ -83,9 +83,6 @@
 <body class="text-gray-800">
 
     <div class="game-container">
-        
-        <h1 class="title-text text-xl md:text-2xl font-bold text-center text-blue-700 shrink-0">ماشین تورینگ: جمع‌کننده ده‌دهی (انسانی)</h1>
-
         <!-- Controls (Compact for mobile) -->
         <div class="controls-panel flex flex-col sm:flex-row gap-3 bg-gray-50 p-2 sm:p-3 rounded-lg border shrink-0 items-center justify-between">
             <div class="flex gap-2 w-full sm:w-auto flex-1">
@@ -163,33 +160,39 @@
                 add(`find_B_c${c}`, '=', `find_B_c${c}`, '=', 'L');
                 for(let i=0; i<=9; i++) {
                     add(`find_B_c${c}`, m(i), `find_B_c${c}`, m(i), 'L'); // اسکیپ کردنِ رقم پردازش‌شده
-                    add(`find_B_c${c}`, i.toString(), `goto_A_c${c}_v${i}`, m(i), 'L'); // خواندن رقم
+                    add(`find_B_c${c}`, i.toString(), `skip_B_c${c}_v${i}`, m(i), 'L'); // خواندن رقم
                 }
                 add(`find_B_c${c}`, '+', `proc_A_c${c}`, '+', 'L'); // عدد دوم تمام شد
 
-                // 3. goto_A: حرکت به چپ برای پیدا کردن رقم متناظر از عدد اول
+                // 3. skip_B: عبور از ارقام باقیمانده عدد دوم
                 for(let v=0; v<=9; v++) {
                     for(let i=0; i<=9; i++) {
-                        add(`goto_A_c${c}_v${v}`, i.toString(), `goto_A_c${c}_v${v}`, i.toString(), 'L');
-                        add(`goto_A_c${c}_v${v}`, m(i), `goto_A_c${c}_v${v}`, m(i), 'L');
+                        add(`skip_B_c${c}_v${v}`, i.toString(), `skip_B_c${c}_v${v}`, i.toString(), 'L');
+                        add(`skip_B_c${c}_v${v}`, m(i), `skip_B_c${c}_v${v}`, m(i), 'L'); 
                     }
-                    add(`goto_A_c${c}_v${v}`, '+', `goto_A_c${c}_v${v}`, '+', 'L');
-
-                    // رقم پیدا شد، جمع کن
-                    for(let a=0; a<=9; a++) {
-                        let sum = c + v + a;
-                        let nc = sum >= 10 ? 1 : 0;
-                        let d = sum % 10;
-                        add(`goto_A_c${c}_v${v}`, a.toString(), `goto_eq_c${nc}_w${d}`, m(a), 'R');
-                    }
-                    // اگر عدد اول کوتاه‌تر بود (رسیدن به بلنک)
-                    let sum = c + v;
-                    let nc = sum >= 10 ? 1 : 0;
-                    let d = sum % 10;
-                    add(`goto_A_c${c}_v${v}`, BLANK, `goto_eq_c${nc}_w${d}`, BLANK, 'R');
+                    add(`skip_B_c${c}_v${v}`, '+', `find_A_c${c}_v${v}`, '+', 'L'); // عبور از پلاس
                 }
 
-                // 4. proc_A: وقتی عدد دوم تمام شده ولی عدد اول و یا رقم نقلی باقیست
+                // 4. find_A: حرکت به چپ برای پیدا کردن رقم متناظر از عدد اول
+                for(let v=0; v<=9; v++) {
+                    for(let i=0; i<=9; i++) {
+                        add(`find_A_c${c}_v${v}`, m(i), `find_A_c${c}_v${v}`, m(i), 'L'); 
+                    }
+                    // رقم پیدا شد، جمع کن
+                    for(let a=0; a<=9; a++) {
+                        let sum = c + parseInt(v) + a;
+                        let nc = sum >= 10 ? 1 : 0;
+                        let d = sum % 10;
+                        add(`find_A_c${c}_v${v}`, a.toString(), `goto_eq_c${nc}_w${d}`, m(a), 'R');
+                    }
+                    // اگر عدد اول کوتاه‌تر بود (رسیدن به بلنک)
+                    let sum = c + parseInt(v);
+                    let nc = sum >= 10 ? 1 : 0;
+                    let d = sum % 10;
+                    add(`find_A_c${c}_v${v}`, BLANK, `goto_eq_c${nc}_w${d}`, BLANK, 'R');
+                }
+
+                // 5. proc_A: وقتی عدد دوم تمام شده ولی عدد اول و یا رقم نقلی باقیست
                 for(let i=0; i<=9; i++) add(`proc_A_c${c}`, m(i), `proc_A_c${c}`, m(i), 'L');
                 for(let a=0; a<=9; a++) {
                     let sum = c + a;
@@ -200,7 +203,7 @@
                 if (c === 1) add(`proc_A_c${c}`, BLANK, `goto_eq_c0_w1`, BLANK, 'R');
                 else add(`proc_A_c${c}`, BLANK, `cleanup`, BLANK, 'R');
 
-                // 5. goto_eq: بردن رقم حاصل‌جمع به سمت راست تا رسیدن به '='
+                // 6. goto_eq: بردن رقم حاصل‌جمع به سمت راست تا رسیدن به '='
                 for(let d=0; d<=9; d++) {
                     for(let i=0; i<=9; i++) {
                         add(`goto_eq_c${c}_w${d}`, i.toString(), `goto_eq_c${c}_w${d}`, i.toString(), 'R');
@@ -210,7 +213,7 @@
                     add(`goto_eq_c${c}_w${d}`, '=', `insert_${d}_c${c}`, '=', 'R');
                 }
 
-                // 6. insert: درج رقم به صورت Shift کردن تمام ارقام بعدی به سمت راست
+                // 7. insert: درج رقم به صورت Shift کردن تمام ارقام بعدی به سمت راست
                 for(let d=0; d<=9; d++) {
                     add(`insert_${d}_c${c}`, BLANK, `return_c${c}`, d.toString(), 'L');
                     for(let z=0; z<=9; z++) {
@@ -218,12 +221,12 @@
                     }
                 }
 
-                // 7. return: بازگشت به عقب برای عملیات بعدی
+                // 8. return: بازگشت به عقب برای عملیات بعدی
                 for(let i=0; i<=9; i++) add(`return_c${c}`, i.toString(), `return_c${c}`, i.toString(), 'L');
                 add(`return_c${c}`, '=', `find_B_c${c}`, '=', 'L');
             }
 
-            // 8. cleanup: پاک کردن علامت‌گذاری‌ها و پایان
+            // 9. cleanup: پاک کردن علامت‌گذاری‌ها و پایان
             for(let i=0; i<=9; i++) {
                 add(`cleanup`, i.toString(), `cleanup`, i.toString(), 'R');
                 add(`cleanup`, m(i), `cleanup`, i.toString(), 'R');
@@ -240,26 +243,25 @@
             Object.keys(tmMap).forEach(key => {
                 let [fromState, readChar] = key.split(',');
                 let [toState, writeChar, dir] = tmMap[key];
-                let dirStr = dir === 1 ? 'R' : 'L';
                 
-                uniqueStates.add(fromState);
-                uniqueStates.add(toState);
+                // خلاصه‌سازی نام حالت‌ها برای جلوگیری از شلوغی بیش‌ازحد گراف
+                let simplifiedFrom = fromState.replace(/_v[0-9]+/, '_vX').replace(/_w[0-9]+/, '_wX').replace(/insert_[0-9]+/, 'insert_X');
+                let simplifiedTo = toState.replace(/_v[0-9]+/, '_vX').replace(/_w[0-9]+/, '_wX').replace(/insert_[0-9]+/, 'insert_X');
+                
+                uniqueStates.add(simplifiedFrom);
+                uniqueStates.add(simplifiedTo);
 
-                let edgeKey = `${fromState}|${toState}`;
-                let label = `${readChar} -> ${writeChar}, ${dirStr}`;
+                let edgeKey = `${simplifiedFrom}|${simplifiedTo}`;
                 
                 if (!transitionsMap[edgeKey]) transitionsMap[edgeKey] = [];
-                // محدود کردن طول لیبل برای گراف سبک‌تر
-                if(transitionsMap[edgeKey].length < 3) transitionsMap[edgeKey].push(label);
-                else if(transitionsMap[edgeKey].length === 3) transitionsMap[edgeKey].push('...');
             });
 
             let nodesData = Array.from(uniqueStates).map(state => ({
                 id: state,
-                label: state.replace(/_v[0-9]+/, '_vX').replace(/_w[0-9]+/, '_wX'), // ساده‌سازی نام‌ها
+                label: state,
                 shape: 'circle',
                 color: (state === 'accept' ? {background:'#bbf7d0', border:'#22c55e'} : DEFAULT_COLOR),
-                font: { size: 12, face: 'Vazirmatn', bold: true }
+                font: { size: 10, face: 'Vazirmatn', bold: true }
             }));
 
             let edgesData = Object.keys(transitionsMap).map(key => {
@@ -267,9 +269,7 @@
                 return {
                     from: from,
                     to: to,
-                    label: transitionsMap[key].join('\n'),
                     arrows: 'to',
-                    font: { align: 'horizontal', size: 9, color: '#64748b', background: 'rgba(255,255,255,0.7)' },
                     color: { color: '#cbd5e1' },
                     smooth: { type: 'dynamic' } 
                 };
@@ -294,7 +294,7 @@
                 interaction: { hover: true }
             };
             network = new vis.Network(container, data, options);
-            // خاموش کردن فیزیک بعد از پایدار شدن برای جلوگیری از کندی مرورگر
+            // خاموش کردن فیزیک بعد از پایدار شدن برای جلوگیری از کندی
             network.on("stabilizationIterationsDone", function () { network.setOptions( { physics: false } ); });
         }
 
@@ -308,9 +308,9 @@
             if(!expr.includes('+')) expr += '+0';
 
             tape = [];
-            for(let i=0; i<20; i++) tape.push(BLANK); // فضای کافی برای عملیات حمل (Carry)
+            for(let i=0; i<20; i++) tape.push(BLANK); // فضای کافی برای ارقام نقلی
             tape.push(...expr.split(''));
-            for(let i=0; i<25; i++) tape.push(BLANK); // فضای کافی برای درج نتیجه
+            for(let i=0; i<25; i++) tape.push(BLANK); // فضای درج جواب
             
             physHead = 20; 
             currentState = initialTMState;
@@ -326,7 +326,8 @@
             updateUI();
             centerTapeOnHead(true);
             
-            if(nodes.get(currentState)) nodes.update({id: currentState, color: ACTIVE_COLOR});
+            let simpInit = initialTMState.replace(/_v[0-9]+/, '_vX').replace(/_w[0-9]+/, '_wX').replace(/insert_[0-9]+/, 'insert_X');
+            if(nodes.get(simpInit)) nodes.update({id: simpInit, color: ACTIVE_COLOR});
         }
 
         function stepSimulation() {
@@ -335,13 +336,8 @@
                 return;
             }
 
-            if (physHead >= tape.length - 2) {
-                tape.push(BLANK); tape.push(BLANK);
-            }
-            if (physHead <= 2) {
-                tape.unshift(BLANK); tape.unshift(BLANK);
-                physHead += 2; 
-            }
+            if (physHead >= tape.length - 2) { tape.push(BLANK); tape.push(BLANK); }
+            if (physHead <= 2) { tape.unshift(BLANK); tape.unshift(BLANK); physHead += 2; }
 
             let readChar = tape[physHead];
             let transitionKey = currentState + ',' + readChar;
@@ -351,13 +347,16 @@
                 
                 tape[physHead] = writeChar;
                 
-                if (currentState !== nextState && currentState !== 'accept' && currentState !== 'reject') {
-                    if(nodes.get(currentState)) nodes.update({id: currentState, color: DEFAULT_COLOR});
+                let currentStateSimp = currentState.replace(/_v[0-9]+/, '_vX').replace(/_w[0-9]+/, '_wX').replace(/insert_[0-9]+/, 'insert_X');
+                let nextStateSimp = nextState.replace(/_v[0-9]+/, '_vX').replace(/_w[0-9]+/, '_wX').replace(/insert_[0-9]+/, 'insert_X');
+
+                if (currentStateSimp !== nextStateSimp && currentStateSimp !== 'accept' && currentStateSimp !== 'reject') {
+                    if(nodes.get(currentStateSimp)) nodes.update({id: currentStateSimp, color: DEFAULT_COLOR});
                 }
-                if (nextState !== 'accept' && nextState !== 'reject') {
-                    if(nodes.get(nextState)) nodes.update({id: nextState, color: ACTIVE_COLOR});
+                if (nextStateSimp !== 'accept' && nextStateSimp !== 'reject') {
+                    if(nodes.get(nextStateSimp)) nodes.update({id: nextStateSimp, color: ACTIVE_COLOR});
                 }
-                if(nodes.get(nextState)) network.focus(nextState, { scale: 0.6, animation: { duration: 150 } });
+                if(nodes.get(nextStateSimp)) network.focus(nextStateSimp, { scale: 0.6, animation: { duration: 150 } });
 
                 currentState = nextState;
                 physHead += moveDirection;
@@ -387,7 +386,8 @@
         function getStateHint(state) {
             if (state === 'init') return "حرکت به انتهای عبارت برای نوشتن '='";
             if (state.startsWith('find_B')) return "پیدا کردن رقمِ جدید از عدد دوم";
-            if (state.startsWith('goto_A')) return "حرکت به سمت عدد اول برای جمع و ایجاد نقلی";
+            if (state.startsWith('skip_B')) return "عبور از ارقام باقی‌مانده عدد دوم";
+            if (state.startsWith('find_A')) return "پیدا کردن رقم متناظر از عدد اول و جمع زدن";
             if (state.startsWith('proc_A')) return "پردازش ارقام باقی‌مانده عدد اول";
             if (state.startsWith('goto_eq')) return "حمل رقم حاصل‌جمع به سمت مساوی";
             if (state.startsWith('insert')) return "درج رقم حاصل‌جمع و شیفت دادن بقیه ارقام";
@@ -402,7 +402,7 @@
         }
 
         function unmarkDisplay(char) {
-            if(isMarked(char)) return String.fromCharCode(char.charCodeAt(0) - 97);
+            if(isMarked(char)) return String.fromCharCode(char.charCodeAt(0) - 97 + 48); // تبدیل a->0, b->1
             return char;
         }
 
@@ -431,7 +431,7 @@
                 statText = "نتیجه: Reject (خطا) ❌";
             } else {
                 let hint = getStateHint(currentState);
-                statText = `حالت فعلی: ${currentState} (${hint}) | خواندن: ${unmarkDisplay(tape[physHead])}`;
+                statText = `حالت فعلی: ${currentState.replace(/_v[0-9]+/, '_vX').replace(/_w[0-9]+/, '_wX').replace(/insert_[0-9]+/, 'insert_X')} (${hint}) | خواندن: ${unmarkDisplay(tape[physHead])}`;
             }
             
             document.getElementById('statusText').innerText = statText;

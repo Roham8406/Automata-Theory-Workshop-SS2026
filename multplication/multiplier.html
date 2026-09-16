@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ماشین تورینگ: ضرب ده‌دهی ۳-نواره</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap');
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #ffffff;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        body {
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .tape-cell { transition: all 0.15s ease-in-out; }
+        .head-active-1 { box-shadow: 0 0 0 3px #3b82f6; z-index: 10; transform: scale(1.1); background-color: #eff6ff !important; }
+        .head-active-2 { box-shadow: 0 0 0 3px #10b981; z-index: 10; transform: scale(1.1); background-color: #ecfdf5 !important; }
+        .head-active-3 { box-shadow: 0 0 0 3px #8b5cf6; z-index: 10; transform: scale(1.1); background-color: #f5f3ff !important; }
+
+        .tapeScrollWrapper::-webkit-scrollbar { display: none; }
+        .tapeScrollWrapper { -ms-overflow-style: none; scrollbar-width: none; }
+
+        #network-wrapper {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        #network {
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            background-color: #fafafa;
+            border-radius: 0.5rem;
+        }
+
+        /* فشرده‌سازی بسیار بالا برای جا شدن 3 نوار در موبایل */
+        @media (max-height: 750px) {
+           .game-container { gap: 4px; padding: 6px; }
+           .controls-panel { padding: 4px !important; gap: 4px !important; }
+           .tape-cell { height: 32px !important; width: 28px !important; border-width: 1px !important;}
+           .tape-cell span { font-size: 0.95rem !important; }
+           .tapeScrollWrapper { padding-top: 14px !important; padding-bottom: 4px !important; }
+           .head-label { top: -14px !important; font-size: 7px !important; padding: 0 2px !important;}
+           .title-text { font-size: 0.95rem !important; margin-bottom: 0 !important;}
+           .tape-title { font-size: 0.65rem !important; margin-bottom: 0 !important;}
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="game-container">
+        
+        <h1 class="title-text text-lg md:text-xl font-bold text-center text-blue-700 shrink-0">ماشین تورینگ: ضرب ده‌دهی (سمانتیکِ انسانی)</h1>
+
+        <!-- Controls -->
+        <div class="controls-panel flex flex-col sm:flex-row gap-2 bg-gray-50 p-2 rounded-lg border shrink-0 items-center justify-between">
+            <div class="flex gap-2 w-full sm:w-auto flex-1">
+                <div class="flex-1 flex flex-col">
+                    <label class="font-bold text-[10px] md:text-xs mb-0.5 text-gray-600">عدد اول:</label>
+                    <input type="text" id="input1" value="4519" class="w-full border p-1 rounded text-center font-mono text-sm md:text-base outline-none focus:border-blue-500" dir="ltr" maxlength="6">
+                </div>
+                <div class="flex-1 flex flex-col">
+                    <label class="font-bold text-[10px] md:text-xs mb-0.5 text-gray-600">عدد دوم:</label>
+                    <input type="text" id="input2" value="1158" class="w-full border p-1 rounded text-center font-mono text-sm md:text-base outline-none focus:border-blue-500" dir="ltr" maxlength="6">
+                </div>
+            </div>
+            
+            <div class="flex justify-center gap-2 mt-1 sm:mt-0">
+                <button onclick="initSimulation()" class="w-9 h-9 md:w-10 md:h-10 flex justify-center items-center text-base bg-blue-600 text-white rounded-full shadow hover:bg-blue-700 transition" title="ریست">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button onclick="stepSimulation()" id="stepBtn" class="w-9 h-9 md:w-10 md:h-10 flex justify-center items-center text-base bg-green-600 text-white rounded-full shadow hover:bg-green-700 transition opacity-50 cursor-not-allowed" disabled title="یک گام">
+                    <i class="fa-solid fa-forward-step"></i>
+                </button>
+                <button onclick="togglePlay()" id="playBtn" class="w-9 h-9 md:w-10 md:h-10 flex justify-center items-center text-base bg-purple-600 text-white rounded-full shadow hover:bg-purple-700 transition opacity-50 cursor-not-allowed" disabled title="پخش / توقف">
+                    <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="text-center shrink-0">
+            <p id="statusText" class="text-[11px] md:text-sm font-bold text-gray-600">آماده برای شروع شبیه‌سازی</p>
+        </div>
+
+        <!-- 3 Tapes (Stacked for Mobile) -->
+        <div class="shrink-0 flex flex-col gap-1 md:gap-2 w-full">
+            <!-- Tape 1 -->
+            <div class="w-full relative">
+                <h2 class="tape-title font-bold text-[10px] md:text-xs text-slate-700">نوار ۱ (عدد اول)</h2>
+                <div id="tapeScrollWrapper1" class="tapeScrollWrapper overflow-x-hidden pb-1 pt-4 border rounded-md bg-slate-100 shadow-inner relative" dir="ltr">
+                    <div id="tapeContainer1" class="flex justify-center items-center space-x-0.5 w-max px-[25vw]"></div>
+                </div>
+            </div>
+            <!-- Tape 2 -->
+            <div class="w-full relative">
+                <h2 class="tape-title font-bold text-[10px] md:text-xs text-slate-700">نوار ۲ (عدد دوم)</h2>
+                <div id="tapeScrollWrapper2" class="tapeScrollWrapper overflow-x-hidden pb-1 pt-4 border rounded-md bg-slate-100 shadow-inner relative" dir="ltr">
+                    <div id="tapeContainer2" class="flex justify-center items-center space-x-0.5 w-max px-[25vw]"></div>
+                </div>
+            </div>
+            <!-- Tape 3 -->
+            <div class="w-full relative">
+                <h2 class="tape-title font-bold text-[10px] md:text-xs text-slate-700">نوار ۳ (انباشتگر / نتیجه)</h2>
+                <div id="tapeScrollWrapper3" class="tapeScrollWrapper overflow-x-hidden pb-1 pt-4 border rounded-md bg-slate-100 shadow-inner relative" dir="ltr">
+                    <div id="tapeContainer3" class="flex justify-center items-center space-x-0.5 w-max px-[25vw]"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vis Network Diagram -->
+        <div id="network-wrapper">
+            <div id="network"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // Semantic JS Logic for Turing Machine
+        let tape1 = [], tape2 = [], tape3 = [];
+        let h1 = 0, h2 = 0, h3 = 0;
+        
+        let currentState = 'پیمایش_به_راست'; 
+        let playInterval = null;
+        const BLANK = '_';
+
+        // State Variables for Semantic Logic
+        let currentMultiplier = 0;
+        let t3_base_index = 0;
+        let carry = 0;
+
+        // Vis.js Variables
+        let nodes, edges, network;
+        const DEFAULT_COLOR = { background: '#ffffff', border: '#94a3b8' };
+        const ACTIVE_COLOR = { background: '#fef08a', border: '#ca8a04' };
+
+        // Semantic States Graph Data
+        const graphData = {
+            nodes: [
+                { id: 'پیمایش_به_راست', label: 'یافتن یکان‌ها\n(Go Right)' },
+                { id: 'خواندن_رقم_پایینی', label: 'خواندن رقم ضرب\n(Read Mul2)' },
+                { id: 'ضرب_و_جمع', label: 'ضرب و جمع ستونی\n(Sweep & Add)' },
+                { id: 'اعمال_نقلی', label: 'ده بر یک\n(Apply Carry)' },
+                { id: 'بازگشت_عدد_اول', label: 'بازگشت به یکان بالا\n(Reset T1)' },
+                { id: 'شیفت_ارزش_مکانی', label: 'شیفت ارزش مکانی\n(Shift Base)' },
+                { id: 'رقم_بعدی', label: 'رفتن به دهگان/صدگان\n(Next Digit)' },
+                { id: 'پایان', label: 'پایان عملیات\n(Accept)', color: {background:'#bbf7d0', border:'#22c55e'} }
+            ],
+            edges: [
+                { from: 'پیمایش_به_راست', to: 'خواندن_رقم_پایینی', label: 'رسیدن به انتهای اعداد' },
+                { from: 'خواندن_رقم_پایینی', to: 'ضرب_و_جمع', label: 'خواندن 0 تا 9' },
+                { from: 'خواندن_رقم_پایینی', to: 'پایان', label: 'خواندن _ (اتمام)' },
+                { from: 'ضرب_و_جمع', to: 'ضرب_و_جمع', label: 'ضرب رقم در بالا\nجمع با پایین' },
+                { from: 'ضرب_و_جمع', to: 'اعمال_نقلی', label: 'اتمام ارقام بالا' },
+                { from: 'اعمال_نقلی', to: 'اعمال_نقلی', label: 'نقلی > 0' },
+                { from: 'اعمال_نقلی', to: 'بازگشت_عدد_اول', label: 'نقلی = 0' },
+                { from: 'بازگشت_عدد_اول', to: 'بازگشت_عدد_اول', label: 'حرکت هد به راست' },
+                { from: 'بازگشت_عدد_اول', to: 'شیفت_ارزش_مکانی', label: 'رسیدن به یکان' },
+                { from: 'شیفت_ارزش_مکانی', to: 'رقم_بعدی', label: 'تغییر Base' },
+                { from: 'رقم_بعدی', to: 'خواندن_رقم_پایینی', label: 'حرکت هد به چپ' }
+            ]
+        };
+
+        function initNetwork() {
+            const container = document.getElementById('network');
+            const data = {
+                nodes: new vis.DataSet(graphData.nodes.map(n => ({...n, shape: 'box', font: { face: 'Vazirmatn', size: 12, bold: true }, color: n.color || DEFAULT_COLOR}))),
+                edges: new vis.DataSet(graphData.edges.map(e => ({...e, arrows: 'to', font: { size: 9, color: '#475569', align: 'horizontal' }, color: '#cbd5e1'})))
+            };
+            nodes = data.nodes;
+            network = new vis.Network(container, data, {
+                layout: { hierarchical: { direction: 'UD', sortMethod: 'directed', nodeSpacing: 120, levelSeparation: 80 } },
+                physics: false,
+                interaction: { hover: true, dragNodes: false }
+            });
+        }
+
+        function initSimulation() {
+            if(playInterval) togglePlay();
+            initNetwork();
+
+            let s1 = document.getElementById('input1').value.trim();
+            let s2 = document.getElementById('input2').value.trim();
+
+            tape1 = Array(15).fill(BLANK).concat(s1.split('')).concat(Array(15).fill(BLANK));
+            tape2 = Array(15).fill(BLANK).concat(s2.split('')).concat(Array(15).fill(BLANK));
+            tape3 = Array(40).fill(BLANK); // نوار 3 برای ذخیره نتیجه نهایی
+
+            h1 = 15; 
+            h2 = 15; 
+            h3 = 25; // مکان تقریبی یکان در نوار 3
+            
+            t3_base_index = 0;
+            carry = 0;
+            currentMultiplier = 0;
+            currentState = 'پیمایش_به_راست';
+            
+            document.getElementById('stepBtn').disabled = false;
+            document.getElementById('stepBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('playBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
+            document.getElementById('playBtn').classList.replace('bg-red-600', 'bg-purple-600');
+            
+            updateUI();
+            centerAllTapes(true);
+            
+            if(nodes.get(currentState)) nodes.update({id: currentState, color: ACTIVE_COLOR});
+        }
+
+        // Semantic Turing Machine Step Logic
+        function stepSimulation() {
+            if (currentState === 'پایان') {
+                if(playInterval) togglePlay();
+                return;
+            }
+
+            let prevState = currentState;
+
+            switch(currentState) {
+                case 'پیمایش_به_راست':
+                    let moved = false;
+                    if (tape1[h1+1] !== BLANK) { h1++; moved = true; }
+                    if (tape2[h2+1] !== BLANK) { h2++; moved = true; }
+                    if (!moved) {
+                        t3_base_index = h1 + 10; // مچ کردن مکان اولیه نوار نتیجه
+                        currentState = 'خواندن_رقم_پایینی';
+                    }
+                    break;
+
+                case 'خواندن_رقم_پایینی':
+                    if (tape2[h2] === BLANK) {
+                        currentState = 'پایان';
+                    } else {
+                        currentMultiplier = parseInt(tape2[h2]);
+                        tape2[h2] = `[${tape2[h2]}]`; // علامت‌گذاری مجازی برای زیبایی
+                        h3 = t3_base_index;
+                        currentState = 'ضرب_و_جمع';
+                    }
+                    break;
+
+                case 'ضرب_و_جمع':
+                    if (tape1[h1] === BLANK) {
+                        currentState = 'اعمال_نقلی';
+                    } else {
+                        let v1 = parseInt(tape1[h1]);
+                        let v3 = tape3[h3] === BLANK ? 0 : parseInt(tape3[h3]);
+                        
+                        let sum = (v1 * currentMultiplier) + v3 + carry;
+                        tape3[h3] = (sum % 10).toString();
+                        carry = Math.floor(sum / 10);
+                        
+                        h1--;
+                        h3--;
+                    }
+                    break;
+
+                case 'اعمال_نقلی':
+                    if (carry > 0) {
+                        let v3 = tape3[h3] === BLANK ? 0 : parseInt(tape3[h3]);
+                        let sum = v3 + carry;
+                        tape3[h3] = (sum % 10).toString();
+                        carry = Math.floor(sum / 10);
+                        h3--;
+                    } else {
+                        currentState = 'بازگشت_عدد_اول';
+                    }
+                    break;
+
+                case 'بازگشت_عدد_اول':
+                    if (tape1[h1+1] !== BLANK) {
+                        h1++;
+                    } else {
+                        currentState = 'شیفت_ارزش_مکانی';
+                    }
+                    break;
+
+                case 'شیفت_ارزش_مکانی':
+                    t3_base_index--; // برای دور بعدی یک خانه به چپ شیفت می‌شویم
+                    currentState = 'رقم_بعدی';
+                    break;
+
+                case 'رقم_بعدی':
+                    // پاک کردن علامت‌گذاری قبلی
+                    tape2[h2] = tape2[h2].replace('[', '').replace(']', '');
+                    h2--;
+                    currentState = 'خواندن_رقم_پایینی';
+                    break;
+            }
+
+            // Update Graph Visuals
+            if (prevState !== currentState && prevState !== 'پایان') {
+                if(nodes.get(prevState)) nodes.update({id: prevState, color: DEFAULT_COLOR});
+            }
+            if (currentState !== 'پایان') {
+                if(nodes.get(currentState)) nodes.update({id: currentState, color: ACTIVE_COLOR});
+                network.focus(currentState, { scale: 0.8, animation: { duration: 200 } });
+            } else {
+                if(nodes.get('پایان')) nodes.update({id: 'پایان', color: {background:'#bbf7d0', border:'#22c55e'}});
+                network.focus('پایان', { scale: 0.8, animation: { duration: 200 } });
+                
+                // Cleanup last marker if any
+                if(tape2[h2] && tape2[h2].includes('[')) tape2[h2] = tape2[h2].replace('[', '').replace(']', '');
+            }
+
+            updateUI();
+            centerAllTapes();
+        }
+
+        function togglePlay() {
+            if (playInterval) {
+                clearInterval(playInterval);
+                playInterval = null;
+                document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-play"></i>';
+                document.getElementById('playBtn').classList.replace('bg-red-600', 'bg-purple-600');
+            } else {
+                playInterval = setInterval(stepSimulation, 350); 
+                document.getElementById('playBtn').innerHTML = '<i class="fa-solid fa-pause"></i>';
+                document.getElementById('playBtn').classList.replace('bg-purple-600', 'bg-red-600');
+            }
+        }
+
+        function renderTape(tapeArray, physHead, containerId, headClass, headTitle) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            tapeArray.forEach((cell, index) => {
+                const isPhysHead = index === physHead;
+                const isMarked = cell.length > 1 && cell.includes('['); // For tape2 marking
+                const displayChar = isMarked ? cell.replace('[', '').replace(']', '') : cell;
+                
+                const cellHTML = `
+                    <div id="${containerId}-cell-${index}" class="tape-cell border ${isPhysHead ? headClass + ' bg-blue-50' : 'border-slate-300 bg-white'} rounded w-8 h-10 md:w-10 md:h-12 flex justify-center items-center shrink-0 relative shadow-sm">
+                        ${isPhysHead ? `<div class="head-label absolute -top-4 md:-top-5 text-[7px] md:text-[9px] font-bold text-white bg-slate-800 px-1 py-0.5 rounded shadow whitespace-nowrap">${headTitle}</div>` : ''}
+                        <span class="font-mono text-base md:text-xl ${isMarked ? 'text-red-600 font-black scale-125' : 'text-slate-700'} transition-transform">${displayChar}</span>
+                    </div>
+                `;
+                container.innerHTML += cellHTML;
+            });
+        }
+
+        function updateUI() {
+            renderTape(tape1, h1, 'tapeContainer1', 'border-blue-500 head-active-1', 'H1');
+            renderTape(tape2, h2, 'tapeContainer2', 'border-green-500 head-active-2', 'H2');
+            renderTape(tape3, h3, 'tapeContainer3', 'border-purple-500 head-active-3', 'H3 (Sum)');
+
+            let statText = "";
+            if(currentState === 'پایان') statText = "نتیجه نهایی محاسبه شد! ✔️";
+            else statText = `حالت (سمانتیک): ${currentState} | Carry (رقم نقلی): ${carry}`;
+            
+            document.getElementById('statusText').innerText = statText;
+        }
+
+        function centerSingleTape(headIndex, containerId, wrapperId, instant) {
+            const headElement = document.getElementById(`${containerId}-cell-${headIndex}`);
+            const wrapper = document.getElementById(wrapperId);
+            if (headElement && wrapper) {
+                wrapper.scrollTo({
+                    left: headElement.offsetLeft - (wrapper.offsetWidth / 2) + (headElement.offsetWidth / 2),
+                    behavior: instant ? 'auto' : 'smooth'
+                });
+            }
+        }
+
+        function centerAllTapes(instant = false) {
+            setTimeout(() => {
+                centerSingleTape(h1, 'tapeContainer1', 'tapeScrollWrapper1', instant);
+                centerSingleTape(h2, 'tapeContainer2', 'tapeScrollWrapper2', instant);
+                centerSingleTape(h3, 'tapeContainer3', 'tapeScrollWrapper3', instant);
+            }, 10);
+        }
+
+        window.onload = () => {
+            initSimulation();
+        };
+    </script>
+</body>
+</html>
